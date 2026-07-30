@@ -10,7 +10,7 @@ interface Props {
   loggedInRep: RepId;
   onLogout: () => void;
   view: AppView;
-  onViewChange: (view: AppView) => void;
+  onViewChange: (view: AppView, originRect?: DOMRect) => void;
 }
 
 export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
@@ -33,7 +33,7 @@ export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
         {tabs.map((tab) => (
           <button
             key={tab.label}
-            onClick={() => onViewChange(tab.view)}
+            onClick={(e) => onViewChange(tab.view, e.currentTarget.getBoundingClientRect())}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               view === tab.view
                 ? "bg-neutral-900 text-white"

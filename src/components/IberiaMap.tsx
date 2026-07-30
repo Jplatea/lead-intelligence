@@ -16,6 +16,7 @@ interface Props {
   onSelect: (id: string) => void;
   onPlaceNew: (lat: number, lng: number) => void;
   highlight: { ids: Set<string>; color: string } | null;
+  reviewIds?: Set<string>;
 }
 
 interface HoverState {
@@ -186,7 +187,7 @@ function pathBetween(a: { x: number; y: number }, b: { x: number; y: number }) {
   return `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`;
 }
 
-export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlight }: Props) {
+export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlight, reviewIds }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const connectorRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -481,6 +482,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
               const isSelected = c.id === selectedId;
               const isHovered = hover?.company.id === c.id;
               const isHighlighted = highlight?.ids.has(c.id) ?? false;
+              const needsReviewArrow = reviewIds?.has(c.id) ?? false;
               const color = REPS[c.assignedRep].color;
 
               return (
@@ -501,6 +503,15 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
                         strokeWidth={2 * zoomScale}
                         className="highlight-ring-blink"
                       />
+                    )}
+                    {needsReviewArrow && (
+                      <g transform={`translate(0, ${-20 * zoomScale})`}>
+                        <path
+                          d={`M0,${-2 * zoomScale} L${6 * zoomScale},${-11 * zoomScale} L${-6 * zoomScale},${-11 * zoomScale} Z`}
+                          fill="#b9503a"
+                          className="review-arrow"
+                        />
+                      </g>
                     )}
                     <g
                       style={{
@@ -554,6 +565,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
             const r = clusterRadius(count) * zoomScale;
             const isSelectedCluster = cluster.members.some((m) => m.id === selectedId);
             const highlightedInCluster = highlight ? cluster.members.some((m) => highlight.ids.has(m.id)) : false;
+            const clusterNeedsReviewArrow = reviewIds ? cluster.members.some((m) => reviewIds.has(m.id)) : false;
 
             // One ring segment per distinct comercial among the cluster's
             // clients — solid if just one, split evenly in half/thirds if two
@@ -581,6 +593,15 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
                   )}
                   {highlightedInCluster && (
                     <circle r={outerRadius + 4.5 * zoomScale} fill="none" stroke={highlight!.color} strokeWidth="2.5" className="highlight-ring-blink" />
+                  )}
+                  {clusterNeedsReviewArrow && (
+                    <g transform={`translate(0, ${-(outerRadius + 12 * zoomScale)})`}>
+                      <path
+                        d={`M0,${-2 * zoomScale} L${6 * zoomScale},${-11 * zoomScale} L${-6 * zoomScale},${-11 * zoomScale} Z`}
+                        fill="#b9503a"
+                        className="review-arrow"
+                      />
+                    </g>
                   )}
                   {ringColors.map((color, i) => (
                     <circle

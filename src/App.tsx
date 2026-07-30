@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
 import { Search } from "lucide-react";
 import { TopNav, type AppView } from "./components/TopNav";
 import { LoginPage } from "./components/LoginPage";
 import { DatabasePage } from "./components/DatabasePage";
+import { CloudBackground } from "./components/CloudBackground";
 import { FiltersPanel, type Filters } from "./components/FiltersPanel";
 import { IberiaMap } from "./components/IberiaMap";
 import type { ResultsHighlight } from "./components/ResultsList";
@@ -12,7 +14,6 @@ import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { MailingPage } from "./components/MailingPage";
 import { ImportModal } from "./components/ImportModal";
-import { SourcesDock } from "./components/SourcesDock";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { checkUrlAndScan } from "./lib/robotsCheck";
@@ -59,9 +60,8 @@ function todayLabel() {
 function App() {
   const [session, setSession] = useState<RepId | null>(loadSession);
   const [view, setView] = useState<AppView>("dashboard");
-  const [viewTransition, setViewTransition] = useState<"idle" | "out" | "in">("idle");
-  const [databaseTransition, setDatabaseTransition] = useState<"idle" | "closing">("idle");
-  const [mailingTransition, setMailingTransition] = useState<"idle" | "glitching">("idle");
+  const [visited, setVisited] = useState<Set<AppView>>(() => new Set(["dashboard"]));
+  const [transformOrigin, setTransformOrigin] = useState("50% 50%");
   const [companies, setCompanies] = useState<Company[]>(loadCompanies);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
@@ -73,9 +73,9 @@ function App() {
   const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
+  const [reviewArrowIds, setReviewArrowIds] = useState<Set<string> | null>(null);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [sourcesDockOpen, setSourcesDockOpen] = useState(false);
 
   const [sources, setSources] = useState<LeadSource[]>(() => [...DEFAULT_SOURCES, ...loadCustomSources()]);
   const [scanning, setScanning] = useState(false);
@@ -209,6 +209,15 @@ function App() {
     setHighlight({ ids, color: "#eda18f" });
   };
 
+  // "Empresas detectadas" card opens the import modal (unchanged); its
+  // blinking badge instead points out companies pending review on the map
+  // with an animated arrow, toggling on/off.
+  const handleToggleReviewArrows = () => {
+    setReviewArrowIds((prev) =>
+      prev ? null : new Set(companies.filter((c) => c.needsReview).map((c) => c.id))
+    );
+  };
+
   const filteredCompanies = useMemo(() => {
     const q = query.trim().toLowerCase();
     const terms = q.length ? q.split(/\s+/) : [];
@@ -251,128 +260,113 @@ function App() {
     setSession(null);
   };
 
-  // Leaving Lead Intelligence (dashboard) for any other tab plays the merge:
-  // the stat tiles and filter/search bar shrink down toward the map card
-  // below them (which gives its own small absorbing pulse); the Database
-  // card additionally grows into place once its view mounts (other
-  // destinations just fade in normally via their own entrance animation).
-  // Leaving the Database page instead narrows its card to a vanishing point
-  // at the center. Leaving Mailing plays a digital-glitch breakup.
-  const handleViewChange = (next: AppView) => {
+  // Switching tabs materializes the new page in place — a soft
+  // blur+scale+fade, spring-eased (critically damped, no overshoot, per
+  // Apple's fluid-interface guidance) — anchored to the clicked nav tab so
+  // it visibly grows from where the user tapped. Pages stay mounted once
+  // visited instead of unmounting on every switch: Database's table (and
+  // its many CustomSelect cells) is expensive to build, and remounting it
+  // on every visit was what made switching to/from it feel slow — now that
+  // cost is paid once, and later switches are just a cheap opacity/blur/
+  // scale tween on already-built DOM.
+  const handleViewChange = (next: AppView, originRect?: DOMRect) => {
     if (next === view) return;
-
-    if (view === "database") {
-      setDatabaseTransition("closing");
-      setTimeout(() => {
-        setView(next);
-        setDatabaseTransition("idle");
-      }, 420);
-      return;
+    if (originRect) {
+      const originX = ((originRect.left + originRect.width / 2) / window.innerWidth) * 100;
+      const originY = ((originRect.top + originRect.height / 2) / window.innerHeight) * 100;
+      setTransformOrigin(`${originX}% ${originY}%`);
     }
-
-    if (view === "mailing") {
-      setMailingTransition("glitching");
-      setTimeout(() => {
-        setView(next);
-        setMailingTransition("idle");
-      }, 420);
-      return;
-    }
-
-    if (view === "dashboard") {
-      setViewTransition("out");
-      setTimeout(() => {
-        setView(next);
-        setViewTransition("in");
-        setTimeout(() => setViewTransition("idle"), 500);
-      }, 420);
-      return;
-    }
-
+    setVisited((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
     setView(next);
   };
 
-  if (view === "database") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
-        <main
-          className={`flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto ${
-            databaseTransition === "closing" ? "database-vanishing" : ""
-          }`}
-        >
-          <DatabasePage
-            companies={companies}
-            onUpdate={updateCompany}
-            onDelete={deleteCompany}
-            entering={viewTransition === "in"}
-          />
-        </main>
-      </div>
-    );
-  }
-
-  if (view === "mailing") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
-        <main
-          className={`flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto ${
-            mailingTransition === "glitching" ? "mailing-glitching" : ""
-          }`}
-        >
-          <MailingPage companies={companies} />
-        </main>
-      </div>
-    );
-  }
+  const pageMotionProps = (pageView: AppView) => ({
+    initial: { opacity: 0, scale: 0.96, filter: "blur(6px)" },
+    animate: {
+      opacity: view === pageView ? 1 : 0,
+      scale: view === pageView ? 1 : 0.96,
+      filter: view === pageView ? "blur(0px)" : "blur(6px)",
+    },
+    transition: { type: "spring" as const, bounce: 0, duration: 0.22 },
+    style: {
+      transformOrigin,
+      pointerEvents: (view === pageView ? "auto" : "none") as "auto" | "none",
+      zIndex: view === pageView ? 1 : 0,
+    },
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
+      <CloudBackground active={view === "database" || view === "mailing"} />
       <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
 
-      <main className="flex-1 flex flex-col gap-5 p-5 max-w-[1600px] w-full mx-auto">
-        <StatsRow
-          companies={filteredCompanies}
-          scanning={scanning}
-          onScan={() => setImportModalOpen(true)}
-          onOpenSources={() => setSourcesDockOpen(true)}
-          onOpenVisit={() => setVisitModalOpen(true)}
-          onOpenMailing={() => handleViewChange("mailing")}
-          onShowUncontacted={handleShowUncontacted}
-          merging={viewTransition === "out"}
-        />
-
-        <div className={`flex items-center gap-3 flex-wrap ${viewTransition === "out" ? "bar-merging" : ""}`}>
-          <FiltersPanel filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
-
-          <div className="relative flex-1 min-w-[240px]">
-            <Search
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+      <div className="relative flex-1 min-h-0">
+        {visited.has("dashboard") && (
+          <motion.main
+            {...pageMotionProps("dashboard")}
+            className="absolute inset-0 flex flex-col gap-5 p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
+          >
+            <StatsRow
+              companies={filteredCompanies}
+              scanning={scanning}
+              onOpenImport={() => setImportModalOpen(true)}
+              onToggleReviewArrows={handleToggleReviewArrows}
+              onOpenVisit={() => setVisitModalOpen(true)}
+              onOpenMailing={() => handleViewChange("mailing")}
+              onShowUncontacted={handleShowUncontacted}
             />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar: Madrid KNX Control4..."
-              className="w-full glass rounded-2xl pl-11 pr-36 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] truncate"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-neutral-500 bg-surface px-2 py-1 rounded-full pointer-events-none whitespace-nowrap">
-              {filteredCompanies.length} empresas
-            </span>
-          </div>
-        </div>
 
-        <div className={`h-[560px] ${viewTransition === "out" ? "map-absorbing" : ""}`}>
-          <IberiaMap
-            companies={filteredCompanies}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onPlaceNew={(lat, lng) => setPendingPosition({ lat, lng })}
-            highlight={highlight}
-          />
-        </div>
-      </main>
+            <div className="flex items-center gap-3 flex-wrap">
+              <FiltersPanel filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
+
+              <div className="relative flex-1 min-w-[240px]">
+                <Search
+                  size={16}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar: Madrid KNX Control4..."
+                  className="w-full glass rounded-2xl pl-11 pr-36 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] truncate"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-neutral-500 bg-surface px-2 py-1 rounded-full pointer-events-none whitespace-nowrap">
+                  {filteredCompanies.length} empresas
+                </span>
+              </div>
+            </div>
+
+            <div className="h-[560px]">
+              <IberiaMap
+                companies={filteredCompanies}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onPlaceNew={(lat, lng) => setPendingPosition({ lat, lng })}
+                highlight={highlight}
+                reviewIds={reviewArrowIds ?? undefined}
+              />
+            </div>
+          </motion.main>
+        )}
+
+        {visited.has("database") && (
+          <motion.main
+            {...pageMotionProps("database")}
+            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
+          >
+            <DatabasePage companies={companies} onUpdate={updateCompany} onDelete={deleteCompany} />
+          </motion.main>
+        )}
+
+        {visited.has("mailing") && (
+          <motion.main
+            {...pageMotionProps("mailing")}
+            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
+          >
+            <MailingPage companies={companies} />
+          </motion.main>
+        )}
+      </div>
 
       {pendingPosition && (
         <NewCompanyModal
@@ -394,22 +388,15 @@ function App() {
       {importModalOpen && (
         <ImportModal
           companies={companies}
+          sources={sources}
           onClose={() => setImportModalOpen(false)}
           onAddSource={addSource}
+          onRemoveSource={removeSource}
           onImportCompanies={importCompanies}
           onUpdateCompany={updateCompany}
           onDeleteCompany={deleteCompany}
           onRescanAll={scanAllSources}
           scanning={scanning}
-        />
-      )}
-
-      {sourcesDockOpen && (
-        <SourcesDock
-          sources={sources}
-          onAddSource={addSource}
-          onRemoveSource={removeSource}
-          onClose={() => setSourcesDockOpen(false)}
         />
       )}
 
@@ -419,6 +406,7 @@ function App() {
             <CompanyCard
               key={selectedCompany.id}
               company={selectedCompany}
+              allCompanies={companies}
               onClose={() => setSelectedId(null)}
               onUpdate={(patch) => updateCompany(selectedCompany.id, patch)}
               onAddComment={(repId, text) => addComment(selectedCompany.id, repId, text)}

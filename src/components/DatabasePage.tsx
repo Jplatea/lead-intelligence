@@ -9,7 +9,6 @@ interface Props {
   companies: Company[];
   onUpdate: (id: string, patch: Partial<Company>) => void;
   onDelete: (id: string) => void;
-  entering?: boolean;
 }
 
 // No backdrop-blur here: with 100+ rows this class is applied to
@@ -75,7 +74,7 @@ function splitList(text: string): string[] {
     .filter(Boolean);
 }
 
-export function DatabasePage({ companies, onUpdate, onDelete, entering }: Props) {
+export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const [query, setQuery] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_HIDDEN));
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -246,26 +245,8 @@ export function DatabasePage({ companies, onUpdate, onDelete, entering }: Props)
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
-      {/* Same cloud animation as LoginPage, but on the app's own light cream
-          background (not black) — full-viewport, not confined to this
-          component's own box, so it covers the whole page behind the card. */}
-      <div className="fixed inset-0 -z-10 overflow-hidden" style={{ background: "#e6dcd2" }}>
-        <div
-          className="login-cloud login-cloud-a"
-          style={{ width: 640, height: 640, top: "-10%", left: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
-        />
-        <div
-          className="login-cloud login-cloud-b"
-          style={{ width: 560, height: 560, bottom: "-15%", right: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
-        />
-        <div
-          className="login-cloud login-cloud-c"
-          style={{ width: 420, height: 420, top: "35%", left: "55%", mixBlendMode: "multiply", opacity: 0.4 }}
-        />
-      </div>
-
       <div
-        className={`relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full ${entering ? "card-merging-in" : ""}`}
+        className="relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full"
         style={{
           background: "rgba(255,255,255,0.55)",
           border: "1px solid rgba(255,255,255,0.6)",

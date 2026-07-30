@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Mail, Phone, Sparkles, Check, Send, ChevronDown } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
 import {
@@ -11,35 +11,43 @@ import {
   PASTEL_TEXT,
 } from "../data/config";
 import { CustomSelect } from "./CustomSelect";
+import { TagInput } from "./TagInput";
 
 interface Props {
   company: Company;
+  allCompanies: Company[];
   onClose: () => void;
   onUpdate: (patch: Partial<Company>) => void;
   onAddComment: (repId: RepId, text: string) => void;
 }
 
 function Divider() {
-  return <div className="h-px my-3.5 bg-gradient-to-r from-transparent via-black/10 to-transparent" />;
+  return <div className="h-px my-4 bg-gradient-to-r from-transparent via-black/10 to-transparent" />;
 }
 
 const selectClass =
   "bg-black/[0.03] border border-black/10 rounded-lg outline-none focus:border-[#a8dfcf]";
 
-// All fields in this card are shown and editable regardless of whether
-// they're already filled in — this shared style reads as an underlined,
-// borderless field until focused, so empty fields don't look broken.
-const fieldClass =
-  "w-full bg-transparent outline-none text-xs text-neutral-700 placeholder:text-neutral-400 border-b border-black/10 focus:border-[#a8dfcf] pb-1 transition-colors";
+// One shared visual language for every editable field in this card: a
+// dashed, faintly-tinted box while empty (an invitation to fill it in), that
+// solidifies into a normal bordered box the moment it has a value. Applied
+// uniformly to text inputs, CustomSelect triggers, and TagInput so nothing
+// reads as a different "kind" of control.
+const FIELD_BASE =
+  "rounded-lg px-2.5 py-1.5 text-xs text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] transition-colors w-full";
 
-const dropdownClass =
-  "w-full bg-black/[0.02] outline-none text-xs text-neutral-700 border border-dashed border-neutral-300 hover:border-neutral-400 focus:border-[#a8dfcf] rounded-lg px-2 py-1.5 cursor-pointer transition-colors text-left";
+function fieldTone(isEmpty: boolean): string {
+  return isEmpty
+    ? "bg-black/[0.015] border border-dashed border-neutral-300 hover:border-neutral-400"
+    : "bg-black/[0.03] border border-black/10 hover:border-black/20";
+}
 
-function splitList(text: string): string[] {
-  return text
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+function fieldClass(isEmpty: boolean): string {
+  return `${FIELD_BASE} ${fieldTone(isEmpty)}`;
+}
+
+function fieldClassIcon(isEmpty: boolean): string {
+  return `${FIELD_BASE} pl-7 ${fieldTone(isEmpty)}`;
 }
 
 // Flat solid-color fill with a crisp, layered edge (double inset ring for a
@@ -51,7 +59,7 @@ function crispEdge(active: boolean): string {
     : "inset 0 0 0 1.5px rgba(255,255,255,0.6), inset 0 0 0 1px rgba(33,31,29,0.12), 0 1px 2px rgba(33,31,29,0.14)";
 }
 
-export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props) {
+export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddComment }: Props) {
   const status = STATUS_CONFIG[company.status];
   const alarm = ALARM_CONFIG[company.alarm];
 
@@ -75,8 +83,17 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
     ...PROVINCE_OPTIONS_PT.map((p) => ({ value: p, label: p, group: "Portugal" })),
   ];
 
+  const allBrands = useMemo(
+    () => Array.from(new Set(allCompanies.flatMap((c) => c.brands))).sort((a, b) => a.localeCompare(b, "es")),
+    [allCompanies]
+  );
+  const allSpecialties = useMemo(
+    () => Array.from(new Set(allCompanies.flatMap((c) => c.specialties))).sort((a, b) => a.localeCompare(b, "es")),
+    [allCompanies]
+  );
+
   return (
-    <div className="glass float-card rounded-3xl p-5 animate-fade-in-up">
+    <div className="glass float-card rounded-3xl p-6 animate-fade-in-up">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <p
@@ -144,26 +161,26 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
 
       <Divider />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Contacto</h3>
-          <div className="space-y-2 text-neutral-700">
-            <div className="flex items-center gap-2">
-              <Mail size={13} className="text-[#2a9678] shrink-0" />
+          <div className="space-y-2">
+            <div className="relative">
+              <Mail size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
               <input
                 value={company.contact.email ?? ""}
                 onChange={(e) => patchContact({ email: e.target.value })}
                 placeholder="Sin email"
-                className={fieldClass}
+                className={fieldClassIcon(!company.contact.email)}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Phone size={13} className="text-[#2a9678] shrink-0" />
+            <div className="relative">
+              <Phone size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
               <input
                 value={company.contact.phone ?? ""}
                 onChange={(e) => patchContact({ phone: e.target.value })}
                 placeholder="Sin teléfono"
-                className={fieldClass}
+                className={fieldClassIcon(!company.contact.phone)}
               />
             </div>
           </div>
@@ -176,26 +193,26 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
               value={company.city}
               onChange={(e) => onUpdate({ city: e.target.value })}
               placeholder="Ciudad"
-              className={fieldClass}
+              className={fieldClass(!company.city)}
             />
             <CustomSelect
               value={company.province}
               options={provinceOptions}
               onChange={(v) => onUpdate({ province: v })}
-              triggerClassName={dropdownClass}
+              triggerClassName={`${fieldClass(!company.province)} text-left cursor-pointer`}
             />
             <div className="flex gap-2">
               <input
                 value={company.country}
                 onChange={(e) => onUpdate({ country: e.target.value })}
                 placeholder="País"
-                className={fieldClass}
+                className={`${fieldClass(!company.country)} flex-1 min-w-0`}
               />
               <input
                 value={company.postalCode}
                 onChange={(e) => onUpdate({ postalCode: e.target.value })}
                 placeholder="C.P."
-                className={`${fieldClass} w-16 shrink-0`}
+                className={`${fieldClass(!company.postalCode)} !w-16 shrink-0`}
               />
             </div>
           </div>
@@ -204,23 +221,23 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
 
       <Divider />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Marcas</h3>
-          <input
-            value={company.brands.join(", ")}
-            onChange={(e) => onUpdate({ brands: splitList(e.target.value) })}
+          <TagInput
+            value={company.brands}
+            options={allBrands}
+            onChange={(brands) => onUpdate({ brands })}
             placeholder="Sin marcas"
-            className={fieldClass}
           />
         </div>
         <div>
           <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Especialidades</h3>
-          <input
-            value={company.specialties.join(", ")}
-            onChange={(e) => onUpdate({ specialties: splitList(e.target.value) })}
+          <TagInput
+            value={company.specialties}
+            options={allSpecialties}
+            onChange={(specialties) => onUpdate({ specialties })}
             placeholder="Sin especialidades"
-            className={fieldClass}
           />
         </div>
       </div>
@@ -247,9 +264,9 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
 
       <Divider />
 
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-3 gap-3 text-center">
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Comercial</p>
+          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Comercial</p>
           <div className="flex items-center justify-center gap-2">
             {Object.values(REPS).map((r) => {
               const isActive = r.id === company.assignedRep;
@@ -271,26 +288,26 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
         </div>
 
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Tipo</p>
+          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Tipo</p>
           <CustomSelect
             value={company.type}
             options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
             onChange={(v) => onUpdate({ type: v })}
             triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
-            triggerClassName="text-[10px] text-neutral-700 px-1.5 py-1 w-full rounded-lg outline-none text-center cursor-pointer"
+            triggerClassName="text-[10px] text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none text-center cursor-pointer"
           />
         </div>
 
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Alarma</p>
+          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Alarma</p>
           <CustomSelect
             value={company.alarm}
             options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
             onChange={(v) => onUpdate({ alarm: v as Company["alarm"] })}
             triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
-            triggerClassName="flex items-center justify-center gap-1 text-[10px] text-neutral-700 px-1.5 py-1 w-full rounded-lg outline-none cursor-pointer"
+            triggerClassName="flex items-center justify-center gap-1 text-[10px] text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none cursor-pointer"
           />
-          <div className="flex items-center justify-center gap-1 mt-1">
+          <div className="flex items-center justify-center gap-1 mt-1.5">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${alarm.dot}`} />
           </div>
         </div>

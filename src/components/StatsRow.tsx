@@ -5,12 +5,11 @@ import type { Company } from "../types";
 interface Props {
   companies: Company[];
   scanning: boolean;
-  onScan: () => void;
-  onOpenSources: () => void;
+  onOpenImport: () => void;
+  onToggleReviewArrows: () => void;
   onOpenVisit: () => void;
   onOpenMailing: () => void;
   onShowUncontacted: () => void;
-  merging?: boolean;
 }
 
 interface Tile {
@@ -28,12 +27,11 @@ interface Tile {
 export function StatsRow({
   companies,
   scanning,
-  onScan,
-  onOpenSources,
+  onOpenImport,
+  onToggleReviewArrows,
   onOpenVisit,
   onOpenMailing,
   onShowUncontacted,
-  merging,
 }: Props) {
   const working = companies.filter((c) => c.status === "trabajando").length;
   const upcomingMeetings = companies.filter((c) => c.alarm === "reunion_proxima").length;
@@ -49,8 +47,8 @@ export function StatsRow({
       hint: scanning ? "escaneando fuentes..." : needsReview ? "hay clientes por revisar" : "en la Península",
       icon: scanning ? Loader2 : Building2,
       bg: "bg-[#a8dfcf]",
-      onClick: onScan,
-      onIconClick: onOpenSources,
+      onClick: onOpenImport,
+      onIconClick: onToggleReviewArrows,
       spinning: scanning,
       alarm: needsReview,
     },
@@ -81,7 +79,7 @@ export function StatsRow({
   ];
 
   return (
-    <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${merging ? "stat-merging" : ""}`}>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {tiles.map((tile) => (
         <div
           key={tile.label}

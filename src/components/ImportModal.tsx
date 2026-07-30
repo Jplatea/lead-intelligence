@@ -1,5 +1,16 @@
 import { useRef, useState } from "react";
-import { Link2, Loader2, RefreshCw, Upload, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  HelpCircle,
+  Link2,
+  Loader2,
+  RefreshCw,
+  ShieldAlert,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import {
   detectFormat,
   findAllDuplicateGroups,
@@ -14,15 +25,26 @@ import {
 } from "../lib/importClients";
 import { MergeDuplicatesModal, type DuplicateConflict, type MergeDecision } from "./MergeDuplicatesModal";
 import type { Company } from "../types";
+import type { LeadSource, RobotsStatus } from "../data/sources";
 
 // Imports no longer ask "assign to whom" up front — rows land unassigned
 // to José by default and get reassigned later from the Database view.
 const DEFAULT_IMPORT_REP = "jose" as const;
 
+const STATUS_BADGE: Record<RobotsStatus, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  allowed: { icon: CheckCircle2, className: "text-[#3f8f52]", label: "Permitido por robots.txt" },
+  disallowed: { icon: ShieldAlert, className: "text-[#b9503a]", label: "No permitido por robots.txt" },
+  blocked: { icon: ShieldAlert, className: "text-[#b9503a]", label: "Bloqueado (anti-bot)" },
+  checking: { icon: Loader2, className: "text-neutral-400 animate-spin", label: "Comprobando robots.txt..." },
+  unknown: { icon: HelpCircle, className: "text-neutral-400", label: "No verificable desde el navegador" },
+};
+
 interface Props {
   companies: Company[];
+  sources: LeadSource[];
   onClose: () => void;
   onAddSource: (url: string) => string | null;
+  onRemoveSource: (id: string) => void;
   onImportCompanies: (companies: Company[]) => void;
   onUpdateCompany: (id: string, patch: Partial<Company>) => void;
   onDeleteCompany: (id: string) => void;
@@ -32,8 +54,10 @@ interface Props {
 
 export function ImportModal({
   companies,
+  sources,
   onClose,
   onAddSource,
+  onRemoveSource,
   onImportCompanies,
   onUpdateCompany,
   onDeleteCompany,
@@ -152,7 +176,7 @@ export function ImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-5">
-      <div className="glass rounded-3xl p-5 w-full max-w-md animate-fade-in-up">
+      <div className="glass rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800">Empresas detectadas</h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
@@ -239,6 +263,53 @@ export function ImportModal({
             <RefreshCw size={12} className={scanning ? "animate-spin" : ""} />
             {scanning ? "Reescaneando fuentes..." : "Reescanear todas las fuentes existentes"}
           </button>
+
+          {sources.length > 0 && (
+            <>
+              <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+              <div>
+                <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+                  Fuentes añadidas
+                </label>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {sources.map((source) => {
+                    const badge = STATUS_BADGE[source.robotsStatus] ?? STATUS_BADGE.unknown;
+                    return (
+                      <div
+                        key={source.id}
+                        className="flex items-center gap-2 p-2 rounded-xl bg-black/[0.02] border border-black/6"
+                      >
+                        <Link2 size={12} className="text-[#2a9678] shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-neutral-800 truncate">{source.name}</p>
+                          <p className="text-[10px] text-neutral-400 truncate">{source.note}</p>
+                        </div>
+                        <span title={source.robotsNote ?? badge.label} className="shrink-0">
+                          <badge.icon size={13} className={badge.className} />
+                        </span>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] text-[#2a9678] hover:text-[#237a63] shrink-0 px-1.5 py-0.5 rounded-md border border-[#a8dfcf] bg-[#a8dfcf]/15"
+                        >
+                          Abrir <ExternalLink size={9} />
+                        </a>
+                        {source.custom && (
+                          <button
+                            onClick={() => onRemoveSource(source.id)}
+                            className="text-neutral-400 hover:text-[#b9503a] shrink-0 p-0.5"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, Image as ImageIcon, Mail, Plus, Trash2, Type, Video, X } from "lucide-react";
+import { Check, Copy, Download, Image as ImageIcon, Mail, Plus, Send, Trash2, Type, Video, X } from "lucide-react";
 import type { Company } from "../types";
 import { buildMarketingEmailHtml, type BlockType, type MailingBlock as Block } from "../lib/mailingTemplate";
 
@@ -43,11 +43,27 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-const ADD_BUTTONS: { type: BlockType; label: string; icon: typeof ImageIcon; bg: string; text: string }[] = [
-  { type: "text", label: "Texto", icon: Type, bg: "bg-[#a79bcb]/25 border-[#a79bcb]", text: "text-[#6a56a0]" },
-  { type: "image", label: "Imagen", icon: ImageIcon, bg: "bg-[#a8dfcf]/30 border-[#a8dfcf]", text: "text-[#2a9678]" },
-  { type: "video", label: "Vídeo", icon: Video, bg: "bg-[#f0c39a]/35 border-[#f0c39a]", text: "text-[#a3672c]" },
+interface BlockStyle {
+  type: BlockType;
+  label: string;
+  icon: typeof ImageIcon;
+  border: string;
+  bg: string;
+  text: string;
+}
+
+// Each block type keeps the same color as its "add" button — the block
+// header/border reuse these instead of a separate palette, so the canvas
+// visually maps back to the buttons that created it.
+const ADD_BUTTONS: BlockStyle[] = [
+  { type: "text", label: "Texto", icon: Type, border: "border-[#a79bcb]", bg: "bg-[#a79bcb]/25", text: "text-[#6a56a0]" },
+  { type: "image", label: "Imagen", icon: ImageIcon, border: "border-[#a8dfcf]", bg: "bg-[#a8dfcf]/30", text: "text-[#2a9678]" },
+  { type: "video", label: "Vídeo", icon: Video, border: "border-[#f0c39a]", bg: "bg-[#f0c39a]/35", text: "text-[#a3672c]" },
 ];
+
+function blockStyle(type: BlockType): BlockStyle {
+  return ADD_BUTTONS.find((b) => b.type === type)!;
+}
 
 export function MailingPage({ companies }: Props) {
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -203,26 +219,8 @@ export function MailingPage({ companies }: Props) {
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
-      {/* Same full-bleed cloud background as Database — Mailing is meant to
-          share that look, just with a narrower card since this one holds an
-          email-template canvas rather than a wide client grid. */}
-      <div className="fixed inset-0 -z-10 overflow-hidden" style={{ background: "#e6dcd2" }}>
-        <div
-          className="login-cloud login-cloud-a"
-          style={{ width: 640, height: 640, top: "-10%", left: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
-        />
-        <div
-          className="login-cloud login-cloud-b"
-          style={{ width: 560, height: 560, bottom: "-15%", right: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
-        />
-        <div
-          className="login-cloud login-cloud-c"
-          style={{ width: 420, height: 420, top: "35%", left: "55%", mixBlendMode: "multiply", opacity: 0.4 }}
-        />
-      </div>
-
       <div
-        className="relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full max-w-5xl mx-auto animate-fade-in-up"
+        className="relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full max-w-5xl mx-auto"
         style={{
           background: "rgba(255,255,255,0.55)",
           border: "1px solid rgba(255,255,255,0.6)",
@@ -240,7 +238,7 @@ export function MailingPage({ companies }: Props) {
               <button
                 key={btn.type}
                 onClick={() => addBlock(btn.type)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border ${btn.bg} ${btn.text} font-medium`}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border ${btn.border} ${btn.bg} ${btn.text} font-medium`}
               >
                 <Plus size={12} /> <btn.icon size={13} /> {btn.label}
               </button>
@@ -249,7 +247,7 @@ export function MailingPage({ companies }: Props) {
               onClick={() => setExportOpen(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800"
             >
-              <Mail size={13} /> Generar email
+              <Send size={13} /> Generar email
             </button>
           </div>
         </div>
@@ -291,26 +289,26 @@ export function MailingPage({ companies }: Props) {
             />
           ))}
 
-          {blocks.map((block) => (
+          {blocks.map((block) => {
+            const style = blockStyle(block.type);
+            return (
             <div
               key={block.id}
-              className="absolute rounded-xl border border-black/15 bg-white/70 shadow-sm flex flex-col overflow-hidden"
+              className={`absolute rounded-2xl border bg-white/90 backdrop-blur-sm shadow-[0_10px_24px_-14px_rgba(33,31,29,0.4)] flex flex-col overflow-hidden ${style.border}`}
               style={{ left: block.x, top: block.y, width: block.width, height: block.height }}
             >
               <div
                 onMouseDown={startDrag(block, "move")}
-                className="flex items-center justify-between gap-2 px-2 py-1 bg-black/[0.04] cursor-move shrink-0"
+                className={`flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-move shrink-0 border-b ${style.border} ${style.bg}`}
               >
-                <span className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500">
-                  {block.type === "text" && <Type size={11} />}
-                  {block.type === "image" && <ImageIcon size={11} />}
-                  {block.type === "video" && <Video size={11} />}
-                  {block.type === "text" ? "Texto" : block.type === "image" ? "Imagen" : "Vídeo"}
+                <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${style.text}`}>
+                  <style.icon size={11} />
+                  {style.label}
                 </span>
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => removeBlock(block.id)}
-                  className="text-neutral-400 hover:text-[#b9503a] p-0.5"
+                  className={`${style.text} hover:text-[#b9503a] p-0.5 opacity-60 hover:opacity-100 transition-opacity`}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -402,7 +400,8 @@ export function MailingPage({ companies }: Props) {
                 }}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
