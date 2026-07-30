@@ -238,12 +238,22 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
-      {/* Same treatment as LoginPage: a fixed, full-viewport cloud background —
-          not confined to this component's own box — so it covers the whole app. */}
-      <div className="fixed inset-0 -z-10 overflow-hidden" style={{ background: "#0b1220" }}>
-        <div className="login-cloud login-cloud-a" style={{ width: 640, height: 640, top: "-10%", left: "-10%" }} />
-        <div className="login-cloud login-cloud-b" style={{ width: 560, height: 560, bottom: "-15%", right: "-10%" }} />
-        <div className="login-cloud login-cloud-c" style={{ width: 420, height: 420, top: "35%", left: "55%" }} />
+      {/* Same cloud animation as LoginPage, but on the app's own light cream
+          background (not black) — full-viewport, not confined to this
+          component's own box, so it covers the whole page behind the card. */}
+      <div className="fixed inset-0 -z-10 overflow-hidden" style={{ background: "#e6dcd2" }}>
+        <div
+          className="login-cloud login-cloud-a"
+          style={{ width: 640, height: 640, top: "-10%", left: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
+        />
+        <div
+          className="login-cloud login-cloud-b"
+          style={{ width: 560, height: 560, bottom: "-15%", right: "-10%", mixBlendMode: "multiply", opacity: 0.45 }}
+        />
+        <div
+          className="login-cloud login-cloud-c"
+          style={{ width: 420, height: 420, top: "35%", left: "55%", mixBlendMode: "multiply", opacity: 0.4 }}
+        />
       </div>
 
       <div
