@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Copy, Download, Image as ImageIcon, Mail, Plus, Send, Trash2, Type, Video, X } from "lucide-react";
 import type { MailingContact } from "../types";
-import { buildMarketingEmailHtml, type BlockType, type MailingBlock as Block } from "../lib/mailingTemplate";
+import { buildEmlFile, buildMarketingEmailHtml, type BlockType, type MailingBlock as Block } from "../lib/mailingTemplate";
 
 interface Props {
   contacts: MailingContact[];
@@ -70,7 +70,6 @@ export function MailingPage({ contacts }: Props) {
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [designCopied, setDesignCopied] = useState(false);
   const [guides, setGuides] = useState<{ vertical: number[]; horizontal: number[] }>({ vertical: [], horizontal: [] });
   const blocksRef = useRef<Block[]>([]);
   useEffect(() => {
@@ -205,33 +204,21 @@ export function MailingPage({ contacts }: Props) {
     });
   };
 
-  // Copies the design as rendered HTML (not raw source) via the clipboard's
-  // text/html MIME type — pasting this into Gmail/Outlook's rich-text compose
-  // box drops in the actual formatted template (images, layout, colors),
-  // which is what makes a mail client "already have the template inside".
-  const copyRichDesign = async () => {
+  // A real .eml file can carry an HTML body directly (mailto: links can't —
+  // that's a text/plain-only browser/OS limitation) — downloading one and
+  // opening it hands the user's mail client a draft that already has the
+  // recipients, subject, and formatted template inside it, no paste step
+  // needed.
+  const downloadEmlDraft = () => {
     const html = buildMarketingEmailHtml(blocks);
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([html], { type: "text/html" }),
-          "text/plain": new Blob(["Pega este diseño (Ctrl+V) dentro del cuerpo de tu correo."], { type: "text/plain" }),
-        }),
-      ]);
-      setDesignCopied(true);
-      setTimeout(() => setDesignCopied(false), 1800);
-    } catch {
-      copyHtml();
-    }
-  };
-
-  const openMailClient = () => {
-    const subject = encodeURIComponent("Novedades de Prestige Ibérica");
-    const body = encodeURIComponent(
-      "Pega aquí (Ctrl+V) el diseño copiado con \"Copiar diseño\" para incluir la plantilla ya formateada."
-    );
-    const bcc = encodeURIComponent(recipients.join(","));
-    window.location.href = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
+    const eml = buildEmlFile(html, "Novedades de Prestige Ibérica", recipients);
+    const blob = new Blob([eml], { type: "message/rfc822" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "borrador-mailing-prestige.eml";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -452,17 +439,11 @@ export function MailingPage({ contacts }: Props) {
 
             <div className="flex items-center gap-2 flex-wrap">
               <button
-                onClick={copyRichDesign}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800"
-              >
-                {designCopied ? <Check size={13} /> : <Copy size={13} />} {designCopied ? "Copiado" : "Copiar diseño"}
-              </button>
-              <button
-                onClick={openMailClient}
+                onClick={downloadEmlDraft}
                 disabled={recipients.length === 0}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-[#a79bcb]/25 border border-[#a79bcb] text-[#6a56a0] font-medium disabled:opacity-40"
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-40"
               >
-                <Mail size={13} /> Abrir borrador con destinatarios
+                <Mail size={13} /> Generar borrador de correo
               </button>
               <button
                 onClick={downloadHtml}
@@ -478,9 +459,10 @@ export function MailingPage({ contacts }: Props) {
               </button>
             </div>
             <p className="text-[11px] text-neutral-400 leading-relaxed">
-              <strong>Copiar diseño</strong> + <strong>Abrir borrador</strong> + pegar (Ctrl+V) en el cuerpo: el correo
-              se abre con los destinatarios en CCO y el diseño ya formateado, listo para enviar. "Descargar HTML" y
-              "Copiar HTML" son para importar la plantilla en una plataforma de email marketing (Mailchimp, Brevo...).
+              <strong>Generar borrador de correo</strong> descarga un archivo .eml con los destinatarios en CCO, el
+              asunto y el diseño ya formateado dentro — ábrelo y tu cliente de correo lo abrirá como un borrador listo
+              para enviar. "Descargar HTML" y "Copiar HTML" son para importar la plantilla en una plataforma de email
+              marketing (Mailchimp, Brevo...).
             </p>
           </div>
         </div>

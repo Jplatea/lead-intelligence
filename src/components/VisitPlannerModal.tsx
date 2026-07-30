@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { FileDown, MapPin, X } from "lucide-react";
 import type { Company, RepId } from "../types";
 import { REPS } from "../data/config";
+import { regionOf } from "../lib/regions";
 
 interface Props {
   companies: Company[];
@@ -21,7 +22,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
   const [zone, setZone] = useState("");
 
   const zones = useMemo(
-    () => Array.from(new Set(companies.map((c) => c.province))).sort((a, b) => a.localeCompare(b)),
+    () => Array.from(new Set(companies.map((c) => regionOf(c.province)))).sort((a, b) => a.localeCompare(b)),
     [companies]
   );
 
@@ -36,7 +37,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
 
   const matchCount = useMemo(() => {
     if (repIds.size === 0 || !zone) return 0;
-    return companies.filter((c) => repIds.has(c.assignedRep) && c.province === zone).length;
+    return companies.filter((c) => repIds.has(c.assignedRep) && regionOf(c.province) === zone).length;
   }, [companies, repIds, zone]);
 
   const confirm = () => {

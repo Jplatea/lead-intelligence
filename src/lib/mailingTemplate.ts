@@ -10,11 +10,12 @@ export interface MailingBlock {
   content: string;
 }
 
-// A clean, widely-available sans that reads as "professional email" rather
-// than the canvas editor's futuristic display face — Poppins where
-// supported, falling back to the system sans everywhere else (most desktop
-// mail clients strip the @import/link and never see Poppins at all).
-const FONT_STACK = "'Poppins', Arial, Helvetica, sans-serif";
+// A clean, professional sans-serif that reads clearly different from plain
+// Arial without depending on a webfont fetch — email clients (and even our
+// own preview iframe) are inconsistent about loading @import/link web
+// fonts, so this leans on each OS's own good system font instead: Segoe UI
+// on Windows, Helvetica Neue on macOS/iOS, falling back to Arial.
+const FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 function escapeHtml(text: string): string {
   return text
@@ -130,7 +131,6 @@ export function buildMarketingEmailHtml(blocks: MailingBlock[], meta: EmailMeta 
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light" />
 <title>${heading}</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body style="margin:0;padding:0;background-color:#e6dcd2;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#e6dcd2;">
@@ -170,4 +170,21 @@ export function buildMarketingEmailHtml(blocks: MailingBlock[], meta: EmailMeta 
   </table>
 </body>
 </html>`;
+}
+
+// A real .eml file (RFC 5322 message) with an HTML body — unlike a mailto:
+// link, this can actually carry the rendered template inside it. Opening
+// the downloaded file hands it to the user's default mail client already
+// containing the recipients, subject, and formatted design; X-Unsent tells
+// Outlook (Windows) specifically to treat it as an editable draft rather
+// than a received message.
+export function buildEmlFile(html: string, subject: string, bcc: string[]): string {
+  const headers = [
+    "MIME-Version: 1.0",
+    `Subject: ${subject}`,
+    ...(bcc.length > 0 ? [`Bcc: ${bcc.join(", ")}`] : []),
+    "X-Unsent: 1",
+    "Content-Type: text/html; charset=UTF-8",
+  ];
+  return `${headers.join("\r\n")}\r\n\r\n${html}`;
 }

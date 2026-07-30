@@ -21,6 +21,7 @@ import { REPS } from "./data/config";
 import { checkUrlAndScan } from "./lib/robotsCheck";
 import { clearSession, loadSession, saveSession } from "./lib/auth";
 import { generateVisitPdf } from "./lib/visitPdf";
+import { regionOf } from "./lib/regions";
 import type { Company, MailingContact, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
@@ -111,8 +112,14 @@ function App() {
     localStorage.setItem(MAILING_CONTACTS_STORAGE_KEY, JSON.stringify(mailingContacts));
   }, [mailingContacts]);
 
+  // Any manual edit clears the "Revisar" flag by default — a rep touching
+  // the record is itself a sign it's been looked at. Callers that need to
+  // recompute it themselves (e.g. merging import duplicates) can still pass
+  // an explicit needsReview in the patch, which takes precedence.
   const updateCompany = (id: string, patch: Partial<Company>) => {
-    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    setCompanies((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...patch, needsReview: patch.needsReview ?? false } : c))
+    );
   };
 
   const importMailingContacts = (imported: MailingContact[]) => {
@@ -224,14 +231,14 @@ function App() {
 
   const handleVisitConfirm = (repIds: RepId[], zone: string) => {
     const ids = new Set(
-      companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone).map((c) => c.id)
+      companies.filter((c) => repIds.includes(c.assignedRep) && regionOf(c.province) === zone).map((c) => c.id)
     );
-    setHighlight({ ids, color: "#f0c39a" });
+    setHighlight({ ids, color: "#ff10f0" });
     setVisitModalOpen(false);
   };
 
   const handleGenerateVisitPdf = (repIds: RepId[], zone: string) => {
-    const matches = companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone);
+    const matches = companies.filter((c) => repIds.includes(c.assignedRep) && regionOf(c.province) === zone);
     if (matches.length === 0) return;
     generateVisitPdf(matches, repIds.map((id) => REPS[id].name), zone);
   };
