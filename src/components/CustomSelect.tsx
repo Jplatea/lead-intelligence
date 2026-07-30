@@ -25,13 +25,17 @@ interface Props<T extends string> {
 // behind other rows before this.
 export function CustomSelect<T extends string>({ value, options, onChange, triggerClassName }: Props<T>) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const openMenu = () => {
+  const measure = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
-    if (rect) setPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    if (rect) setPos({ top: rect.bottom + 4, left: rect.left });
+  };
+
+  const openMenu = () => {
+    measure();
     setOpen(true);
   };
 
@@ -42,13 +46,17 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
       if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
       setOpen(false);
     };
+    // Re-measure instead of closing on scroll (the table's own scroll
+    // container fires these too) — closing on any scroll made the menu
+    // disappear the instant it opened whenever the browser auto-scrolled
+    // the trigger into view.
     document.addEventListener("mousedown", close);
-    window.addEventListener("scroll", () => setOpen(false), true);
-    window.addEventListener("resize", () => setOpen(false));
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
     return () => {
       document.removeEventListener("mousedown", close);
-      window.removeEventListener("scroll", () => setOpen(false), true);
-      window.removeEventListener("resize", () => setOpen(false));
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
     };
   }, [open]);
 
@@ -79,7 +87,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
         createPortal(
           <div
             ref={panelRef}
-            style={{ position: "fixed", top: pos.top, left: pos.left, minWidth: pos.width }}
+            style={{ position: "fixed", top: pos.top, left: pos.left }}
             className="z-[200] w-max max-h-60 overflow-y-auto glass rounded-xl p-1 shadow-[0_12px_28px_rgba(33,31,29,0.18)] animate-fade-in-up"
           >
             {groups.map((g, gi) => (
@@ -97,7 +105,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
                       onChange(opt.value);
                       setOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-colors ${
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[13px] whitespace-nowrap transition-colors ${
                       opt.value === value
                         ? "bg-[#a8dfcf]/40 text-black font-medium"
                         : "text-neutral-700 hover:bg-black/[0.04]"
