@@ -4,11 +4,12 @@ import type { Company } from "../types";
 
 interface Props {
   companies: Company[];
+  mailingContactsCount: number;
   scanning: boolean;
   onOpenImport: () => void;
   onToggleReviewArrows: () => void;
   onOpenVisit: () => void;
-  onOpenMailing: () => void;
+  onOpenMailingImport: () => void;
   onShowUncontacted: () => void;
 }
 
@@ -26,14 +27,14 @@ interface Tile {
 
 export function StatsRow({
   companies,
+  mailingContactsCount,
   scanning,
   onOpenImport,
   onToggleReviewArrows,
   onOpenVisit,
-  onOpenMailing,
+  onOpenMailingImport,
   onShowUncontacted,
 }: Props) {
-  const working = companies.filter((c) => c.status === "trabajando").length;
   const upcomingMeetings = companies.filter((c) => c.alarm === "reunion_proxima").length;
   const neverContacted = companies.filter(
     (c) => c.alarm === "nunca_contactado" || c.alarm === "mas_30_dias"
@@ -54,11 +55,11 @@ export function StatsRow({
     },
     {
       label: "Mailing",
-      value: working,
-      hint: "cuentas activas",
+      value: mailingContactsCount,
+      hint: "contactos de mailing",
       icon: Crown,
       bg: "bg-[#a79bcb]",
-      onClick: onOpenMailing,
+      onClick: onOpenMailingImport,
     },
     {
       label: "Voy de visita",

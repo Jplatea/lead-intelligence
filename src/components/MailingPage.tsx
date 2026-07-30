@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Copy, Download, Image as ImageIcon, Mail, Plus, Send, Trash2, Type, Video, X } from "lucide-react";
-import type { Company } from "../types";
+import type { MailingContact } from "../types";
 import { buildMarketingEmailHtml, type BlockType, type MailingBlock as Block } from "../lib/mailingTemplate";
 
 interface Props {
-  companies: Company[];
+  contacts: MailingContact[];
 }
 
 const MIN_SIZE = 60;
@@ -65,7 +65,7 @@ function blockStyle(type: BlockType): BlockStyle {
   return ADD_BUTTONS.find((b) => b.type === type)!;
 }
 
-export function MailingPage({ companies }: Props) {
+export function MailingPage({ contacts }: Props) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
@@ -183,11 +183,7 @@ export function MailingPage({ companies }: Props) {
   };
 
   const recipients = Array.from(
-    new Set(
-      companies
-        .map((c) => c.contact.email?.trim())
-        .filter((email): email is string => !!email)
-    )
+    new Set(contacts.map((c) => c.email.trim()).filter(Boolean))
   );
 
   const downloadHtml = () => {
@@ -412,7 +408,7 @@ export function MailingPage({ companies }: Props) {
               <div>
                 <h2 className="text-sm font-semibold text-neutral-800">Generar email de marketing</h2>
                 <p className="text-xs text-neutral-500">
-                  {recipients.length} destinatario{recipients.length === 1 ? "" : "s"} con email en la base de datos.
+                  {recipients.length} destinatario{recipients.length === 1 ? "" : "s"} en la base de datos de mailing.
                 </p>
               </div>
               <button

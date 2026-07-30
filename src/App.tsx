@@ -14,18 +14,32 @@ import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { MailingPage } from "./components/MailingPage";
 import { ImportModal } from "./components/ImportModal";
+import { MailingImportModal } from "./components/MailingImportModal";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { checkUrlAndScan } from "./lib/robotsCheck";
 import { clearSession, loadSession, saveSession } from "./lib/auth";
-import type { Company, RepId } from "./types";
+import type { Company, MailingContact, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
 const COMPANIES_STORAGE_KEY = "lead-intelligence:companies";
+const MAILING_CONTACTS_STORAGE_KEY = "lead-intelligence:mailing-contacts";
 
 function loadCustomSources(): LeadSource[] {
   try {
     const raw = localStorage.getItem(SOURCES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// The mailing database is a deliberately separate contacts list (name/
+// email/company only) — it never merges with the main leads/companies
+// database, so it gets its own storage key and load/save cycle.
+function loadMailingContacts(): MailingContact[] {
+  try {
+    const raw = localStorage.getItem(MAILING_CONTACTS_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -63,6 +77,8 @@ function App() {
   const [visited, setVisited] = useState<Set<AppView>>(() => new Set(["dashboard"]));
   const [transformOrigin, setTransformOrigin] = useState("50% 50%");
   const [companies, setCompanies] = useState<Company[]>(loadCompanies);
+  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(loadMailingContacts);
+  const [mailingImportModalOpen, setMailingImportModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
     brands: new Set(),
@@ -89,8 +105,20 @@ function App() {
     localStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(companies));
   }, [companies]);
 
+  useEffect(() => {
+    localStorage.setItem(MAILING_CONTACTS_STORAGE_KEY, JSON.stringify(mailingContacts));
+  }, [mailingContacts]);
+
   const updateCompany = (id: string, patch: Partial<Company>) => {
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
+  const importMailingContacts = (imported: MailingContact[]) => {
+    setMailingContacts((prev) => [...prev, ...imported]);
+  };
+
+  const deleteMailingContact = (id: string) => {
+    setMailingContacts((prev) => prev.filter((c) => c.id !== id));
   };
 
   const deleteCompany = (id: string) => {
@@ -308,11 +336,12 @@ function App() {
           >
             <StatsRow
               companies={filteredCompanies}
+              mailingContactsCount={mailingContacts.length}
               scanning={scanning}
               onOpenImport={() => setImportModalOpen(true)}
               onToggleReviewArrows={handleToggleReviewArrows}
               onOpenVisit={() => setVisitModalOpen(true)}
-              onOpenMailing={() => handleViewChange("mailing")}
+              onOpenMailingImport={() => setMailingImportModalOpen(true)}
               onShowUncontacted={handleShowUncontacted}
             />
 
@@ -363,7 +392,7 @@ function App() {
             {...pageMotionProps("mailing")}
             className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
           >
-            <MailingPage companies={companies} />
+            <MailingPage contacts={mailingContacts} />
           </motion.main>
         )}
       </div>
@@ -397,6 +426,15 @@ function App() {
           onDeleteCompany={deleteCompany}
           onRescanAll={scanAllSources}
           scanning={scanning}
+        />
+      )}
+
+      {mailingImportModalOpen && (
+        <MailingImportModal
+          contacts={mailingContacts}
+          onClose={() => setMailingImportModalOpen(false)}
+          onImport={importMailingContacts}
+          onDeleteContact={deleteMailingContact}
         />
       )}
 

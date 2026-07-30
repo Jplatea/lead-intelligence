@@ -49,3 +49,14 @@ export interface Company {
   connectedTo?: string[];
   needsReview?: boolean;
 }
+
+// A separate, minimal contacts list for mailing campaigns — deliberately not
+// the same records as Company. It's imported straight from an XLSX/CSV of
+// contact name + email + company name, and never merges with the main
+// leads database.
+export interface MailingContact {
+  id: string;
+  contactName: string;
+  email: string;
+  companyName: string;
+}
