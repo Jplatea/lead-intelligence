@@ -493,6 +493,19 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
             const isSelectedCluster = cluster.members.some((m) => m.id === selectedId);
             const highlightedInCluster = highlight ? cluster.members.some((m) => highlight.ids.has(m.id)) : false;
 
+            // One ring segment per distinct comercial among the cluster's
+            // clients — solid if just one, split evenly in half/thirds if two
+            // or three, in canonical José/Fran/Víctor order.
+            const ringColors = Object.values(REPS)
+              .filter((rep) => cluster.members.some((m) => m.assignedRep === rep.id))
+              .map((rep) => rep.color);
+            const ringGap = 3.5 * zoomScale;
+            const ringStroke = 3 * zoomScale;
+            const ringRadius = r + ringGap;
+            const ringCircumference = 2 * Math.PI * ringRadius;
+            const segLen = ringCircumference / ringColors.length;
+            const outerRadius = ringRadius + ringStroke / 2 + 2 * zoomScale;
+
             return (
               <g
                 key={cluster.key}
@@ -502,11 +515,22 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
                 <title>{`${count} clientes — haz clic para ampliar`}</title>
                 <g transform={`translate(${cluster.x}, ${cluster.y})`}>
                   {isSelectedCluster && (
-                    <circle r={r + 3} fill="none" stroke="#211f1d" strokeWidth="1.5" className="soft-pulse" />
+                    <circle r={outerRadius + 2.5 * zoomScale} fill="none" stroke="#211f1d" strokeWidth="1.5" className="soft-pulse" />
                   )}
                   {highlightedInCluster && (
-                    <circle r={r + 5} fill="none" stroke={highlight!.color} strokeWidth="2.5" className="highlight-ring-blink" />
+                    <circle r={outerRadius + 4.5 * zoomScale} fill="none" stroke={highlight!.color} strokeWidth="2.5" className="highlight-ring-blink" />
                   )}
+                  {ringColors.map((color, i) => (
+                    <circle
+                      key={i}
+                      r={ringRadius}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth={ringStroke}
+                      strokeDasharray={`${segLen} ${ringCircumference - segLen}`}
+                      transform={`rotate(${i * (360 / ringColors.length) - 90})`}
+                    />
+                  ))}
                   <circle
                     r={r}
                     fill="#211f1d"
