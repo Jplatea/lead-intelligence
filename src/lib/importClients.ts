@@ -203,3 +203,51 @@ export async function rowsToCompanies(
 
   return { companies, skipped, geocodeFailed };
 }
+
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+export function findDuplicate(incoming: Company, existing: Company[]): Company | undefined {
+  const target = normalizeName(incoming.name);
+  return existing.find((c) => normalizeName(c.name) === target);
+}
+
+// Scans the whole database for companies sharing a name with another one
+// already in it (e.g. imported more than once over time). Groups by
+// normalized name; within each group the first record is kept as
+// "existing" and every other one pairs against it as "incoming".
+export function findAllDuplicateGroups(companies: Company[]): { existing: Company; incoming: Company }[] {
+  const groups = new Map<string, Company[]>();
+  for (const c of companies) {
+    const key = normalizeName(c.name);
+    const arr = groups.get(key);
+    if (arr) arr.push(c);
+    else groups.set(key, [c]);
+  }
+  const conflicts: { existing: Company; incoming: Company }[] = [];
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const [first, ...rest] = group;
+    for (const dup of rest) conflicts.push({ existing: first, incoming: dup });
+  }
+  return conflicts;
+}
+
+// Fills gaps in the existing record from the incoming one rather than
+// overwriting anything already there, and unions list fields (brands,
+// specialties) — the existing record's own edits are never clobbered.
+export function mergeCompanyData(existing: Company, incoming: Company): Partial<Company> {
+  const contact = {
+    email: existing.contact.email || incoming.contact.email,
+    phone: existing.contact.phone || incoming.contact.phone,
+  };
+  const province = existing.province && existing.province !== "Sin especificar" ? existing.province : incoming.province;
+  const city = existing.city || incoming.city;
+  const country = existing.country || incoming.country;
+  const postalCode = existing.postalCode || incoming.postalCode;
+  const brands = Array.from(new Set([...existing.brands, ...incoming.brands]));
+  const specialties = Array.from(new Set([...existing.specialties, ...incoming.specialties]));
+  const needsReview = !contact.email || !contact.phone || !province || province === "Sin especificar";
+  return { city, province, country, postalCode, contact, brands, specialties, needsReview };
+}

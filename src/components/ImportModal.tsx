@@ -1,30 +1,56 @@
 import { useRef, useState } from "react";
 import { Link2, Loader2, RefreshCw, Upload, X } from "lucide-react";
-import type { RepId } from "../types";
-import { REPS } from "../data/config";
-import { detectFormat, parseCSV, parseKML, parseKMZ, parseXLSX, rowsToCompanies, type ImportRow } from "../lib/importClients";
+import {
+  detectFormat,
+  findAllDuplicateGroups,
+  findDuplicate,
+  mergeCompanyData,
+  parseCSV,
+  parseKML,
+  parseKMZ,
+  parseXLSX,
+  rowsToCompanies,
+  type ImportRow,
+} from "../lib/importClients";
+import { MergeDuplicatesModal, type DuplicateConflict, type MergeDecision } from "./MergeDuplicatesModal";
 import type { Company } from "../types";
 
+// Imports no longer ask "assign to whom" up front — rows land unassigned
+// to José by default and get reassigned later from the Database view.
+const DEFAULT_IMPORT_REP = "jose" as const;
+
 interface Props {
+  companies: Company[];
   onClose: () => void;
   onAddSource: (url: string) => string | null;
   onImportCompanies: (companies: Company[]) => void;
+  onUpdateCompany: (id: string, patch: Partial<Company>) => void;
+  onDeleteCompany: (id: string) => void;
   onRescanAll: () => void;
   scanning: boolean;
 }
 
-export function ImportModal({ onClose, onAddSource, onImportCompanies, onRescanAll, scanning }: Props) {
+export function ImportModal({
+  companies,
+  onClose,
+  onAddSource,
+  onImportCompanies,
+  onUpdateCompany,
+  onDeleteCompany,
+  onRescanAll,
+  scanning,
+}: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [url, setUrl] = useState("");
   const [urlMessage, setUrlMessage] = useState<string | null>(null);
 
-  const [assignedRep, setAssignedRep] = useState<RepId>("jose");
   const [fileName, setFileName] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [conflicts, setConflicts] = useState<DuplicateConflict[]>([]);
 
   const submitUrl = () => {
     const trimmed = url.trim();
@@ -71,18 +97,57 @@ export function ImportModal({ onClose, onAddSource, onImportCompanies, onRescanA
 
     setImporting(true);
     setProgress({ done: 0, total: rows.length });
-    const { companies, skipped, geocodeFailed } = await rowsToCompanies(rows, assignedRep, (done, total) =>
-      setProgress({ done, total })
+    const { companies: imported, skipped, geocodeFailed } = await rowsToCompanies(
+      rows,
+      DEFAULT_IMPORT_REP,
+      (done, total) => setProgress({ done, total })
     );
     setImporting(false);
     setProgress(null);
 
-    if (companies.length > 0) onImportCompanies(companies);
+    // Every client read from the file gets checked against the existing
+    // database by name before being added — matches go to a merge popup
+    // instead of creating a duplicate outright.
+    const fresh: Company[] = [];
+    const newConflicts: DuplicateConflict[] = [];
+    for (const inc of imported) {
+      const existing = findDuplicate(inc, companies);
+      if (existing) newConflicts.push({ existing, incoming: inc });
+      else fresh.push(inc);
+    }
 
-    const parts = [`${companies.length} cliente${companies.length === 1 ? "" : "s"} añadido${companies.length === 1 ? "" : "s"} al mapa.`];
+    if (fresh.length > 0) onImportCompanies(fresh);
+    if (newConflicts.length > 0) setConflicts(newConflicts);
+
+    const parts = [`${fresh.length} cliente${fresh.length === 1 ? "" : "s"} añadido${fresh.length === 1 ? "" : "s"} al mapa.`];
+    if (newConflicts.length > 0)
+      parts.push(`${newConflicts.length} coincid${newConflicts.length === 1 ? "e" : "en"} con clientes existentes.`);
     if (skipped > 0) parts.push(`${skipped} fila${skipped === 1 ? "" : "s"} sin datos suficientes.`);
     if (geocodeFailed.length > 0) parts.push(`No se pudo ubicar: ${geocodeFailed.join(", ")}.`);
     setResult(parts.join(" "));
+  };
+
+  const applyMergeDecisions = (decisions: MergeDecision[]) => {
+    for (const { conflict, action } of decisions) {
+      if (action === "merge") {
+        onUpdateCompany(conflict.existing.id, mergeCompanyData(conflict.existing, conflict.incoming));
+        // For duplicates found *within* the existing database (via "Reescanear"),
+        // the incoming side is itself a saved record, not a new one — merging
+        // means folding it into the kept record and removing the redundant copy.
+        if (conflict.incomingPersisted) onDeleteCompany(conflict.incoming.id);
+      }
+    }
+    setConflicts([]);
+  };
+
+  const rescan = () => {
+    onRescanAll();
+    const dupes = findAllDuplicateGroups(companies).map((c) => ({ ...c, incomingPersisted: true }));
+    if (dupes.length > 0) {
+      setConflicts(dupes);
+    } else {
+      setResult("No se han encontrado contactos duplicados.");
+    }
   };
 
   return (
@@ -131,21 +196,6 @@ export function ImportModal({ onClose, onAddSource, onImportCompanies, onRescanA
               Subir archivo (CSV, KML, KMZ, Excel)
             </label>
 
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[11px] text-neutral-400 shrink-0">Asignar a</span>
-              <select
-                value={assignedRep}
-                onChange={(e) => setAssignedRep(e.target.value as RepId)}
-                className="text-xs bg-black/[0.03] border border-black/10 rounded-lg px-2 py-1 text-neutral-700 outline-none focus:border-[#a8dfcf]"
-              >
-                {Object.values(REPS).map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <input
               ref={fileInputRef}
               type="file"
@@ -182,7 +232,7 @@ export function ImportModal({ onClose, onAddSource, onImportCompanies, onRescanA
           <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
 
           <button
-            onClick={onRescanAll}
+            onClick={rescan}
             disabled={scanning}
             className="w-full flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-xl bg-black/[0.03] border border-black/10 text-neutral-600 hover:bg-black/[0.06] disabled:opacity-50"
           >
@@ -191,6 +241,14 @@ export function ImportModal({ onClose, onAddSource, onImportCompanies, onRescanA
           </button>
         </div>
       </div>
+
+      {conflicts.length > 0 && (
+        <MergeDuplicatesModal
+          conflicts={conflicts}
+          onClose={() => setConflicts([])}
+          onApply={applyMergeDecisions}
+        />
+      )}
     </div>
   );
 }

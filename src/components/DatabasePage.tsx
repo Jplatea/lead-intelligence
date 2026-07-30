@@ -3,6 +3,7 @@ import { Check, ChevronDown, ChevronUp, Columns3, FileDown, FileSpreadsheet, Sea
 import type { Company, RepId, CompanyStatus, AlarmLevel } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { exportCompaniesCSV, exportCompaniesXLSX } from "../lib/exportClients";
+import { CustomSelect } from "./CustomSelect";
 
 interface Props {
   companies: Company[];
@@ -139,44 +140,29 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
     switch (key) {
       case "type":
         return (
-          <select className={selectClass} value={c.type} onChange={(e) => onUpdate(c.id, { type: e.target.value })}>
-            {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t} className="text-black">
-                {t}
-              </option>
-            ))}
-          </select>
+          <CustomSelect
+            triggerClassName={selectClass}
+            value={c.type}
+            options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
+            onChange={(v) => onUpdate(c.id, { type: v })}
+          />
         );
       case "city":
         return <input className={cellClass} value={c.city} onChange={(e) => onUpdate(c.id, { city: e.target.value })} />;
       case "province": {
         const known = PROVINCE_OPTIONS_ES.includes(c.province) || PROVINCE_OPTIONS_PT.includes(c.province);
+        const options = [
+          ...(known ? [] : [{ value: c.province, label: c.province }]),
+          ...PROVINCE_OPTIONS_ES.map((p) => ({ value: p, label: p, group: "España" })),
+          ...PROVINCE_OPTIONS_PT.map((p) => ({ value: p, label: p, group: "Portugal" })),
+        ];
         return (
-          <select
-            className={selectClass}
+          <CustomSelect
+            triggerClassName={selectClass}
             value={c.province}
-            onChange={(e) => onUpdate(c.id, { province: e.target.value })}
-          >
-            {!known && (
-              <option value={c.province} className="text-black">
-                {c.province}
-              </option>
-            )}
-            <optgroup label="España">
-              {PROVINCE_OPTIONS_ES.map((p) => (
-                <option key={p} value={p} className="text-black">
-                  {p}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Portugal">
-              {PROVINCE_OPTIONS_PT.map((p) => (
-                <option key={p} value={p} className="text-black">
-                  {p}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+            options={options}
+            onChange={(v) => onUpdate(c.id, { province: v })}
+          />
         );
       }
       case "country":
@@ -229,45 +215,30 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
         );
       case "assignedRep":
         return (
-          <select
-            className={selectClass}
+          <CustomSelect
+            triggerClassName={selectClass}
             value={c.assignedRep}
-            onChange={(e) => onUpdate(c.id, { assignedRep: e.target.value as RepId })}
-          >
-            {Object.values(REPS).map((r) => (
-              <option key={r.id} value={r.id} className="text-black">
-                {r.name}
-              </option>
-            ))}
-          </select>
+            options={Object.values(REPS).map((r) => ({ value: r.id, label: r.name }))}
+            onChange={(v) => onUpdate(c.id, { assignedRep: v as RepId })}
+          />
         );
       case "status":
         return (
-          <select
-            className={selectClass}
+          <CustomSelect
+            triggerClassName={selectClass}
             value={c.status}
-            onChange={(e) => onUpdate(c.id, { status: e.target.value as CompanyStatus })}
-          >
-            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key} className="text-black">
-                {cfg.label}
-              </option>
-            ))}
-          </select>
+            options={Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
+            onChange={(v) => onUpdate(c.id, { status: v as CompanyStatus })}
+          />
         );
       case "alarm":
         return (
-          <select
-            className={selectClass}
+          <CustomSelect
+            triggerClassName={selectClass}
             value={c.alarm}
-            onChange={(e) => onUpdate(c.id, { alarm: e.target.value as AlarmLevel })}
-          >
-            {Object.entries(ALARM_CONFIG).map(([key, cfg]) => (
-              <option key={key} value={key} className="text-black">
-                {cfg.label}
-              </option>
-            ))}
-          </select>
+            options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
+            onChange={(v) => onUpdate(c.id, { alarm: v as AlarmLevel })}
+          />
         );
     }
   };

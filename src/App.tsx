@@ -338,9 +338,12 @@ function App() {
 
       {importModalOpen && (
         <ImportModal
+          companies={companies}
           onClose={() => setImportModalOpen(false)}
           onAddSource={addSource}
           onImportCompanies={importCompanies}
+          onUpdateCompany={updateCompany}
+          onDeleteCompany={deleteCompany}
           onRescanAll={scanAllSources}
           scanning={scanning}
         />
