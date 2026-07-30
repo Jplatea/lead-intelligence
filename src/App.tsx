@@ -188,9 +188,9 @@ function App() {
     setScanning(false);
   };
 
-  const handleVisitConfirm = (repId: RepId, zone: string) => {
+  const handleVisitConfirm = (repIds: RepId[], zone: string) => {
     const ids = new Set(
-      companies.filter((c) => c.assignedRep === repId && c.province === zone).map((c) => c.id)
+      companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone).map((c) => c.id)
     );
     setHighlight({ ids, color: "#f0c39a" });
     setResultsExpanded(true);

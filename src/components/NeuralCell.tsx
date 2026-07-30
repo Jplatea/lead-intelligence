@@ -50,14 +50,20 @@ export function NeuralCell({ size = 32, opacity = 1, animated = false, className
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className={className} style={{ opacity, overflow: "visible" }}>
       <defs>
-        <filter id={`cell-glow-${uid}`} x="-60%" y="-60%" width="220%" height="220%">
+        <filter id={`cell-glow-${uid}`} x="-80%" y="-80%" width="260%" height="260%">
           <feGaussianBlur stdDeviation="3.2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <radialGradient id={`cell-aura-${uid}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#4ade80" stopOpacity="0.65" />
+          <stop offset="55%" stopColor="#2a9678" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#2a9678" stopOpacity="0" />
+        </radialGradient>
       </defs>
+      <circle cx="100" cy="100" r="96" fill={`url(#cell-aura-${uid})`} className={animated ? "soft-pulse" : undefined} />
       <g filter={`url(#cell-glow-${uid})`}>
         <g stroke="#2dd4bf" strokeWidth={1.1} opacity={0.7}>
           {edges.map(([a, b], i) => (
@@ -78,7 +84,7 @@ export function NeuralCell({ size = 32, opacity = 1, animated = false, className
               cx={n.x}
               cy={n.y}
               r={i === 0 ? 6 : 3.6}
-              fill={i % 3 === 0 ? "#c4b5fd" : "#5eead4"}
+              fill={i % 3 === 0 ? "#4ade80" : "#5eead4"}
               className={animated ? "packet-glow" : undefined}
               style={animated ? { animationDelay: `${(i % 5) * 0.2}s` } : undefined}
             />

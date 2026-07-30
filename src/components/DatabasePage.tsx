@@ -11,7 +11,7 @@ interface Props {
 }
 
 const cellClass =
-  "w-full bg-white/35 backdrop-blur-sm outline-none text-xs text-black/80 placeholder:text-black/40 rounded-lg px-2 py-1.5 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
+  "w-full bg-white/35 backdrop-blur-sm outline-none text-[13px] text-black/80 placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
 
 // Rows without a recognized rep (shouldn't normally happen — assignedRep is
 // required — but legacy/imported data isn't guaranteed to match the union at
@@ -30,6 +30,8 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
     onUpdate(c.id, { contact: { ...c.contact, ...patch } });
 
   const rowColor = (c: Company) => REPS[c.assignedRep]?.color ?? UNASSIGNED_COLOR;
+  // Lightened for the row fill so the pastel reads softer against the dark card.
+  const rowBg = (c: Company) => `color-mix(in srgb, ${rowColor(c)} 55%, white)`;
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
@@ -81,7 +83,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-white/10 bg-black/20">
-          <table className="w-full border-collapse text-xs">
+          <table className="w-full text-[13px]" style={{ borderCollapse: "separate", borderSpacing: "0 4px" }}>
             <thead className="sticky top-0 z-10">
               <tr className="bg-white/10 backdrop-blur-xl">
                 {[
@@ -103,110 +105,109 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b border-black/10 hover:brightness-95 transition-[filter]"
-                  style={{ background: rowColor(c) }}
-                >
-                  <td className="px-1 py-1">
-                    <div className="flex items-center gap-1">
+              {rows.map((c) => {
+                const bg = rowBg(c);
+                return (
+                  <tr key={c.id} className="hover:brightness-95 transition-[filter]">
+                    <td className="pl-3 pr-1 py-1 rounded-l-xl" style={{ background: bg }}>
+                      <div className="flex items-center gap-1">
+                        <input
+                          className={cellClass}
+                          value={c.name}
+                          onChange={(e) => onUpdate(c.id, { name: e.target.value })}
+                        />
+                        {c.needsReview && (
+                          <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
+                            Revisar
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <select
+                        className={cellClass}
+                        value={c.type}
+                        onChange={(e) => onUpdate(c.id, { type: e.target.value })}
+                      >
+                        {TYPE_OPTIONS.map((t) => (
+                          <option key={t} value={t} className="text-black">
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <input className={cellClass} value={c.city} onChange={(e) => onUpdate(c.id, { city: e.target.value })} />
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <input className={cellClass} value={c.province} onChange={(e) => onUpdate(c.id, { province: e.target.value })} />
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
                       <input
                         className={cellClass}
-                        value={c.name}
-                        onChange={(e) => onUpdate(c.id, { name: e.target.value })}
+                        value={c.contact.email ?? ""}
+                        placeholder="—"
+                        onChange={(e) => patchContact(c, { email: e.target.value })}
                       />
-                      {c.needsReview && (
-                        <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
-                          Revisar
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-1 py-1">
-                    <select
-                      className={cellClass}
-                      value={c.type}
-                      onChange={(e) => onUpdate(c.id, { type: e.target.value })}
-                    >
-                      {TYPE_OPTIONS.map((t) => (
-                        <option key={t} value={t} className="text-black">
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-1 py-1">
-                    <input className={cellClass} value={c.city} onChange={(e) => onUpdate(c.id, { city: e.target.value })} />
-                  </td>
-                  <td className="px-1 py-1">
-                    <input className={cellClass} value={c.province} onChange={(e) => onUpdate(c.id, { province: e.target.value })} />
-                  </td>
-                  <td className="px-1 py-1">
-                    <input
-                      className={cellClass}
-                      value={c.contact.email ?? ""}
-                      placeholder="—"
-                      onChange={(e) => patchContact(c, { email: e.target.value })}
-                    />
-                  </td>
-                  <td className="px-1 py-1">
-                    <input
-                      className={cellClass}
-                      value={c.contact.phone ?? ""}
-                      placeholder="—"
-                      onChange={(e) => patchContact(c, { phone: e.target.value })}
-                    />
-                  </td>
-                  <td className="px-1 py-1">
-                    <select
-                      className={cellClass}
-                      value={c.assignedRep}
-                      onChange={(e) => onUpdate(c.id, { assignedRep: e.target.value as RepId })}
-                    >
-                      {Object.values(REPS).map((r) => (
-                        <option key={r.id} value={r.id} className="text-black">
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-1 py-1">
-                    <select
-                      className={cellClass}
-                      value={c.status}
-                      onChange={(e) => onUpdate(c.id, { status: e.target.value as CompanyStatus })}
-                    >
-                      {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                        <option key={key} value={key} className="text-black">
-                          {cfg.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-1 py-1">
-                    <select
-                      className={cellClass}
-                      value={c.alarm}
-                      onChange={(e) => onUpdate(c.id, { alarm: e.target.value as AlarmLevel })}
-                    >
-                      {Object.entries(ALARM_CONFIG).map(([key, cfg]) => (
-                        <option key={key} value={key} className="text-black">
-                          {cfg.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-2 text-right">
-                    <button
-                      onClick={() => onDelete(c.id)}
-                      className="text-[10px] text-black/40 hover:text-[#b9503a]"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <input
+                        className={cellClass}
+                        value={c.contact.phone ?? ""}
+                        placeholder="—"
+                        onChange={(e) => patchContact(c, { phone: e.target.value })}
+                      />
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <select
+                        className={cellClass}
+                        value={c.assignedRep}
+                        onChange={(e) => onUpdate(c.id, { assignedRep: e.target.value as RepId })}
+                      >
+                        {Object.values(REPS).map((r) => (
+                          <option key={r.id} value={r.id} className="text-black">
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <select
+                        className={cellClass}
+                        value={c.status}
+                        onChange={(e) => onUpdate(c.id, { status: e.target.value as CompanyStatus })}
+                      >
+                        {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                          <option key={key} value={key} className="text-black">
+                            {cfg.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-1 py-1" style={{ background: bg }}>
+                      <select
+                        className={cellClass}
+                        value={c.alarm}
+                        onChange={(e) => onUpdate(c.id, { alarm: e.target.value as AlarmLevel })}
+                      >
+                        {Object.entries(ALARM_CONFIG).map(([key, cfg]) => (
+                          <option key={key} value={key} className="text-black">
+                            {cfg.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="pl-2 pr-3 py-1 text-right rounded-r-xl" style={{ background: bg }}>
+                      <button
+                        onClick={() => onDelete(c.id)}
+                        className="text-[10px] text-black/40 hover:text-[#b9503a]"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

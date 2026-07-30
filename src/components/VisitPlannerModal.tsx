@@ -6,7 +6,7 @@ import { REPS } from "../data/config";
 interface Props {
   companies: Company[];
   onClose: () => void;
-  onConfirm: (repId: RepId, zone: string) => void;
+  onConfirm: (repIds: RepId[], zone: string) => void;
 }
 
 function repCircleShadow(active: boolean): string {
@@ -16,7 +16,7 @@ function repCircleShadow(active: boolean): string {
 }
 
 export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
-  const [repId, setRepId] = useState<RepId | null>(null);
+  const [repIds, setRepIds] = useState<Set<RepId>>(new Set());
   const [zone, setZone] = useState("");
 
   const zones = useMemo(
@@ -24,14 +24,23 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
     [companies]
   );
 
+  const toggleRep = (id: RepId) => {
+    setRepIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const matchCount = useMemo(() => {
-    if (!repId || !zone) return 0;
-    return companies.filter((c) => c.assignedRep === repId && c.province === zone).length;
-  }, [companies, repId, zone]);
+    if (repIds.size === 0 || !zone) return 0;
+    return companies.filter((c) => repIds.has(c.assignedRep) && c.province === zone).length;
+  }, [companies, repIds, zone]);
 
   const confirm = () => {
-    if (!repId || !zone) return;
-    onConfirm(repId, zone);
+    if (repIds.size === 0 || !zone) return;
+    onConfirm([...repIds], zone);
   };
 
   return (
@@ -46,14 +55,16 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
 
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">¿Quién eres?</label>
+            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+              ¿Quién eres? <span className="normal-case text-neutral-400">(elige uno, dos o los tres)</span>
+            </label>
             <div className="flex items-center gap-3">
               {Object.values(REPS).map((r) => {
-                const active = r.id === repId;
+                const active = repIds.has(r.id);
                 return (
                   <button
                     key={r.id}
-                    onClick={() => setRepId(r.id)}
+                    onClick={() => toggleRep(r.id)}
                     title={r.name}
                     style={{ background: r.color, boxShadow: repCircleShadow(active) }}
                     className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-black/75 transition-transform ${
@@ -86,11 +97,13 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
             </div>
           </div>
 
-          {repId && zone && (
+          {repIds.size > 0 && zone && (
             <p className="text-xs text-neutral-500">
               {matchCount === 0
-                ? "No hay clientes de este comercial en esa zona."
-                : `${matchCount} cliente${matchCount === 1 ? "" : "s"} de ${REPS[repId].name} en ${zone}.`}
+                ? "No hay clientes de estos comerciales en esa zona."
+                : `${matchCount} cliente${matchCount === 1 ? "" : "s"} de ${[...repIds]
+                    .map((id) => REPS[id].name)
+                    .join(", ")} en ${zone}.`}
             </p>
           )}
         </div>
@@ -104,7 +117,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
           </button>
           <button
             onClick={confirm}
-            disabled={!repId || !zone}
+            disabled={repIds.size === 0 || !zone}
             className="flex-1 text-xs px-3 py-2 rounded-xl bg-[#f0c39a] border border-[#f0c39a] text-black/80 font-medium hover:bg-[#e8b483] disabled:opacity-40"
           >
             Marcar clientes
