@@ -9,6 +9,7 @@ interface Props {
   companies: Company[];
   onUpdate: (id: string, patch: Partial<Company>) => void;
   onDelete: (id: string) => void;
+  entering?: boolean;
 }
 
 // No backdrop-blur here: with 100+ rows this class is applied to
@@ -74,7 +75,7 @@ function splitList(text: string): string[] {
     .filter(Boolean);
 }
 
-export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
+export function DatabasePage({ companies, onUpdate, onDelete, entering }: Props) {
   const [query, setQuery] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_HIDDEN));
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -264,7 +265,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
       </div>
 
       <div
-        className="relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full"
+        className={`relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full ${entering ? "card-merging-in" : ""}`}
         style={{
           background: "rgba(255,255,255,0.55)",
           border: "1px solid rgba(255,255,255,0.6)",

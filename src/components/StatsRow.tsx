@@ -9,6 +9,7 @@ interface Props {
   onOpenVisit: () => void;
   onOpenMailing: () => void;
   onShowUncontacted: () => void;
+  merging?: boolean;
 }
 
 interface Tile {
@@ -22,7 +23,7 @@ interface Tile {
   alarm?: boolean;
 }
 
-export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMailing, onShowUncontacted }: Props) {
+export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMailing, onShowUncontacted, merging }: Props) {
   const working = companies.filter((c) => c.status === "trabajando").length;
   const upcomingMeetings = companies.filter((c) => c.alarm === "reunion_proxima").length;
   const neverContacted = companies.filter(
@@ -68,7 +69,7 @@ export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMaili
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${merging ? "stat-merging" : ""}`}>
       {tiles.map((tile) => (
         <button
           key={tile.label}

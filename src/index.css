@@ -132,6 +132,46 @@ body {
   animation: alarm-blink 1s ease-in-out infinite;
 }
 
+/* "Database" transition: the stat tiles and filter/search bar shrink and
+   slide down toward the map card below them (each tile's transform-origin
+   is its own far corner, so it visually travels toward the shared center),
+   the map gives a small "absorbing" pulse, and the incoming Database card
+   grows into place from roughly where the map was. */
+@keyframes dash-collapse {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(110px) scale(0.1); opacity: 0; }
+}
+.stat-merging > *:nth-child(1) { transform-origin: 80% 20%; animation: dash-collapse 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.stat-merging > *:nth-child(2) { transform-origin: 20% 20%; animation: dash-collapse 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards; animation-delay: 0.03s; }
+.stat-merging > *:nth-child(3) { transform-origin: 80% 80%; animation: dash-collapse 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards; animation-delay: 0.06s; }
+.stat-merging > *:nth-child(4) { transform-origin: 20% 80%; animation: dash-collapse 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards; animation-delay: 0.09s; }
+
+@keyframes bar-collapse {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(30px) scale(0.9); opacity: 0; }
+}
+.bar-merging {
+  animation: bar-collapse 0.42s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.05s;
+}
+
+@keyframes map-pulse {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.015); }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+.map-absorbing {
+  animation: map-pulse 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes card-grow-in {
+  from { transform: scale(0.85) translateY(-16px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.card-merging-in {
+  animation: card-grow-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Login page: animated nebula-like blobs cycling through the app's own
    palette (teal/purple/orange/coral) on a dark background — a deliberate
    one-off futuristic treatment for the gate screen only. */

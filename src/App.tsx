@@ -5,10 +5,9 @@ import { LoginPage } from "./components/LoginPage";
 import { DatabasePage } from "./components/DatabasePage";
 import { FiltersPanel, type Filters } from "./components/FiltersPanel";
 import { IberiaMap } from "./components/IberiaMap";
-import { ResultsList, type ResultsHighlight } from "./components/ResultsList";
+import type { ResultsHighlight } from "./components/ResultsList";
 import { CompanyCard } from "./components/CompanyCard";
 import { StatsRow } from "./components/StatsRow";
-import { SourcesPanel } from "./components/SourcesPanel";
 import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { MailingModal } from "./components/MailingModal";
@@ -59,6 +58,7 @@ function todayLabel() {
 function App() {
   const [session, setSession] = useState<RepId | null>(loadSession);
   const [view, setView] = useState<AppView>("dashboard");
+  const [viewTransition, setViewTransition] = useState<"idle" | "out" | "in">("idle");
   const [companies, setCompanies] = useState<Company[]>(loadCompanies);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
@@ -69,7 +69,6 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [resultsExpanded, setResultsExpanded] = useState(false);
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [mailingModalOpen, setMailingModalOpen] = useState(false);
@@ -164,8 +163,6 @@ function App() {
     return null;
   };
 
-  const removeSource = (id: string) => setSources((prev) => prev.filter((s) => s.id !== id));
-
   const scanAllSources = async () => {
     setScanning(true);
     await Promise.all(
@@ -193,7 +190,6 @@ function App() {
       companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone).map((c) => c.id)
     );
     setHighlight({ ids, color: "#f0c39a" });
-    setResultsExpanded(true);
     setVisitModalOpen(false);
   };
 
@@ -204,7 +200,6 @@ function App() {
         .map((c) => c.id)
     );
     setHighlight({ ids, color: "#eda18f" });
-    setResultsExpanded(true);
   };
 
   const filteredCompanies = useMemo(() => {
@@ -249,12 +244,36 @@ function App() {
     setSession(null);
   };
 
+  // "Database" click plays a brief merge: the stat tiles and filter/search
+  // bar shrink down toward the map card below them (which gives its own
+  // small absorbing pulse), then the Database card grows into place once
+  // the view actually switches — going the other way is just an instant
+  // swap, only the dashboard->database direction was asked for.
+  const handleViewChange = (next: AppView) => {
+    if (next === view) return;
+    if (next === "database" && view === "dashboard") {
+      setViewTransition("out");
+      setTimeout(() => {
+        setView(next);
+        setViewTransition("in");
+        setTimeout(() => setViewTransition("idle"), 500);
+      }, 420);
+    } else {
+      setView(next);
+    }
+  };
+
   if (view === "database") {
     return (
       <div className="min-h-screen flex flex-col">
-        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={setView} />
+        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
         <main className="flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto">
-          <DatabasePage companies={companies} onUpdate={updateCompany} onDelete={deleteCompany} />
+          <DatabasePage
+            companies={companies}
+            onUpdate={updateCompany}
+            onDelete={deleteCompany}
+            entering={viewTransition === "in"}
+          />
         </main>
       </div>
     );
@@ -262,7 +281,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={setView} />
+      <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
 
       <main className="flex-1 flex flex-col gap-5 p-5 max-w-[1600px] w-full mx-auto">
         <StatsRow
@@ -272,9 +291,10 @@ function App() {
           onOpenVisit={() => setVisitModalOpen(true)}
           onOpenMailing={() => setMailingModalOpen(true)}
           onShowUncontacted={handleShowUncontacted}
+          merging={viewTransition === "out"}
         />
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className={`flex items-center gap-3 flex-wrap ${viewTransition === "out" ? "bar-merging" : ""}`}>
           <FiltersPanel filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
 
           <div className="relative flex-1 min-w-[240px]">
@@ -294,7 +314,7 @@ function App() {
           </div>
         </div>
 
-        <div className="h-[560px]">
+        <div className={`h-[560px] ${viewTransition === "out" ? "map-absorbing" : ""}`}>
           <IberiaMap
             companies={filteredCompanies}
             selectedId={selectedId}
@@ -303,18 +323,6 @@ function App() {
             highlight={highlight}
           />
         </div>
-
-        <ResultsList
-          companies={filteredCompanies}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onDelete={deleteCompany}
-          expanded={resultsExpanded}
-          onExpandedChange={setResultsExpanded}
-          highlight={highlight}
-        />
-
-        <SourcesPanel sources={sources} onRemoveSource={removeSource} />
       </main>
 
       {pendingPosition && (
