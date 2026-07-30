@@ -212,9 +212,9 @@ export function MailingPage() {
                   (block.content ? (
                     <img src={block.content} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-neutral-400 p-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-black p-2">
                       <ImageIcon size={16} />
-                      <label className="text-[11px] cursor-pointer hover:text-neutral-600">
+                      <label className="text-[11px] font-medium cursor-pointer hover:opacity-70">
                         Subir imagen
                         <input
                           type="file"
@@ -229,11 +229,11 @@ export function MailingPage() {
                           onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [block.id]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && submitUrl(block)}
                           placeholder="o pega una URL"
-                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] outline-none focus:border-[#a8dfcf]"
+                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#a8dfcf]"
                         />
                         <button
                           onClick={() => submitUrl(block)}
-                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-neutral-600"
+                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-black font-medium"
                         >
                           Usar
                         </button>
@@ -245,9 +245,9 @@ export function MailingPage() {
                   (block.content ? (
                     <video src={block.content} controls className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-neutral-400 p-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-black p-2">
                       <Video size={16} />
-                      <label className="text-[11px] cursor-pointer hover:text-neutral-600">
+                      <label className="text-[11px] font-medium cursor-pointer hover:opacity-70">
                         Subir vídeo
                         <input
                           type="file"
@@ -262,11 +262,11 @@ export function MailingPage() {
                           onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [block.id]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && submitUrl(block)}
                           placeholder="o pega una URL"
-                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] outline-none focus:border-[#a8dfcf]"
+                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#a8dfcf]"
                         />
                         <button
                           onClick={() => submitUrl(block)}
-                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-neutral-600"
+                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-black font-medium"
                         >
                           Usar
                         </button>
