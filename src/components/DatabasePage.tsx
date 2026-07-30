@@ -327,19 +327,19 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
             style={{ borderCollapse: "separate", borderSpacing: "0 4px", minWidth: 1100, width: "100%" }}
           >
             <thead className="sticky top-0 z-10">
-              <tr className="bg-white/10 backdrop-blur-md">
-                <th className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-white/15 whitespace-nowrap">
+              <tr>
+                <th className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-white/15 whitespace-nowrap">
                   Nombre
                 </th>
                 {visibleColumns.map((col) => (
                   <th
                     key={col.key}
-                    className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap"
+                    className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap"
                   >
                     {col.label}
                   </th>
                 ))}
-                <th className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap" />
+                <th className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
