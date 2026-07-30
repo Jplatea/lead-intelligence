@@ -396,7 +396,7 @@ function App() {
         {visited.has("database") && (
           <motion.main
             {...pageMotionProps("database")}
-            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
+            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-hidden"
           >
             <DatabasePage companies={companies} onUpdate={updateCompany} onDelete={deleteCompany} />
           </motion.main>
@@ -405,7 +405,7 @@ function App() {
         {visited.has("mailing") && (
           <motion.main
             {...pageMotionProps("mailing")}
-            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-y-auto"
+            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-hidden"
           >
             <MailingPage contacts={mailingContacts} />
           </motion.main>

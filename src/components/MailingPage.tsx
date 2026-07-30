@@ -1,7 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, Image as ImageIcon, Mail, Plus, Send, Trash2, Type, Video, X } from "lucide-react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Check,
+  Copy,
+  Download,
+  Image as ImageIcon,
+  Mail,
+  Plus,
+  Send,
+  Trash2,
+  Type,
+  Video,
+  X,
+} from "lucide-react";
 import type { MailingContact } from "../types";
-import { buildEmlFile, buildMarketingEmailHtml, type BlockType, type MailingBlock as Block } from "../lib/mailingTemplate";
+import {
+  buildEmlFile,
+  buildMarketingEmailHtml,
+  TEXT_FONT_OPTIONS,
+  type BlockType,
+  type MailingBlock as Block,
+  type TextAlign,
+} from "../lib/mailingTemplate";
 
 interface Props {
   contacts: MailingContact[];
@@ -29,8 +51,9 @@ function newBlock(type: BlockType, index: number): Block {
     x: 24 + index * 18,
     y: 24 + index * 18,
     width: type === "text" ? 240 : 260,
-    height: type === "text" ? 90 : 170,
+    height: type === "text" ? 110 : 170,
     content: "",
+    ...(type === "text" ? { fontFamily: "system", textAlign: "left" as const } : {}),
   };
 }
 
@@ -320,12 +343,56 @@ export function MailingPage({ contacts }: Props) {
 
               <div className="flex-1 min-h-0 relative">
                 {block.type === "text" && (
-                  <textarea
-                    value={block.content}
-                    onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                    placeholder="Escribe tu texto..."
-                    className="font-mailing-text w-full h-full resize-none bg-transparent outline-none p-2 text-sm text-neutral-800 placeholder:text-neutral-400"
-                  />
+                  <div className="w-full h-full flex flex-col">
+                    <div
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 px-1.5 py-1 border-b border-black/10 bg-black/[0.02] shrink-0"
+                    >
+                      <select
+                        value={block.fontFamily ?? "system"}
+                        onChange={(e) => updateBlock(block.id, { fontFamily: e.target.value })}
+                        className="flex-1 min-w-0 bg-transparent outline-none text-[10px] text-neutral-600 cursor-pointer"
+                      >
+                        {TEXT_FONT_OPTIONS.map((f) => (
+                          <option key={f.value} value={f.value}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {(
+                          [
+                            { value: "left", icon: AlignLeft },
+                            { value: "center", icon: AlignCenter },
+                            { value: "right", icon: AlignRight },
+                          ] as { value: TextAlign; icon: typeof AlignLeft }[]
+                        ).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => updateBlock(block.id, { textAlign: opt.value })}
+                            className={`p-1 rounded ${
+                              (block.textAlign ?? "left") === opt.value
+                                ? "bg-[#a79bcb]/30 text-[#6a56a0]"
+                                : "text-neutral-400 hover:text-neutral-600"
+                            }`}
+                          >
+                            <opt.icon size={11} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <textarea
+                      value={block.content}
+                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                      placeholder="Escribe tu texto..."
+                      style={{
+                        fontFamily: TEXT_FONT_OPTIONS.find((f) => f.value === (block.fontFamily ?? "system"))?.stack,
+                        textAlign: block.textAlign ?? "left",
+                      }}
+                      className="flex-1 min-h-0 w-full resize-none bg-transparent outline-none p-2 text-sm text-neutral-800 placeholder:text-neutral-400"
+                    />
+                  </div>
                 )}
 
                 {block.type === "image" &&

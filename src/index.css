@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&display=swap");
 
 @theme {
   --color-surface: #f9f3ec;
@@ -21,12 +20,6 @@ body {
     #e6dcd2;
   color: #211f1d;
   font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-}
-
-/* Futuristic face for the mailing template's text blocks — kept scoped to
-   that one field rather than swapped in app-wide. */
-.font-mailing-text {
-  font-family: "Exo 2", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 ::-webkit-scrollbar {

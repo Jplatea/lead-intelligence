@@ -1,4 +1,5 @@
 export type BlockType = "image" | "video" | "text";
+export type TextAlign = "left" | "center" | "right";
 
 export interface MailingBlock {
   id: string;
@@ -8,6 +9,8 @@ export interface MailingBlock {
   width: number;
   height: number;
   content: string;
+  fontFamily?: string;
+  textAlign?: TextAlign;
 }
 
 // A clean, professional sans-serif that reads clearly different from plain
@@ -16,6 +19,23 @@ export interface MailingBlock {
 // fonts, so this leans on each OS's own good system font instead: Segoe UI
 // on Windows, Helvetica Neue on macOS/iOS, falling back to Arial.
 const FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+// Only classic "web-safe" font families — the ones actually pre-installed
+// across Windows/macOS/mail clients — since a text block's font choice has
+// to survive being rendered by whatever the recipient's mail client is,
+// with no webfont loading available there at all.
+export const TEXT_FONT_OPTIONS: { value: string; label: string; stack: string }[] = [
+  { value: "system", label: "Sistema (recomendado)", stack: FONT_STACK },
+  { value: "georgia", label: "Georgia", stack: "Georgia, 'Times New Roman', serif" },
+  { value: "times", label: "Times New Roman", stack: "'Times New Roman', Times, serif" },
+  { value: "verdana", label: "Verdana", stack: "Verdana, Geneva, sans-serif" },
+  { value: "trebuchet", label: "Trebuchet MS", stack: "'Trebuchet MS', sans-serif" },
+  { value: "courier", label: "Courier New", stack: "'Courier New', Courier, monospace" },
+];
+
+function textFontStack(value: string | undefined): string {
+  return TEXT_FONT_OPTIONS.find((f) => f.value === value)?.stack ?? FONT_STACK;
+}
 
 function escapeHtml(text: string): string {
   return text
@@ -67,8 +87,11 @@ function renderBlockContent(block: MailingBlock): string {
   if (!block.content.trim()) return "";
 
   switch (block.type) {
-    case "text":
-      return `<p style="margin:0;font-family:${FONT_STACK};font-size:15px;line-height:1.7;color:#211f1d;">${textToHtml(block.content)}</p>`;
+    case "text": {
+      const stack = textFontStack(block.fontFamily);
+      const align = block.textAlign ?? "left";
+      return `<p style="margin:0;font-family:${stack};font-size:15px;line-height:1.7;color:#211f1d;text-align:${align};">${textToHtml(block.content)}</p>`;
+    }
 
     case "image":
       return `<img src="${escapeHtml(block.content)}" alt="" width="100%" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid rgba(33,31,29,0.1);" />`;
