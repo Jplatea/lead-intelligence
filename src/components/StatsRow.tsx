@@ -6,6 +6,7 @@ interface Props {
   companies: Company[];
   scanning: boolean;
   onScan: () => void;
+  onOpenSources: () => void;
   onOpenVisit: () => void;
   onOpenMailing: () => void;
   onShowUncontacted: () => void;
@@ -19,11 +20,21 @@ interface Tile {
   icon: LucideIcon;
   bg: string;
   onClick: () => void;
+  onIconClick?: () => void;
   spinning?: boolean;
   alarm?: boolean;
 }
 
-export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMailing, onShowUncontacted, merging }: Props) {
+export function StatsRow({
+  companies,
+  scanning,
+  onScan,
+  onOpenSources,
+  onOpenVisit,
+  onOpenMailing,
+  onShowUncontacted,
+  merging,
+}: Props) {
   const working = companies.filter((c) => c.status === "trabajando").length;
   const upcomingMeetings = companies.filter((c) => c.alarm === "reunion_proxima").length;
   const neverContacted = companies.filter(
@@ -39,6 +50,7 @@ export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMaili
       icon: scanning ? Loader2 : Building2,
       bg: "bg-[#a8dfcf]",
       onClick: onScan,
+      onIconClick: onOpenSources,
       spinning: scanning,
       alarm: needsReview,
     },
@@ -71,20 +83,32 @@ export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMaili
   return (
     <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${merging ? "stat-merging" : ""}`}>
       {tiles.map((tile) => (
-        <button
+        <div
           key={tile.label}
+          role="button"
+          tabIndex={0}
           onClick={tile.onClick}
-          className={`relative rounded-2xl p-4 text-left shadow-[0_10px_24px_-14px_rgba(33,31,29,0.35)] transition-transform hover:scale-[1.015] ${tile.bg}`}
+          onKeyDown={(e) => e.key === "Enter" && tile.onClick()}
+          className={`relative rounded-2xl p-4 text-left shadow-[0_10px_24px_-14px_rgba(33,31,29,0.35)] transition-transform hover:scale-[1.015] cursor-pointer ${tile.bg}`}
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-medium text-black/60">{tile.label}</span>
-            <span className={`w-8 h-8 rounded-full flex items-center justify-center ${tile.alarm ? "alarm-blink" : "bg-black/15"}`}>
+            <button
+              type="button"
+              onClick={(e) => {
+                if (tile.onIconClick) {
+                  e.stopPropagation();
+                  tile.onIconClick();
+                }
+              }}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${tile.alarm ? "alarm-blink" : "bg-black/15"}`}
+            >
               <tile.icon size={15} className={`text-black/70 ${tile.spinning ? "animate-spin" : ""}`} strokeWidth={2.25} />
-            </span>
+            </button>
           </div>
           <p className="text-3xl font-bold text-black/80 tracking-tight">{tile.value}</p>
           <p className="text-xs text-black/50 mt-1">{tile.hint}</p>
-        </button>
+        </div>
       ))}
     </div>
   );

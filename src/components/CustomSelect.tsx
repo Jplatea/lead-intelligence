@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 export interface SelectOption<T extends string> {
@@ -12,6 +12,7 @@ interface Props<T extends string> {
   options: SelectOption<T>[];
   onChange: (value: T) => void;
   triggerClassName?: string;
+  triggerStyle?: CSSProperties;
 }
 
 // A fully custom dropdown to replace native <select> in dense tables — the
@@ -23,7 +24,7 @@ interface Props<T extends string> {
 // the table this way — the table's scroll container clips/traps any
 // absolutely-positioned descendant, which made the panel invisible or stuck
 // behind other rows before this.
-export function CustomSelect<T extends string>({ value, options, onChange, triggerClassName }: Props<T>) {
+export function CustomSelect<T extends string>({ value, options, onChange, triggerClassName, triggerStyle }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -75,6 +76,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
         ref={triggerRef}
         type="button"
         onClick={() => (open ? setOpen(false) : openMenu())}
+        style={triggerStyle}
         className={
           triggerClassName ??
           "w-full bg-transparent outline-none text-[14px] font-medium text-black rounded-lg px-2 py-1 border border-dashed border-neutral-400 hover:border-neutral-600 cursor-pointer transition-colors"

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Radar, ChevronDown, LogOut, CircuitBoard } from "lucide-react";
+import { Radar, ChevronDown, LogOut, CircuitBoard, Mail } from "lucide-react";
 import type { RepId } from "../types";
 import { REPS } from "../data/config";
 import { NeuralCell } from "./NeuralCell";
 
-export type AppView = "dashboard" | "database";
+export type AppView = "dashboard" | "database" | "mailing";
 
 interface Props {
   loggedInRep: RepId;
@@ -20,6 +20,7 @@ export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
   const tabs: { label: string; icon: typeof Radar; view: AppView }[] = [
     { label: "Lead Intelligence", icon: Radar, view: "dashboard" },
     { label: "Database", icon: CircuitBoard, view: "database" },
+    { label: "Mailing", icon: Mail, view: "mailing" },
   ];
 
   return (

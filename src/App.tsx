@@ -10,8 +10,9 @@ import { CompanyCard } from "./components/CompanyCard";
 import { StatsRow } from "./components/StatsRow";
 import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
-import { MailingModal } from "./components/MailingModal";
+import { MailingPage } from "./components/MailingPage";
 import { ImportModal } from "./components/ImportModal";
+import { SourcesDock } from "./components/SourcesDock";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { checkUrlAndScan } from "./lib/robotsCheck";
@@ -59,6 +60,8 @@ function App() {
   const [session, setSession] = useState<RepId | null>(loadSession);
   const [view, setView] = useState<AppView>("dashboard");
   const [viewTransition, setViewTransition] = useState<"idle" | "out" | "in">("idle");
+  const [databaseTransition, setDatabaseTransition] = useState<"idle" | "closing">("idle");
+  const [mailingTransition, setMailingTransition] = useState<"idle" | "glitching">("idle");
   const [companies, setCompanies] = useState<Company[]>(loadCompanies);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
@@ -71,8 +74,8 @@ function App() {
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
-  const [mailingModalOpen, setMailingModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [sourcesDockOpen, setSourcesDockOpen] = useState(false);
 
   const [sources, setSources] = useState<LeadSource[]>(() => [...DEFAULT_SOURCES, ...loadCustomSources()]);
   const [scanning, setScanning] = useState(false);
@@ -163,6 +166,10 @@ function App() {
     return null;
   };
 
+  const removeSource = (id: string) => {
+    setSources((prev) => prev.filter((s) => s.id !== id));
+  };
+
   const scanAllSources = async () => {
     setScanning(true);
     await Promise.all(
@@ -244,36 +251,77 @@ function App() {
     setSession(null);
   };
 
-  // "Database" click plays a brief merge: the stat tiles and filter/search
-  // bar shrink down toward the map card below them (which gives its own
-  // small absorbing pulse), then the Database card grows into place once
-  // the view actually switches — going the other way is just an instant
-  // swap, only the dashboard->database direction was asked for.
+  // Leaving Lead Intelligence (dashboard) for any other tab plays the merge:
+  // the stat tiles and filter/search bar shrink down toward the map card
+  // below them (which gives its own small absorbing pulse); the Database
+  // card additionally grows into place once its view mounts (other
+  // destinations just fade in normally via their own entrance animation).
+  // Leaving the Database page instead narrows its card to a vanishing point
+  // at the center. Leaving Mailing plays a digital-glitch breakup.
   const handleViewChange = (next: AppView) => {
     if (next === view) return;
-    if (next === "database" && view === "dashboard") {
+
+    if (view === "database") {
+      setDatabaseTransition("closing");
+      setTimeout(() => {
+        setView(next);
+        setDatabaseTransition("idle");
+      }, 420);
+      return;
+    }
+
+    if (view === "mailing") {
+      setMailingTransition("glitching");
+      setTimeout(() => {
+        setView(next);
+        setMailingTransition("idle");
+      }, 420);
+      return;
+    }
+
+    if (view === "dashboard") {
       setViewTransition("out");
       setTimeout(() => {
         setView(next);
         setViewTransition("in");
         setTimeout(() => setViewTransition("idle"), 500);
       }, 420);
-    } else {
-      setView(next);
+      return;
     }
+
+    setView(next);
   };
 
   if (view === "database") {
     return (
       <div className="min-h-screen flex flex-col">
         <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
-        <main className="flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto">
+        <main
+          className={`flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto ${
+            databaseTransition === "closing" ? "database-vanishing" : ""
+          }`}
+        >
           <DatabasePage
             companies={companies}
             onUpdate={updateCompany}
             onDelete={deleteCompany}
             entering={viewTransition === "in"}
           />
+        </main>
+      </div>
+    );
+  }
+
+  if (view === "mailing") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
+        <main
+          className={`flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto ${
+            mailingTransition === "glitching" ? "mailing-glitching" : ""
+          }`}
+        >
+          <MailingPage />
         </main>
       </div>
     );
@@ -288,8 +336,9 @@ function App() {
           companies={filteredCompanies}
           scanning={scanning}
           onScan={() => setImportModalOpen(true)}
+          onOpenSources={() => setSourcesDockOpen(true)}
           onOpenVisit={() => setVisitModalOpen(true)}
-          onOpenMailing={() => setMailingModalOpen(true)}
+          onOpenMailing={() => handleViewChange("mailing")}
           onShowUncontacted={handleShowUncontacted}
           merging={viewTransition === "out"}
         />
@@ -342,8 +391,6 @@ function App() {
         />
       )}
 
-      {mailingModalOpen && <MailingModal onClose={() => setMailingModalOpen(false)} />}
-
       {importModalOpen && (
         <ImportModal
           companies={companies}
@@ -354,6 +401,15 @@ function App() {
           onDeleteCompany={deleteCompany}
           onRescanAll={scanAllSources}
           scanning={scanning}
+        />
+      )}
+
+      {sourcesDockOpen && (
+        <SourcesDock
+          sources={sources}
+          onAddSource={addSource}
+          onRemoveSource={removeSource}
+          onClose={() => setSourcesDockOpen(false)}
         />
       )}
 

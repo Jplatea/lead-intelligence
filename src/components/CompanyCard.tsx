@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { X, Mail, Phone, Sparkles, Check, Send, ChevronDown } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
-import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PASTEL_TEXT } from "../data/config";
+import {
+  REPS,
+  STATUS_CONFIG,
+  ALARM_CONFIG,
+  TYPE_OPTIONS,
+  PROVINCE_OPTIONS_ES,
+  PROVINCE_OPTIONS_PT,
+  PASTEL_TEXT,
+} from "../data/config";
+import { CustomSelect } from "./CustomSelect";
 
 interface Props {
   company: Company;
@@ -17,6 +26,22 @@ function Divider() {
 const selectClass =
   "bg-black/[0.03] border border-black/10 rounded-lg outline-none focus:border-[#a8dfcf]";
 
+// All fields in this card are shown and editable regardless of whether
+// they're already filled in — this shared style reads as an underlined,
+// borderless field until focused, so empty fields don't look broken.
+const fieldClass =
+  "w-full bg-transparent outline-none text-xs text-neutral-700 placeholder:text-neutral-400 border-b border-black/10 focus:border-[#a8dfcf] pb-1 transition-colors";
+
+const dropdownClass =
+  "w-full bg-black/[0.02] outline-none text-xs text-neutral-700 border border-dashed border-neutral-300 hover:border-neutral-400 focus:border-[#a8dfcf] rounded-lg px-2 py-1.5 cursor-pointer transition-colors text-left";
+
+function splitList(text: string): string[] {
+  return text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 // Flat solid-color fill with a crisp, layered edge (double inset ring for a
 // refined bezel, no gradient/gloss) — used for the Comercial avatars and the
 // Tipo select, per feedback that those should read as flat but high-quality.
@@ -30,7 +55,6 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
   const status = STATUS_CONFIG[company.status];
   const alarm = ALARM_CONFIG[company.alarm];
 
-  const [brandsOpen, setBrandsOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [commentRep, setCommentRep] = useState<RepId>(company.assignedRep);
   const [commentText, setCommentText] = useState("");
@@ -42,10 +66,19 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
     setCommentText("");
   };
 
+  const patchContact = (patch: Partial<Company["contact"]>) => onUpdate({ contact: { ...company.contact, ...patch } });
+
+  const knownProvince = PROVINCE_OPTIONS_ES.includes(company.province) || PROVINCE_OPTIONS_PT.includes(company.province);
+  const provinceOptions = [
+    ...(knownProvince ? [] : [{ value: company.province, label: company.province || "Sin especificar" }]),
+    ...PROVINCE_OPTIONS_ES.map((p) => ({ value: p, label: p, group: "España" })),
+    ...PROVINCE_OPTIONS_PT.map((p) => ({ value: p, label: p, group: "Portugal" })),
+  ];
+
   return (
     <div className="glass float-card rounded-3xl p-5 animate-fade-in-up">
       <div className="flex items-start justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p
             className={`text-[10px] uppercase tracking-widest mb-1 ${
               company.importedType === "manual" ? "text-[#3f6fc0]" : "text-[#2a9678]"
@@ -53,8 +86,12 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
           >
             {company.importedType === "manual" ? "Introducido manualmente" : "Detectado automáticamente"}
           </p>
-          <h2 className="text-lg font-semibold text-neutral-900 leading-tight">{company.name}</h2>
-          <span className="text-xs text-neutral-400">{company.city}</span>
+          <input
+            value={company.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="Nombre de la empresa"
+            className="text-lg font-semibold text-neutral-900 leading-tight bg-transparent outline-none border-b border-transparent focus:border-[#a8dfcf] w-full"
+          />
           {company.needsReview && (
             <div className="mt-1.5">
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#b9503a]/15 text-[#b9503a]">
@@ -110,43 +147,81 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
       <div className="grid grid-cols-2 gap-3">
         <div>
           <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Contacto</h3>
-          <div className="space-y-1.5 text-xs text-neutral-700">
-            {company.contact.email && (
-              <div className="flex items-center gap-2">
-                <Mail size={13} className="text-[#2a9678] shrink-0" />
-                <span className="truncate">{company.contact.email}</span>
-              </div>
-            )}
-            {company.contact.phone && (
-              <div className="flex items-center gap-2">
-                <Phone size={13} className="text-[#2a9678] shrink-0" />
-                <span className="truncate">{company.contact.phone}</span>
-              </div>
-            )}
+          <div className="space-y-2 text-neutral-700">
+            <div className="flex items-center gap-2">
+              <Mail size={13} className="text-[#2a9678] shrink-0" />
+              <input
+                value={company.contact.email ?? ""}
+                onChange={(e) => patchContact({ email: e.target.value })}
+                placeholder="Sin email"
+                className={fieldClass}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone size={13} className="text-[#2a9678] shrink-0" />
+              <input
+                value={company.contact.phone ?? ""}
+                onChange={(e) => patchContact({ phone: e.target.value })}
+                placeholder="Sin teléfono"
+                className={fieldClass}
+              />
+            </div>
           </div>
         </div>
 
         <div>
-          <button
-            onClick={() => setBrandsOpen((v) => !v)}
-            className="flex items-center justify-between w-full text-[11px] uppercase tracking-widest text-neutral-400 mb-2"
-          >
-            <span>Marcas ({company.brands.length})</span>
-            <ChevronDown size={12} className={`transition-transform ${brandsOpen ? "rotate-180" : ""}`} />
-          </button>
-          {brandsOpen && (
-            <div className="flex flex-wrap gap-1.5 animate-fade-in-up">
-              {company.brands.length === 0 && <span className="text-xs text-neutral-400">Sin marcas</span>}
-              {company.brands.map((b) => (
-                <span
-                  key={b}
-                  className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#a9d6a9] text-black/80"
-                >
-                  <Check size={10} /> {b}
-                </span>
-              ))}
+          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Ubicación</h3>
+          <div className="space-y-2">
+            <input
+              value={company.city}
+              onChange={(e) => onUpdate({ city: e.target.value })}
+              placeholder="Ciudad"
+              className={fieldClass}
+            />
+            <CustomSelect
+              value={company.province}
+              options={provinceOptions}
+              onChange={(v) => onUpdate({ province: v })}
+              triggerClassName={dropdownClass}
+            />
+            <div className="flex gap-2">
+              <input
+                value={company.country}
+                onChange={(e) => onUpdate({ country: e.target.value })}
+                placeholder="País"
+                className={fieldClass}
+              />
+              <input
+                value={company.postalCode}
+                onChange={(e) => onUpdate({ postalCode: e.target.value })}
+                placeholder="C.P."
+                className={`${fieldClass} w-16 shrink-0`}
+              />
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+
+      <Divider />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Marcas</h3>
+          <input
+            value={company.brands.join(", ")}
+            onChange={(e) => onUpdate({ brands: splitList(e.target.value) })}
+            placeholder="Sin marcas"
+            className={fieldClass}
+          />
+        </div>
+        <div>
+          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Especialidades</h3>
+          <input
+            value={company.specialties.join(", ")}
+            onChange={(e) => onUpdate({ specialties: splitList(e.target.value) })}
+            placeholder="Sin especialidades"
+            className={fieldClass}
+          />
         </div>
       </div>
 
@@ -197,25 +272,26 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
 
         <div>
           <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Tipo</p>
-          <select
+          <CustomSelect
             value={company.type}
-            onChange={(e) => onUpdate({ type: e.target.value })}
-            style={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
-            className="text-[10px] text-neutral-700 px-1.5 py-1 w-full rounded-lg outline-none"
-          >
-            {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+            options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
+            onChange={(v) => onUpdate({ type: v })}
+            triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
+            triggerClassName="text-[10px] text-neutral-700 px-1.5 py-1 w-full rounded-lg outline-none text-center cursor-pointer"
+          />
         </div>
 
         <div>
           <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Alarma</p>
-          <div className="flex items-center justify-center gap-1">
+          <CustomSelect
+            value={company.alarm}
+            options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
+            onChange={(v) => onUpdate({ alarm: v as Company["alarm"] })}
+            triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
+            triggerClassName="flex items-center justify-center gap-1 text-[10px] text-neutral-700 px-1.5 py-1 w-full rounded-lg outline-none cursor-pointer"
+          />
+          <div className="flex items-center justify-center gap-1 mt-1">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${alarm.dot}`} />
-            <p className="text-[10px] text-neutral-700 leading-tight">{alarm.label}</p>
           </div>
         </div>
       </div>
