@@ -139,9 +139,22 @@ export function buildMarketingEmailHtml(blocks: MailingBlock[], meta: EmailMeta 
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 20px 45px rgba(33,31,29,0.14);">
           <tr>
             <td align="center" style="padding:26px 36px 20px;background-color:#ffffff;border-bottom:1px solid rgba(33,31,29,0.06);">
-              <p style="margin:0;font-family:${FONT_STACK};font-size:20px;font-weight:700;letter-spacing:0.06em;color:#161514;">
-                PRESTIGE<span style="font-weight:400;opacity:0.65;">&nbsp;DISTRIBUTION</span>
-              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td style="padding-right:8px;">
+                    <img
+                      src="https://ileads.prestigedistribution.es/prestige-logo-black.png"
+                      alt=""
+                      width="26"
+                      height="32"
+                      style="display:block;width:26px;height:32px;"
+                    />
+                  </td>
+                  <td style="font-family:${FONT_STACK};font-size:20px;font-weight:700;letter-spacing:0.06em;color:#161514;white-space:nowrap;">
+                    PRESTIGE<span style="font-weight:400;opacity:0.65;">&nbsp;DISTRIBUTION</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           <tr>
