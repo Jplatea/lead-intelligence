@@ -93,7 +93,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
             {groups.map((g, gi) => (
               <div key={gi}>
                 {g.group && (
-                  <p className="px-2 pt-1.5 pb-0.5 text-[9px] font-semibold uppercase tracking-wide text-neutral-400">
+                  <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
                     {g.group}
                   </p>
                 )}
@@ -105,7 +105,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
                       onChange(opt.value);
                       setOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[13px] whitespace-nowrap transition-colors ${
+                    className={`block w-full text-left px-2.5 py-1.5 rounded-lg text-[13px] whitespace-nowrap transition-colors ${
                       opt.value === value
                         ? "bg-[#a8dfcf]/40 text-black font-medium"
                         : "text-neutral-700 hover:bg-black/[0.04]"
