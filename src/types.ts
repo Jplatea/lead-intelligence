@@ -23,11 +23,6 @@ export interface Comment {
   date: string;
 }
 
-export interface NextAction {
-  label: string;
-  dueInDays: number;
-}
-
 export interface Company {
   id: string;
   name: string;
@@ -38,31 +33,19 @@ export interface Company {
   postalCode: string;
   lat: number;
   lng: number;
-  employees?: string;
-  revenueEstimate?: string;
-  foundedYear?: number;
   contact: {
     email?: string;
-    secondaryEmails?: string[];
     phone?: string;
-    whatsapp?: string;
-    web?: string;
-    instagram?: string;
-    linkedin?: string;
-    facebook?: string;
-    youtube?: string;
-    pinterest?: string;
   };
   brands: string[];
   specialties: string[];
   assignedRep: RepId;
   status: CompanyStatus;
   alarm: AlarmLevel;
-  lastActionLabel: string;
   importedType: "manual" | "auto";
   comments: Comment[];
-  nextActions: NextAction[];
   aiSummary?: string;
   aiRecommendation?: string;
   connectedTo?: string[];
+  needsReview?: boolean;
 }

@@ -19,6 +19,7 @@ interface Tile {
   bg: string;
   onClick: () => void;
   spinning?: boolean;
+  alarm?: boolean;
 }
 
 export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMailing, onShowUncontacted }: Props) {
@@ -27,16 +28,18 @@ export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMaili
   const neverContacted = companies.filter(
     (c) => c.alarm === "nunca_contactado" || c.alarm === "mas_30_dias"
   ).length;
+  const needsReview = companies.some((c) => c.needsReview);
 
   const tiles: Tile[] = [
     {
       label: "Empresas detectadas",
       value: companies.length,
-      hint: scanning ? "escaneando fuentes..." : "en la Península",
+      hint: scanning ? "escaneando fuentes..." : needsReview ? "hay clientes por revisar" : "en la Península",
       icon: scanning ? Loader2 : Building2,
       bg: "bg-[#a8dfcf]",
       onClick: onScan,
       spinning: scanning,
+      alarm: needsReview,
     },
     {
       label: "Mailing",
@@ -74,7 +77,7 @@ export function StatsRow({ companies, scanning, onScan, onOpenVisit, onOpenMaili
         >
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-medium text-black/60">{tile.label}</span>
-            <span className="w-8 h-8 rounded-full bg-black/15 flex items-center justify-center">
+            <span className={`w-8 h-8 rounded-full flex items-center justify-center ${tile.alarm ? "alarm-blink" : "bg-black/15"}`}>
               <tile.icon size={15} className={`text-black/70 ${tile.spinning ? "animate-spin" : ""}`} strokeWidth={2.25} />
             </span>
           </div>

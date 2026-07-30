@@ -46,9 +46,24 @@ interface Cluster {
 // the current zoom collapse into one bubble showing the count; zooming in
 // spreads their pixel positions apart until they naturally fall back out.
 const CLUSTER_RADIUS_PX = 32;
+// Past this zoom, stop collapsing points into count-bubbles altogether —
+// otherwise clients that are only a few dozen meters apart (e.g. neighboring
+// units in the same building) could stay merged forever, since screen-pixel
+// distance at a fixed max zoom never actually reaches 0 for them but can
+// still be under CLUSTER_RADIUS_PX indefinitely.
+const STOP_CLUSTERING_ZOOM = 19;
+// If, even past that zoom, two or more points still land on (almost) the
+// exact same pixel — true near-duplicate coordinates — fan them out in a
+// small ring so every one of them stays individually visible and clickable.
+const FAN_OUT_RADIUS_PX = 15;
 
-function clusterCompanies(companies: Company[], positions: Positions): Cluster[] {
+function clusterCompanies(companies: Company[], positions: Positions, zoom: number): Cluster[] {
   const withPos = companies.filter((c) => positions[c.id]);
+
+  if (zoom >= STOP_CLUSTERING_ZOOM) {
+    return fanOutCoincident(withPos, positions);
+  }
+
   const used = new Set<string>();
   const clusters: Cluster[] = [];
 
@@ -83,6 +98,26 @@ function clusterCompanies(companies: Company[], positions: Positions): Cluster[]
     });
   }
 
+  return clusters;
+}
+
+function fanOutCoincident(companies: Company[], positions: Positions): Cluster[] {
+  const buckets: Record<string, Company[]> = {};
+  for (const c of companies) {
+    const p = positions[c.id];
+    const key = `${Math.round(p.x / 6)}:${Math.round(p.y / 6)}`;
+    (buckets[key] ??= []).push(c);
+  }
+
+  const clusters: Cluster[] = [];
+  for (const group of Object.values(buckets)) {
+    const base = positions[group[0].id];
+    group.forEach((c, i) => {
+      const x = group.length === 1 ? base.x : base.x + Math.cos((i / group.length) * Math.PI * 2) * FAN_OUT_RADIUS_PX;
+      const y = group.length === 1 ? base.y : base.y + Math.sin((i / group.length) * Math.PI * 2) * FAN_OUT_RADIUS_PX;
+      clusters.push({ key: c.id, x, y, lat: c.lat, lng: c.lng, members: [c] });
+    });
+  }
   return clusters;
 }
 
@@ -183,6 +218,15 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
   // the earlier fix where setting them sequentially could trip the map's
   // `restriction` bounds at wide zoom levels.
   const cameraAnimationRef = useRef<number | null>(null);
+  // Tracks where an in-flight animation is ultimately headed (not the map's
+  // current, still-mid-transition zoom/center). Rapid repeated clicks — e.g.
+  // mashing the zoom button — read from these instead of the live map state,
+  // so each click stacks an extra +1 from the *intended* destination rather
+  // than from a barely-progressed interrupted animation, which otherwise
+  // made zoom nearly stall under quick repeated clicks.
+  const targetZoomRef = useRef<number | null>(null);
+  const targetCenterRef = useRef<{ lat: number; lng: number } | null>(null);
+
   const animateCamera = useCallback(
     (targetCenter: { lat: number; lng: number }, targetZoom: number, duration = 550) => {
       const map = mapInstance;
@@ -194,6 +238,9 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
       const startLng = startCenter?.lng() ?? targetCenter.lng;
       const startZoom = map.getZoom() ?? targetZoom;
       const startTime = performance.now();
+
+      targetZoomRef.current = targetZoom;
+      targetCenterRef.current = targetCenter;
 
       const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 
@@ -207,7 +254,13 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
           },
           zoom: startZoom + (targetZoom - startZoom) * eased,
         });
-        cameraAnimationRef.current = t < 1 ? requestAnimationFrame(step) : null;
+        if (t < 1) {
+          cameraAnimationRef.current = requestAnimationFrame(step);
+        } else {
+          cameraAnimationRef.current = null;
+          targetZoomRef.current = null;
+          targetCenterRef.current = null;
+        }
       };
       cameraAnimationRef.current = requestAnimationFrame(step);
     },
@@ -225,12 +278,16 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
     [companies]
   );
 
-  const clusters = useMemo(() => clusterCompanies(companies, positions), [companies, positions]);
+  const clusters = useMemo(
+    () => clusterCompanies(companies, positions, mapZoom),
+    [companies, positions, mapZoom]
+  );
+  // Maps every company id to its cluster — including single-member ones, so
+  // a company that's only visually fanned-out (not grouped into a count
+  // bubble) still resolves to its actual on-screen position below.
   const clusterOf = useMemo(() => {
     const map: Record<string, Cluster> = {};
-    for (const cl of clusters) {
-      if (cl.members.length > 1) for (const m of cl.members) map[m.id] = cl;
-    }
+    for (const cl of clusters) for (const m of cl.members) map[m.id] = cl;
     return map;
   }, [clusters]);
 
@@ -285,24 +342,29 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
     onPlaceNew(e.detail.latLng.lat, e.detail.latLng.lng);
   };
 
-  const expandCluster = (cluster: Cluster) => {
-    if (!mapInstance) return;
-    const targetZoom = Math.min((mapInstance.getZoom() ?? IBERIA_DEFAULT_ZOOM) + 3, 16);
-    animateCamera({ lat: cluster.lat, lng: cluster.lng }, targetZoom, 650);
-  };
-
+  // Read the in-flight animation's destination when one is running, so
+  // repeated clicks stack correctly instead of each restarting from a
+  // barely-progressed interrupted animation (see animateCamera above).
+  const currentZoomTarget = () => targetZoomRef.current ?? mapInstance?.getZoom() ?? IBERIA_DEFAULT_ZOOM;
   const currentCenter = () => {
+    if (targetCenterRef.current) return targetCenterRef.current;
     const c = mapInstance?.getCenter();
     return c ? { lat: c.lat(), lng: c.lng() } : IBERIA_CENTER;
   };
 
+  const expandCluster = (cluster: Cluster) => {
+    if (!mapInstance) return;
+    const targetZoom = Math.min(currentZoomTarget() + 3, 20);
+    animateCamera({ lat: cluster.lat, lng: cluster.lng }, targetZoom, 650);
+  };
+
   const zoomIn = () => {
     if (!mapInstance) return;
-    animateCamera(currentCenter(), Math.min((mapInstance.getZoom() ?? IBERIA_DEFAULT_ZOOM) + 1, 16), 400);
+    animateCamera(currentCenter(), Math.min(currentZoomTarget() + 1, 20), 400);
   };
   const zoomOut = () => {
     if (!mapInstance) return;
-    animateCamera(currentCenter(), Math.max((mapInstance.getZoom() ?? IBERIA_DEFAULT_ZOOM) - 1, 5), 400);
+    animateCamera(currentCenter(), Math.max(currentZoomTarget() - 1, 5), 400);
   };
   const resetView = () => animateCamera(IBERIA_CENTER, IBERIA_DEFAULT_ZOOM, 650);
 
@@ -365,7 +427,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
           defaultCenter={IBERIA_CENTER}
           defaultZoom={IBERIA_DEFAULT_ZOOM}
           minZoom={5}
-          maxZoom={16}
+          maxZoom={20}
           restriction={{ latLngBounds: IBERIA_BOUNDS, strictBounds: false }}
           styles={MAP_STYLE}
           disableDefaultUI
@@ -415,7 +477,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
           {clusters.map((cluster) => {
             if (cluster.members.length === 1) {
               const c = cluster.members[0];
-              const pos = positions[c.id];
+              const pos = { x: cluster.x, y: cluster.y };
               const isSelected = c.id === selectedId;
               const isHovered = hover?.company.id === c.id;
               const isHighlighted = highlight?.ids.has(c.id) ?? false;

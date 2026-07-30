@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, MapPin, Search, X } from "lucide-react";
+import { HelpCircle, Loader2, MapPin, Search, X } from "lucide-react";
 import type { Company, RepId } from "../types";
 import { REPS, TYPE_OPTIONS } from "../data/config";
 import { geocodeAddress } from "../lib/geocode";
@@ -14,19 +14,103 @@ interface Props {
 const inputClass =
   "w-full bg-black/[0.03] border border-black/10 rounded-lg px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf]";
 
+const FLUOR = "#d4ff00";
+
+function Req() {
+  return (
+    <span
+      className="ml-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+      style={{ background: FLUOR, color: "#1a1a1a" }}
+    >
+      Obligatorio
+    </span>
+  );
+}
+
+function Opt() {
+  return <span className="ml-1.5 text-[9px] text-neutral-400 uppercase tracking-wide">Opcional</span>;
+}
+
+function HelpItem({ label, required, note }: { label: string; required?: boolean; note?: string }) {
+  return (
+    <li className="flex flex-wrap items-center gap-x-1 text-xs text-neutral-700">
+      <span>{label}</span>
+      {required ? <Req /> : !note ? <Opt /> : null}
+      {note && <span className="text-[10px] text-neutral-400">— {note}</span>}
+    </li>
+  );
+}
+
+function HelpSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-1.5">{title}</h3>
+      <ul className="space-y-1.5">{children}</ul>
+    </div>
+  );
+}
+
+function HelpPopup({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-5">
+      <div className="glass rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto animate-fade-in-up">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-neutral-800">Campos a rellenar</h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <HelpSection title="Identificación y ubicación">
+            <HelpItem label="Identificador único" note="automático" />
+            <HelpItem label="Nombre de la empresa" required />
+            <HelpItem label="Tipo (Integrador / Arquitecto / Decorador)" required />
+            <HelpItem label="Dirección completa" required />
+            <HelpItem label="Coordenadas para el mapa" note="salen de la dirección" />
+          </HelpSection>
+
+          <HelpSection title="Contacto">
+            <HelpItem label="Email" required />
+            <HelpItem label="Teléfono" required />
+          </HelpSection>
+
+          <HelpSection title="Clasificación">
+            <HelpItem label="Marcas que trabaja (KNX, Control4, etc.)" />
+            <HelpItem label="Especialidades (Cinema, Audio, Iluminación, etc.)" />
+          </HelpSection>
+
+          <HelpSection title="Gestión comercial">
+            <HelpItem label="Comercial asignado (José/Fran/Víctor)" required />
+            <HelpItem label="Estado (Nuevo/Contactado/No interesado/Trabajando)" required />
+            <HelpItem label="Nivel de alarma" />
+          </HelpSection>
+
+          <HelpSection title="Relaciones">
+            <HelpItem label="Empresas relacionadas" note="para las líneas del mapa" />
+          </HelpSection>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, onCreate }: Props) {
   const [name, setName] = useState("");
   const [type, setType] = useState(TYPE_OPTIONS[0]);
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState<"España" | "Portugal">("España");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [assignedRep, setAssignedRep] = useState<RepId>("jose");
   const [error, setError] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [country, setCountry] = useState("España");
+  const [postalCode, setPostalCode] = useState("");
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeMsg, setGeocodeMsg] = useState<string | null>(null);
 
@@ -35,14 +119,18 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
     setGeocoding(true);
     setGeocodeMsg(null);
     try {
-      const query = [address.trim(), city.trim(), country].filter(Boolean).join(", ");
-      const results = await geocodeAddress(query);
+      const results = await geocodeAddress(address.trim());
       if (results.length === 0) {
-        setGeocodeMsg("No se ha encontrado esa dirección. Prueba a afinarla o sitúa el punto en el mapa.");
+        setGeocodeMsg("No se ha encontrado esa dirección. Prueba a afinarla.");
       } else {
-        setLat(results[0].lat);
-        setLng(results[0].lng);
-        setGeocodeMsg(`Ubicación encontrada: ${results[0].displayName}`);
+        const r = results[0];
+        setLat(r.lat);
+        setLng(r.lng);
+        setCity(r.city ?? "");
+        setProvince(r.province ?? "");
+        setCountry(r.country ?? "España");
+        setPostalCode(r.postalCode ?? "");
+        setGeocodeMsg(`Ubicación encontrada: ${r.displayName}`);
       }
     } catch {
       setGeocodeMsg("No se pudo buscar la dirección ahora mismo. Inténtalo de nuevo.");
@@ -52,33 +140,31 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
   };
 
   const submit = () => {
-    if (!name.trim() || !city.trim()) {
-      setError("Nombre y ciudad son obligatorios.");
+    if (!name.trim() || !address.trim() || !email.trim() || !phone.trim()) {
+      setError("Nombre, dirección, email y teléfono son obligatorios.");
       return;
     }
     const company: Company = {
       id: `manual-${Date.now()}`,
       name: name.trim(),
       type,
-      city: city.trim(),
-      province: city.trim(),
+      city: city.trim() || address.trim(),
+      province: province.trim() || "Sin especificar",
       country,
-      postalCode: "",
+      postalCode,
       lat,
       lng,
       contact: {
-        email: email.trim() || undefined,
-        phone: phone.trim() || undefined,
+        email: email.trim(),
+        phone: phone.trim(),
       },
       brands: [],
       specialties: [],
       assignedRep,
       status: "nuevo",
       alarm: "nunca_contactado",
-      lastActionLabel: "Sin registrar",
       importedType: "manual",
       comments: [],
-      nextActions: [{ label: "Primer contacto", dueInDays: 1 }],
     };
     onCreate(company);
   };
@@ -87,7 +173,16 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-5">
       <div className="glass rounded-3xl p-5 w-full max-w-sm animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-800">Nuevo cliente</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-neutral-800">Nuevo cliente</h2>
+            <button
+              onClick={() => setHelpOpen(true)}
+              title="Qué campos rellenar"
+              className="text-neutral-400 hover:text-neutral-800 p-0.5 rounded-full hover:bg-black/5"
+            >
+              <HelpCircle size={15} />
+            </button>
+          </div>
           <button onClick={onCancel} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
             <X size={16} />
           </button>
@@ -99,34 +194,20 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Nombre de la empresa" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Tipo</label>
-              <select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}>
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">País</label>
-              <select value={country} onChange={(e) => setCountry(e.target.value as "España" | "Portugal")} className={inputClass}>
-                <option value="España">España</option>
-                <option value="Portugal">Portugal</option>
-              </select>
-            </div>
-          </div>
-
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Ciudad *</label>
-            <input value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} placeholder="Ciudad" />
+            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Tipo</label>
+            <select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}>
+              {TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">
-              Dirección exacta (opcional)
+              Dirección completa *
             </label>
             <div className="flex gap-2">
               <input
@@ -134,7 +215,7 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
                 onChange={(e) => setAddress(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchAddress())}
                 className={inputClass}
-                placeholder="Calle, número..."
+                placeholder="Calle, número, ciudad..."
               />
               <button
                 onClick={searchAddress}
@@ -152,17 +233,17 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
               </p>
             )}
             <p className="text-[10px] text-neutral-400 mt-1">
-              Ubicación: {lat.toFixed(4)}, {lng.toFixed(4)} (según el punto marcado en el mapa, o la dirección buscada).
+              Ubicación: {lat.toFixed(4)}, {lng.toFixed(4)} (busca la dirección para afinar el punto en el mapa).
             </p>
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Email</label>
+            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Email *</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="contacto@empresa.com" />
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Teléfono</label>
+            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Teléfono *</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} placeholder="+34 ..." />
           </div>
 
@@ -195,6 +276,8 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
           </button>
         </div>
       </div>
+
+      {helpOpen && <HelpPopup onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

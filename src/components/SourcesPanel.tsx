@@ -1,20 +1,9 @@
 import { useState } from "react";
-import {
-  ChevronDown,
-  ExternalLink,
-  Plus,
-  Trash2,
-  Link2,
-  CheckCircle2,
-  ShieldAlert,
-  Loader2,
-  HelpCircle,
-} from "lucide-react";
+import { ChevronDown, ExternalLink, Trash2, Link2, CheckCircle2, ShieldAlert, Loader2, HelpCircle } from "lucide-react";
 import type { LeadSource, RobotsStatus } from "../data/sources";
 
 interface Props {
   sources: LeadSource[];
-  onAddSource: (url: string) => string | null;
   onRemoveSource: (id: string) => void;
 }
 
@@ -26,22 +15,8 @@ const STATUS_BADGE: Record<RobotsStatus, { icon: typeof CheckCircle2; className:
   unknown: { icon: HelpCircle, className: "text-neutral-400", label: "No verificable desde el navegador" },
 };
 
-export function SourcesPanel({ sources, onAddSource, onRemoveSource }: Props) {
-  const [newUrl, setNewUrl] = useState("");
-  const [error, setError] = useState<string | null>(null);
+export function SourcesPanel({ sources, onRemoveSource }: Props) {
   const [expanded, setExpanded] = useState(false);
-
-  const addSource = () => {
-    const trimmed = newUrl.trim();
-    if (!trimmed) return;
-    const err = onAddSource(trimmed);
-    if (err) {
-      setError(err);
-      return;
-    }
-    setError(null);
-    setNewUrl("");
-  };
 
   return (
     <div className="glass rounded-3xl p-5">
@@ -68,10 +43,11 @@ export function SourcesPanel({ sources, onAddSource, onRemoveSource }: Props) {
       {expanded && (
         <>
           <p className="text-xs text-neutral-400 mt-1 mb-4">
-            Directorios y buscadores de instaladores/distribuidores. Limita cada búsqueda a España y Portugal.
+            Directorios y buscadores de instaladores/distribuidores. Limita cada búsqueda a España y Portugal. Añade
+            nuevas fuentes desde la ventana de "Empresas detectadas".
           </p>
 
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2">
             {sources.map((source) => {
               const badge = STATUS_BADGE[source.robotsStatus] ?? STATUS_BADGE.unknown;
               return (
@@ -107,29 +83,6 @@ export function SourcesPanel({ sources, onAddSource, onRemoveSource }: Props) {
               );
             })}
           </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              value={newUrl}
-              onChange={(e) => {
-                setNewUrl(e.target.value);
-                setError(null);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && addSource()}
-              placeholder="Añadir URL manualmente (p.ej. directorio-instaladores.es)"
-              className="flex-1 bg-black/[0.03] border border-black/10 rounded-xl px-3 py-2 text-xs text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf]"
-            />
-            <button
-              onClick={addSource}
-              className="flex items-center gap-1 text-xs px-3 py-2 rounded-xl bg-[#a8dfcf]/25 border border-[#a8dfcf] text-[#2a9678] hover:bg-[#a8dfcf]/40"
-            >
-              <Plus size={13} /> Añadir
-            </button>
-          </div>
-          {error && <p className="text-xs text-[#b9503a] mt-1.5">{error}</p>}
-          <p className="text-[10px] text-neutral-400 mt-2">
-            La verificación de robots.txt se hace desde tu navegador: si el sitio bloquea CORS no podremos confirmarlo automáticamente.
-          </p>
         </>
       )}
     </div>

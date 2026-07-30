@@ -1,22 +1,40 @@
-import { Radar, CircleUserRound } from "lucide-react";
+import { useState } from "react";
+import { Radar, ChevronDown, LogOut, CircuitBoard } from "lucide-react";
+import type { RepId } from "../types";
+import { REPS } from "../data/config";
+import { NeuralCell } from "./NeuralCell";
 
-const TABS = [{ label: "Lead Intelligence", icon: Radar, active: true }];
+export type AppView = "dashboard" | "database";
 
-export function TopNav() {
+interface Props {
+  loggedInRep: RepId;
+  onLogout: () => void;
+  view: AppView;
+  onViewChange: (view: AppView) => void;
+}
+
+export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rep = REPS[loggedInRep];
+
+  const tabs: { label: string; icon: typeof Radar; view: AppView }[] = [
+    { label: "Lead Intelligence", icon: Radar, view: "dashboard" },
+    { label: "Database", icon: CircuitBoard, view: "database" },
+  ];
+
   return (
     <header className="sticky top-0 z-30 glass border-x-0 border-t-0 px-6 py-3 flex items-center gap-8">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-[#a8dfcf] flex items-center justify-center text-black font-bold text-sm">
-          P
-        </div>
-        <span className="text-sm font-semibold tracking-wide text-neutral-900">PRESTIGE IBÉRICA</span>
+        <NeuralCell size={34} animated />
+        <span className="text-sm font-semibold tracking-wide text-neutral-900">ILEADS</span>
       </div>
       <nav className="flex items-center gap-1">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.label}
+            onClick={() => onViewChange(tab.view)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              tab.active
+              view === tab.view
                 ? "bg-neutral-900 text-white"
                 : "text-neutral-500 hover:text-neutral-800 hover:bg-black/5"
             }`}
@@ -26,8 +44,35 @@ export function TopNav() {
           </button>
         ))}
       </nav>
-      <div className="ml-auto flex items-center gap-3">
-        <CircleUserRound size={26} className="text-neutral-400" />
+      <div className="ml-auto relative">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-black/5"
+        >
+          <span
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-black/70"
+            style={{ background: rep.color }}
+          >
+            {rep.name[0]}
+          </span>
+          <span className="text-xs text-neutral-600">{rep.name}</span>
+          <ChevronDown size={12} className={`text-neutral-400 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+            <div className="absolute top-full right-0 mt-2 z-50 glass rounded-2xl p-1.5 w-40 shadow-[0_12px_28px_rgba(33,31,29,0.18)] animate-fade-in-up">
+              <button
+                onClick={onLogout}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-left text-xs text-[#b9503a] hover:bg-black/[0.04] transition-colors"
+              >
+                <LogOut size={13} />
+                Cerrar sesión
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

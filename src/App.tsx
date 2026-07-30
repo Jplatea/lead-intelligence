@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { TopNav } from "./components/TopNav";
+import { TopNav, type AppView } from "./components/TopNav";
+import { LoginPage } from "./components/LoginPage";
+import { DatabasePage } from "./components/DatabasePage";
 import { FiltersPanel, type Filters } from "./components/FiltersPanel";
 import { IberiaMap } from "./components/IberiaMap";
 import { ResultsList, type ResultsHighlight } from "./components/ResultsList";
@@ -10,12 +12,15 @@ import { SourcesPanel } from "./components/SourcesPanel";
 import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { MailingModal } from "./components/MailingModal";
+import { ImportModal } from "./components/ImportModal";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { checkUrlAndScan } from "./lib/robotsCheck";
+import { clearSession, loadSession, saveSession } from "./lib/auth";
 import type { Company, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
+const COMPANIES_STORAGE_KEY = "lead-intelligence:companies";
 
 function loadCustomSources(): LeadSource[] {
   try {
@@ -23,6 +28,19 @@ function loadCustomSources(): LeadSource[] {
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
+  }
+}
+
+// Interim persistence: the client list (including manual edits, deletes, and
+// bulk imports) survives page reloads via localStorage — this is browser-only
+// (not shared across devices) and not a substitute for a real backend, but it
+// stops data from silently vanishing on refresh until a database is set up.
+function loadCompanies(): Company[] {
+  try {
+    const raw = localStorage.getItem(COMPANIES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : COMPANIES;
+  } catch {
+    return COMPANIES;
   }
 }
 
@@ -39,7 +57,9 @@ function todayLabel() {
 }
 
 function App() {
-  const [companies, setCompanies] = useState<Company[]>(COMPANIES);
+  const [session, setSession] = useState<RepId | null>(loadSession);
+  const [view, setView] = useState<AppView>("dashboard");
+  const [companies, setCompanies] = useState<Company[]>(loadCompanies);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
     brands: new Set(),
@@ -53,6 +73,7 @@ function App() {
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [mailingModalOpen, setMailingModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const [sources, setSources] = useState<LeadSource[]>(() => [...DEFAULT_SOURCES, ...loadCustomSources()]);
   const [scanning, setScanning] = useState(false);
@@ -61,6 +82,10 @@ function App() {
     const custom = sources.filter((s) => s.custom);
     localStorage.setItem(SOURCES_STORAGE_KEY, JSON.stringify(custom));
   }, [sources]);
+
+  useEffect(() => {
+    localStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(companies));
+  }, [companies]);
 
   const updateCompany = (id: string, patch: Partial<Company>) => {
     setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -94,6 +119,10 @@ function App() {
     setCompanies((prev) => [...prev, company]);
     setPendingPosition(null);
     setSelectedId(company.id);
+  };
+
+  const importCompanies = (imported: Company[]) => {
+    setCompanies((prev) => [...prev, ...imported]);
   };
 
   const clearFilters = () =>
@@ -204,15 +233,42 @@ function App() {
 
   const selectedCompany = companies.find((c) => c.id === selectedId) ?? null;
 
+  if (!session) {
+    return (
+      <LoginPage
+        onLogin={(repId) => {
+          saveSession(repId);
+          setSession(repId);
+        }}
+      />
+    );
+  }
+
+  const logout = () => {
+    clearSession();
+    setSession(null);
+  };
+
+  if (view === "database") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={setView} />
+        <main className="flex-1 flex flex-col p-5 max-w-[1600px] w-full mx-auto">
+          <DatabasePage companies={companies} onUpdate={updateCompany} onDelete={deleteCompany} />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <TopNav />
+      <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={setView} />
 
       <main className="flex-1 flex flex-col gap-5 p-5 max-w-[1600px] w-full mx-auto">
         <StatsRow
           companies={filteredCompanies}
           scanning={scanning}
-          onScan={scanAllSources}
+          onScan={() => setImportModalOpen(true)}
           onOpenVisit={() => setVisitModalOpen(true)}
           onOpenMailing={() => setMailingModalOpen(true)}
           onShowUncontacted={handleShowUncontacted}
@@ -258,7 +314,7 @@ function App() {
           highlight={highlight}
         />
 
-        <SourcesPanel sources={sources} onAddSource={addSource} onRemoveSource={removeSource} />
+        <SourcesPanel sources={sources} onRemoveSource={removeSource} />
       </main>
 
       {pendingPosition && (
@@ -279,6 +335,16 @@ function App() {
       )}
 
       {mailingModalOpen && <MailingModal onClose={() => setMailingModalOpen(false)} />}
+
+      {importModalOpen && (
+        <ImportModal
+          onClose={() => setImportModalOpen(false)}
+          onAddSource={addSource}
+          onImportCompanies={importCompanies}
+          onRescanAll={scanAllSources}
+          scanning={scanning}
+        />
+      )}
 
       {selectedCompany && (
         <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-40 flex flex-col gap-5 pointer-events-none">

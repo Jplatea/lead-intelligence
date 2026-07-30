@@ -148,6 +148,11 @@ export function ResultsList({
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: highlight!.color }} />
                   )}
                   <span className="text-sm text-neutral-800 truncate flex-1 min-w-0">{c.name}</span>
+                  {c.needsReview && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 bg-[#b9503a]/15 text-[#b9503a]">
+                      Revisar
+                    </span>
+                  )}
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${status.className}`}>
                     {status.label}
                   </span>

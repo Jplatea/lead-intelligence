@@ -1,5 +1,4 @@
 import {
-  Globe,
   MapPin,
   Building2,
   HardHat,
@@ -18,34 +17,6 @@ export interface ConnectorItem {
 
 export function buildConnectors(company: Company): ConnectorItem[] {
   return [
-    {
-      key: "web",
-      label: "Web",
-      icon: <Globe size={13} />,
-      preview: company.contact.web ?? "No disponible",
-      color: "#a8dfcf",
-    },
-    {
-      key: "instagram",
-      label: "Instagram",
-      icon: <span className="text-[12px] leading-none">📷</span>,
-      preview: company.contact.instagram ?? "No detectado",
-      color: "#eeb0c9",
-    },
-    {
-      key: "linkedin",
-      label: "LinkedIn",
-      icon: <span className="text-[10px] font-bold leading-none">in</span>,
-      preview: company.contact.linkedin ?? "No detectado",
-      color: "#9dc0e8",
-    },
-    {
-      key: "facebook",
-      label: "Facebook",
-      icon: <span className="text-[12px] leading-none">📘</span>,
-      preview: company.contact.facebook ?? "No detectado",
-      color: "#9faad6",
-    },
     {
       key: "maps",
       label: "Google Maps",

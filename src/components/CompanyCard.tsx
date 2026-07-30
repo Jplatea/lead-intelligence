@@ -55,6 +55,13 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
           </p>
           <h2 className="text-lg font-semibold text-neutral-900 leading-tight">{company.name}</h2>
           <span className="text-xs text-neutral-400">{company.city}</span>
+          {company.needsReview && (
+            <div className="mt-1.5">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#b9503a]/15 text-[#b9503a]">
+                Revisar — faltan datos obligatorios
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-start gap-2 shrink-0">
           <div className="relative">
@@ -116,24 +123,6 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
                 <span className="truncate">{company.contact.phone}</span>
               </div>
             )}
-            {company.contact.web && (
-              <div className="flex items-center gap-2">
-                <span className="text-[#2a9678] w-[13px] text-center shrink-0">🌐</span>
-                <span className="truncate">{company.contact.web}</span>
-              </div>
-            )}
-            {company.contact.instagram && (
-              <div className="flex items-center gap-2">
-                <span className="text-[#2a9678] w-[13px] text-center shrink-0">📷</span>
-                <span className="truncate">{company.contact.instagram}</span>
-              </div>
-            )}
-            {company.contact.linkedin && (
-              <div className="flex items-center gap-2">
-                <span className="text-[#2a9678] w-[13px] text-center shrink-0">in</span>
-                <span className="truncate">{company.contact.linkedin}</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -183,7 +172,7 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
 
       <Divider />
 
-      <div className="grid grid-cols-4 gap-2 text-center">
+      <div className="grid grid-cols-3 gap-2 text-center">
         <div>
           <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Comercial</p>
           <div className="flex items-center justify-center gap-2">
@@ -223,11 +212,6 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
         </div>
 
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Última acción</p>
-          <p className="text-[10px] text-neutral-700 leading-tight">{company.lastActionLabel}</p>
-        </div>
-
-        <div>
           <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1">Alarma</p>
           <div className="flex items-center justify-center gap-1">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${alarm.dot}`} />
@@ -235,23 +219,6 @@ export function CompanyCard({ company, onClose, onUpdate, onAddComment }: Props)
           </div>
         </div>
       </div>
-
-      {company.nextActions.length > 0 && (
-        <>
-          <Divider />
-          <div>
-            <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Próximas acciones</h3>
-            <ul className="space-y-1.5">
-              {company.nextActions.map((a, i) => (
-                <li key={i} className="flex items-center justify-between text-xs text-neutral-700">
-                  <span>{a.label}</span>
-                  <span className="text-neutral-400">en {a.dueInDays}d</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
 
       <Divider />
 

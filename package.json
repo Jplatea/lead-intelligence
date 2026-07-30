@@ -12,14 +12,18 @@
   },
   "dependencies": {
     "@vis.gl/react-google-maps": "^1.9.0",
+    "fflate": "^0.8.3",
     "lucide-react": "^1.27.0",
+    "papaparse": "^5.5.4",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/google.maps": "^3.65.3",
     "@types/node": "^24.13.2",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
