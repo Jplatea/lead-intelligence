@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, Columns3, FileDown, FileSpreadsheet, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown, ChevronUp, Columns3, FileDown, FileSpreadsheet, Search, Trash2 } from "lucide-react";
 import type { Company, RepId, CompanyStatus, AlarmLevel } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { exportCompaniesCSV, exportCompaniesXLSX } from "../lib/exportClients";
@@ -28,6 +28,8 @@ const selectClass =
 // required — but legacy/imported data isn't guaranteed to match the union at
 // runtime) fall back to the coral "needs attention" tone.
 const UNASSIGNED_COLOR = "#eda18f";
+
+type SortKey = "name" | ColumnKey;
 
 type ColumnKey =
   | "type"
@@ -75,11 +77,45 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const [query, setQuery] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_HIDDEN));
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
 
   const q = query.trim().toLowerCase();
-  const rows = q
+  const filteredRows = q
     ? companies.filter((c) => `${c.name} ${c.city} ${c.province} ${c.contact.email ?? ""}`.toLowerCase().includes(q))
     : companies;
+
+  const sortValue = (c: Company, key: SortKey): string => {
+    switch (key) {
+      case "name":
+        return c.name;
+      case "email":
+        return c.contact.email ?? "";
+      case "phone":
+        return c.contact.phone ?? "";
+      case "brands":
+        return joinList(c.brands);
+      case "specialties":
+        return joinList(c.specialties);
+      case "assignedRep":
+        return REPS[c.assignedRep]?.name ?? "";
+      case "status":
+        return STATUS_CONFIG[c.status]?.label ?? "";
+      case "alarm":
+        return ALARM_CONFIG[c.alarm]?.label ?? "";
+      default:
+        return String(c[key] ?? "");
+    }
+  };
+
+  const rows = useMemo(() => {
+    if (!sort) return filteredRows;
+    const sorted = [...filteredRows].sort((a, b) => sortValue(a, sort.key).localeCompare(sortValue(b, sort.key), "es"));
+    return sort.dir === "desc" ? sorted.reverse() : sorted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRows, sort]);
+
+  const toggleSort = (key: SortKey) =>
+    setSort((prev) => (prev && prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
 
   const patchContact = (c: Company, patch: Partial<Company["contact"]>) =>
     onUpdate(c.id, { contact: { ...c.contact, ...patch } });
@@ -259,50 +295,50 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
       <div
         className="relative z-10 flex-1 min-h-0 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl w-full"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6)",
+          background: "rgba(255,255,255,0.55)",
+          border: "1px solid rgba(255,255,255,0.6)",
+          boxShadow: "0 30px 60px -20px rgba(33,31,29,0.35)",
         }}
       >
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-white">Datos Clientes</h2>
-            <p className="text-xs text-white/50">{rows.length} de {companies.length} clientes</p>
+            <h2 className="text-sm font-semibold text-neutral-900">Datos Clientes</h2>
+            <p className="text-xs text-neutral-500">{rows.length} de {companies.length} clientes</p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar..."
-                className="bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-white/40 outline-none focus:border-[#a8dfcf] w-48"
+                className="bg-black/[0.03] border border-black/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] w-48"
               />
             </div>
 
             <div className="relative">
               <button
                 onClick={() => setColumnsMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-black/[0.03] border border-black/10 text-neutral-700 hover:bg-black/[0.06]"
               >
                 <Columns3 size={13} /> Añadir/Eliminar
               </button>
               {columnsMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setColumnsMenuOpen(false)} />
-                  <div className="absolute top-full right-0 mt-2 z-50 rounded-2xl p-1.5 w-52 bg-[#141a2b] border border-white/10 shadow-xl animate-fade-in-up max-h-72 overflow-y-auto">
+                  <div className="absolute top-full right-0 mt-2 z-50 glass rounded-2xl p-1.5 w-52 shadow-xl animate-fade-in-up max-h-72 overflow-y-auto">
                     {ALL_COLUMNS.map((col) => {
                       const visible = !hiddenColumns.has(col.key);
                       return (
                         <button
                           key={col.key}
                           onClick={() => toggleColumn(col.key)}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-left text-xs text-white/80 hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-left text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors"
                         >
                           <span
                             className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border ${
-                              visible ? "bg-[#a8dfcf] border-[#a8dfcf]" : "border-white/30"
+                              visible ? "bg-[#a8dfcf] border-[#a8dfcf]" : "border-black/20"
                             }`}
                           >
                             {visible && <Check size={10} className="text-black/80" />}
@@ -318,7 +354,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
 
             <button
               onClick={() => exportCompaniesCSV(rows)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-black/[0.03] border border-black/10 text-neutral-700 hover:bg-black/[0.06]"
             >
               <FileDown size={13} /> CSV
             </button>
@@ -331,25 +367,39 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-white/10 bg-black/20">
+        <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-black/10 bg-black/[0.03]">
           <table
             className="text-[13px]"
             style={{ borderCollapse: "separate", borderSpacing: "0 4px", minWidth: 1100, width: "100%" }}
           >
             <thead className="sticky top-0 z-10">
               <tr>
-                <th className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-white/15 whitespace-nowrap">
-                  Nombre
+                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap">
+                  <button
+                    onClick={() => toggleSort("name")}
+                    className="w-full flex items-center justify-center gap-1 hover:text-neutral-800"
+                  >
+                    Nombre
+                    {sort?.key === "name" &&
+                      (sort.dir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />)}
+                  </button>
                 </th>
                 {visibleColumns.map((col) => (
                   <th
                     key={col.key}
-                    className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap"
+                    className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap"
                   >
-                    {col.label}
+                    <button
+                      onClick={() => toggleSort(col.key)}
+                      className="w-full flex items-center justify-center gap-1 hover:text-neutral-800"
+                    >
+                      {col.label}
+                      {sort?.key === col.key &&
+                        (sort.dir === "asc" ? <ChevronUp size={11} /> : <ChevronDown size={11} />)}
+                    </button>
                   </th>
                 ))}
-                <th className="text-center font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap" />
+                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
