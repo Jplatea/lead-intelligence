@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FileDown, FileSpreadsheet, Plus, Search, X } from "lucide-react";
 import type { Company, RepId, CompanyStatus, AlarmLevel } from "../types";
-import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS } from "../data/config";
+import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { exportCompaniesCSV, exportCompaniesXLSX } from "../lib/exportClients";
 
 interface Props {
@@ -15,13 +15,14 @@ interface Props {
 // was causing the visible scroll jank/"loading in" look. The frosted
 // look still comes from the single backdrop-blur on the outer card.
 const cellClass =
-  "w-full bg-white/50 outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/80 transition-colors";
+  "w-full bg-transparent outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/40 focus:border-black transition-colors";
 
-// Selects get a dashed border instead of the native dropdown arrow — that
-// arrow was eating into the little horizontal room these columns have and
-// crowding the text; the dashed style is the "something different" cue
-// that this field opens a list, with no icon competing for space.
-const selectClass = `${cellClass} appearance-none cursor-pointer border-dashed`;
+// Selects get a dashed gray border instead of the native dropdown arrow —
+// that arrow was eating into the little horizontal room these columns have
+// and crowding the text; the dashed style (plus the gray vs. black tone) is
+// the "something different" cue that this field opens a list.
+const selectClass =
+  "w-full bg-transparent outline-none text-[14px] font-medium text-black rounded-lg px-2 py-1 border border-dashed border-neutral-400 focus:border-neutral-600 appearance-none cursor-pointer transition-colors";
 
 // Rows without a recognized rep (shouldn't normally happen — assignedRep is
 // required — but legacy/imported data isn't guaranteed to match the union at
@@ -113,10 +114,36 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
         );
       case "city":
         return <input className={cellClass} value={c.city} onChange={(e) => onUpdate(c.id, { city: e.target.value })} />;
-      case "province":
+      case "province": {
+        const known = PROVINCE_OPTIONS_ES.includes(c.province) || PROVINCE_OPTIONS_PT.includes(c.province);
         return (
-          <input className={cellClass} value={c.province} onChange={(e) => onUpdate(c.id, { province: e.target.value })} />
+          <select
+            className={selectClass}
+            value={c.province}
+            onChange={(e) => onUpdate(c.id, { province: e.target.value })}
+          >
+            {!known && (
+              <option value={c.province} className="text-black">
+                {c.province}
+              </option>
+            )}
+            <optgroup label="España">
+              {PROVINCE_OPTIONS_ES.map((p) => (
+                <option key={p} value={p} className="text-black">
+                  {p}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Portugal">
+              {PROVINCE_OPTIONS_PT.map((p) => (
+                <option key={p} value={p} className="text-black">
+                  {p}
+                </option>
+              ))}
+            </optgroup>
+          </select>
         );
+      }
       case "country":
         return (
           <input className={cellClass} value={c.country} onChange={(e) => onUpdate(c.id, { country: e.target.value })} />
