@@ -11,7 +11,12 @@ interface Props {
 }
 
 const cellClass =
-  "w-full bg-white/10 backdrop-blur-sm outline-none text-xs text-white placeholder:text-white/40 rounded-lg px-2 py-1.5 border border-white/10 focus:border-[#a8dfcf] focus:bg-white/20 transition-colors";
+  "w-full bg-white/35 backdrop-blur-sm outline-none text-xs text-black/80 placeholder:text-black/40 rounded-lg px-2 py-1.5 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
+
+// Rows without a recognized rep (shouldn't normally happen — assignedRep is
+// required — but legacy/imported data isn't guaranteed to match the union at
+// runtime) fall back to the coral "needs attention" tone.
+const UNASSIGNED_COLOR = "#eda18f";
 
 export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const [query, setQuery] = useState("");
@@ -23,6 +28,8 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
 
   const patchContact = (c: Company, patch: Partial<Company["contact"]>) =>
     onUpdate(c.id, { contact: { ...c.contact, ...patch } });
+
+  const rowColor = (c: Company) => REPS[c.assignedRep]?.color ?? UNASSIGNED_COLOR;
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
@@ -97,9 +104,24 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id} className={`border-b border-white/5 ${c.needsReview ? "bg-[#eda18f]/10" : ""} hover:bg-white/[0.06]`}>
+                <tr
+                  key={c.id}
+                  className="border-b border-black/10 hover:brightness-95 transition-[filter]"
+                  style={{ background: rowColor(c) }}
+                >
                   <td className="px-1 py-1">
-                    <input className={cellClass} value={c.name} onChange={(e) => onUpdate(c.id, { name: e.target.value })} />
+                    <div className="flex items-center gap-1">
+                      <input
+                        className={cellClass}
+                        value={c.name}
+                        onChange={(e) => onUpdate(c.id, { name: e.target.value })}
+                      />
+                      {c.needsReview && (
+                        <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
+                          Revisar
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-1 py-1">
                     <select
@@ -178,7 +200,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                   <td className="px-2 text-right">
                     <button
                       onClick={() => onDelete(c.id)}
-                      className="text-[10px] text-white/40 hover:text-[#eda18f]"
+                      className="text-[10px] text-black/40 hover:text-[#b9503a]"
                     >
                       Eliminar
                     </button>
