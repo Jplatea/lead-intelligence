@@ -11,7 +11,7 @@ interface Props {
 }
 
 const cellClass =
-  "w-full bg-white/35 backdrop-blur-sm outline-none text-[13px] text-black/80 placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
+  "w-full bg-white/35 backdrop-blur-sm outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
 
 // Rows without a recognized rep (shouldn't normally happen — assignedRep is
 // required — but legacy/imported data isn't guaranteed to match the union at

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Props {
   size?: number;
@@ -7,89 +7,112 @@ interface Props {
   className?: string;
 }
 
-interface Point {
-  x: number;
-  y: number;
+// Gradient sweep matching the reference mark: teal -> blue -> violet -> pink -> orange.
+const COLORS = ["#2dd4bf", "#38bdf8", "#818cf8", "#c084fc", "#f472b6", "#fb923c"];
+const LINE_COUNT = 7;
+const POINT_COUNT = 7;
+
+interface LineState {
+  phase: number;
+  freq: number;
+  amp: number;
+  targetPhase: number;
+  targetFreq: number;
+  targetAmp: number;
 }
 
-function ring(count: number, radius: number, cx: number, cy: number, phase = 0): Point[] {
-  return Array.from({ length: count }, (_, i) => {
-    const angle = phase + (i / count) * Math.PI * 2;
-    return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius * 0.85 };
+function randRange(min: number, max: number) {
+  return min + Math.random() * (max - min);
+}
+
+function makeLine(): LineState {
+  return {
+    phase: randRange(0, Math.PI * 2),
+    freq: randRange(1.1, 2.2),
+    amp: randRange(16, 34),
+    targetPhase: randRange(0, Math.PI * 2),
+    targetFreq: randRange(1.1, 2.2),
+    targetAmp: randRange(16, 34),
+  };
+}
+
+function buildPath(line: LineState, lineIndex: number): string {
+  const pts = Array.from({ length: POINT_COUNT }, (_, p) => {
+    const t = p / (POINT_COUNT - 1);
+    const x = t * 180 + 10;
+    const taper = 1 - Math.abs(t - 0.5) * 0.5;
+    const y = 100 + Math.sin(p * line.freq + line.phase + lineIndex * 0.5) * line.amp * taper;
+    return { x, y };
   });
+
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let p = 0; p < pts.length - 1; p++) {
+    const cur = pts[p];
+    const next = pts[p + 1];
+    const midX = (cur.x + next.x) / 2;
+    const midY = (cur.y + next.y) / 2;
+    d += ` Q ${cur.x.toFixed(1)} ${cur.y.toFixed(1)} ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` T ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+  return d;
 }
 
-// The "célula" motif: a small sphere-like web of connected, glowing nodes
-// (matching the reference imagery) reused as both the brand mark and a
-// large low-opacity page watermark.
+// Brand mark: a small cluster of flowing, color-swept ribbon lines that
+// drift and reshape organically (random-walk targets, eased toward each
+// frame) rather than looping a fixed animation — "que se mueva de forma
+// random cambiando de forma".
 export function NeuralCell({ size = 32, opacity = 1, animated = false, className }: Props) {
-  const { nodes, edges } = useMemo(() => {
-    const cx = 100;
-    const cy = 100;
-    const center: Point = { x: cx, y: cy };
-    const inner = ring(6, 42, cx, cy, 0.3);
-    const outer = ring(10, 82, cx, cy, 0.1);
-    const allNodes = [center, ...inner, ...outer];
-
-    const allEdges: [number, number][] = [];
-    inner.forEach((_, i) => allEdges.push([0, i + 1]));
-    inner.forEach((_, i) => allEdges.push([i + 1, 1 + ((i + 1) % inner.length)]));
-    outer.forEach((_, i) => {
-      const nearestInner = 1 + (i % inner.length);
-      allEdges.push([1 + inner.length + i, nearestInner]);
-    });
-    outer.forEach((_, i) =>
-      allEdges.push([1 + inner.length + i, 1 + inner.length + ((i + 1) % outer.length)])
-    );
-
-    return { nodes: allNodes, edges: allEdges };
-  }, []);
-
   const uid = useMemo(() => Math.random().toString(36).slice(2), []);
+  const linesRef = useRef<LineState[]>(Array.from({ length: LINE_COUNT }, makeLine));
+  const [, forceRender] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const lastRetarget = useRef(0);
+
+  useEffect(() => {
+    if (!animated) return;
+    const step = (now: number) => {
+      if (now - lastRetarget.current > 2200) {
+        lastRetarget.current = now;
+        linesRef.current.forEach((l) => {
+          l.targetPhase = randRange(0, Math.PI * 2);
+          l.targetFreq = randRange(1.0, 2.4);
+          l.targetAmp = randRange(14, 36);
+        });
+      }
+      linesRef.current.forEach((l) => {
+        l.phase += (l.targetPhase - l.phase) * 0.012 + 0.012;
+        l.freq += (l.targetFreq - l.freq) * 0.01;
+        l.amp += (l.targetAmp - l.amp) * 0.01;
+      });
+      forceRender((v) => (v + 1) % 1_000_000);
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [animated]);
 
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} className={className} style={{ opacity, overflow: "visible" }}>
       <defs>
-        <filter id={`cell-glow-${uid}`} x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="3.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <filter id={`wave-glow-${uid}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.3" />
         </filter>
-        <radialGradient id={`cell-aura-${uid}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#4ade80" stopOpacity="0.65" />
-          <stop offset="55%" stopColor="#2a9678" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#2a9678" stopOpacity="0" />
-        </radialGradient>
       </defs>
-      <circle cx="100" cy="100" r="96" fill={`url(#cell-aura-${uid})`} className={animated ? "soft-pulse" : undefined} />
-      <g filter={`url(#cell-glow-${uid})`}>
-        <g stroke="#2dd4bf" strokeWidth={1.1} opacity={0.7}>
-          {edges.map(([a, b], i) => (
-            <line
-              key={i}
-              x1={nodes[a].x}
-              y1={nodes[a].y}
-              x2={nodes[b].x}
-              y2={nodes[b].y}
-              className={animated ? "line-flow" : undefined}
-            />
-          ))}
-        </g>
-        <g>
-          {nodes.map((n, i) => (
-            <circle
-              key={i}
-              cx={n.x}
-              cy={n.y}
-              r={i === 0 ? 6 : 3.6}
-              fill={i % 3 === 0 ? "#4ade80" : "#5eead4"}
-              className={animated ? "packet-glow" : undefined}
-              style={animated ? { animationDelay: `${(i % 5) * 0.2}s` } : undefined}
-            />
-          ))}
-        </g>
+      <g filter={`url(#wave-glow-${uid})`}>
+        {linesRef.current.map((line, i) => (
+          <path
+            key={i}
+            d={buildPath(line, i)}
+            fill="none"
+            stroke={COLORS[i % COLORS.length]}
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            opacity={0.88}
+          />
+        ))}
       </g>
     </svg>
   );
