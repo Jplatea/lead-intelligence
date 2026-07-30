@@ -321,7 +321,7 @@ function App() {
             mailingTransition === "glitching" ? "mailing-glitching" : ""
           }`}
         >
-          <MailingPage />
+          <MailingPage companies={companies} />
         </main>
       </div>
     );
