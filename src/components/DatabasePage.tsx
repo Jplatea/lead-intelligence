@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileDown, FileSpreadsheet, Plus, Search, X } from "lucide-react";
+import { Check, Columns3, FileDown, FileSpreadsheet, Search, Trash2 } from "lucide-react";
 import type { Company, RepId, CompanyStatus, AlarmLevel } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { exportCompaniesCSV, exportCompaniesXLSX } from "../lib/exportClients";
@@ -74,7 +74,7 @@ function splitList(text: string): string[] {
 export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const [query, setQuery] = useState("");
   const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set(DEFAULT_HIDDEN));
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
 
   const q = query.trim().toLowerCase();
   const rows = q
@@ -90,13 +90,12 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const rowBg = (c: Company) => `color-mix(in srgb, ${rowColor(c)} 55%, white)`;
 
   const visibleColumns = ALL_COLUMNS.filter((col) => !hiddenColumns.has(col.key));
-  const hiddenColumnDefs = ALL_COLUMNS.filter((col) => hiddenColumns.has(col.key));
 
-  const hideColumn = (key: ColumnKey) => setHiddenColumns((prev) => new Set(prev).add(key));
-  const showColumn = (key: ColumnKey) =>
+  const toggleColumn = (key: ColumnKey) =>
     setHiddenColumns((prev) => {
       const next = new Set(prev);
-      next.delete(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
 
@@ -272,35 +271,40 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
               />
             </div>
 
-            {hiddenColumnDefs.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setAddMenuOpen((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                >
-                  <Plus size={13} /> Columna
-                </button>
-                {addMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setAddMenuOpen(false)} />
-                    <div className="absolute top-full right-0 mt-2 z-50 rounded-2xl p-1.5 w-44 bg-[#141a2b] border border-white/10 shadow-xl animate-fade-in-up">
-                      {hiddenColumnDefs.map((col) => (
+            <div className="relative">
+              <button
+                onClick={() => setColumnsMenuOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10"
+              >
+                <Columns3 size={13} /> Añadir/Eliminar
+              </button>
+              {columnsMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setColumnsMenuOpen(false)} />
+                  <div className="absolute top-full right-0 mt-2 z-50 rounded-2xl p-1.5 w-52 bg-[#141a2b] border border-white/10 shadow-xl animate-fade-in-up max-h-72 overflow-y-auto">
+                    {ALL_COLUMNS.map((col) => {
+                      const visible = !hiddenColumns.has(col.key);
+                      return (
                         <button
                           key={col.key}
-                          onClick={() => {
-                            showColumn(col.key);
-                            setAddMenuOpen(false);
-                          }}
+                          onClick={() => toggleColumn(col.key)}
                           className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-left text-xs text-white/80 hover:bg-white/10 transition-colors"
                         >
-                          <Plus size={11} /> {col.label}
+                          <span
+                            className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border ${
+                              visible ? "bg-[#a8dfcf] border-[#a8dfcf]" : "border-white/30"
+                            }`}
+                          >
+                            {visible && <Check size={10} className="text-black/80" />}
+                          </span>
+                          {col.label}
                         </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
 
             <button
               onClick={() => exportCompaniesCSV(rows)}
@@ -323,28 +327,19 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
             style={{ borderCollapse: "separate", borderSpacing: "0 4px", minWidth: 1100, width: "100%" }}
           >
             <thead className="sticky top-0 z-10">
-              <tr className="bg-[#141a2b]">
-                <th className="text-left font-medium text-white/50 uppercase tracking-wide text-[10px] px-2 py-2 border-b border-white/10 whitespace-nowrap">
+              <tr className="bg-white/10 backdrop-blur-md">
+                <th className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-white/15 whitespace-nowrap">
                   Nombre
                 </th>
                 {visibleColumns.map((col) => (
                   <th
                     key={col.key}
-                    className="text-left font-medium text-white/50 uppercase tracking-wide text-[10px] px-2 py-2 border-b border-white/10 whitespace-nowrap"
+                    className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {col.label}
-                      <button
-                        onClick={() => hideColumn(col.key)}
-                        title={`Quitar columna ${col.label}`}
-                        className="text-white/30 hover:text-[#eda18f]"
-                      >
-                        <X size={10} />
-                      </button>
-                    </span>
+                    {col.label}
                   </th>
                 ))}
-                <th className="text-left font-medium text-white/50 uppercase tracking-wide text-[10px] px-2 py-2 border-b border-white/10 whitespace-nowrap" />
+                <th className="text-left font-semibold text-white/70 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-white/15 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
@@ -374,9 +369,10 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     <td className="pl-2 pr-3 py-1 text-right rounded-r-xl" style={{ background: bg }}>
                       <button
                         onClick={() => onDelete(c.id)}
-                        className="text-[10px] text-black/40 hover:text-[#b9503a]"
+                        title="Eliminar cliente"
+                        className="text-black/40 hover:text-[#b9503a] p-1 rounded-lg hover:bg-black/5"
                       >
-                        Eliminar
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
