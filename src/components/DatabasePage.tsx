@@ -17,10 +17,24 @@ interface Props {
 const cellClass =
   "w-full bg-white/50 outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/80 transition-colors";
 
+// Selects get a dashed border instead of the native dropdown arrow — that
+// arrow was eating into the little horizontal room these columns have and
+// crowding the text; the dashed style is the "something different" cue
+// that this field opens a list, with no icon competing for space.
+const selectClass = `${cellClass} appearance-none cursor-pointer border-dashed`;
+
 // Rows without a recognized rep (shouldn't normally happen — assignedRep is
 // required — but legacy/imported data isn't guaranteed to match the union at
 // runtime) fall back to the coral "needs attention" tone.
 const UNASSIGNED_COLOR = "#eda18f";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
   const [query, setQuery] = useState("");
@@ -34,8 +48,9 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
     onUpdate(c.id, { contact: { ...c.contact, ...patch } });
 
   const rowColor = (c: Company) => REPS[c.assignedRep]?.color ?? UNASSIGNED_COLOR;
-  // Lightened for the row fill so the pastel reads softer against the dark card.
-  const rowBg = (c: Company) => `color-mix(in srgb, ${rowColor(c)} 55%, white)`;
+  // Translucent so the dark card shows through — a softer tint per rep
+  // rather than a solid block of pastel.
+  const rowBg = (c: Company) => hexToRgba(rowColor(c), 0.35);
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
@@ -132,7 +147,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     </td>
                     <td className="px-1 py-1" style={{ background: bg }}>
                       <select
-                        className={cellClass}
+                        className={selectClass}
                         value={c.type}
                         onChange={(e) => onUpdate(c.id, { type: e.target.value })}
                       >
@@ -167,7 +182,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     </td>
                     <td className="px-1 py-1" style={{ background: bg }}>
                       <select
-                        className={cellClass}
+                        className={selectClass}
                         value={c.assignedRep}
                         onChange={(e) => onUpdate(c.id, { assignedRep: e.target.value as RepId })}
                       >
@@ -180,7 +195,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     </td>
                     <td className="px-1 py-1" style={{ background: bg }}>
                       <select
-                        className={cellClass}
+                        className={selectClass}
                         value={c.status}
                         onChange={(e) => onUpdate(c.id, { status: e.target.value as CompanyStatus })}
                       >
@@ -193,7 +208,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     </td>
                     <td className="px-1 py-1" style={{ background: bg }}>
                       <select
-                        className={cellClass}
+                        className={selectClass}
                         value={c.alarm}
                         onChange={(e) => onUpdate(c.id, { alarm: e.target.value as AlarmLevel })}
                       >
