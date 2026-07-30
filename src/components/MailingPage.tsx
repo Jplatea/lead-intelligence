@@ -270,9 +270,9 @@ export function MailingPage({ companies }: Props) {
               className="absolute top-0 bottom-0 pointer-events-none z-30"
               style={{
                 left: x,
-                width: 2,
-                background: "linear-gradient(to bottom, transparent, #2a9678, transparent)",
-                boxShadow: "0 0 8px 1px rgba(42,150,120,0.65)",
+                width: 1,
+                background: "linear-gradient(to bottom, transparent, #2a9678 15%, #2a9678 85%, transparent)",
+                boxShadow: "0 0 3px rgba(42,150,120,0.7)",
               }}
             />
           ))}
@@ -282,9 +282,9 @@ export function MailingPage({ companies }: Props) {
               className="absolute left-0 right-0 pointer-events-none z-30"
               style={{
                 top: y,
-                height: 2,
-                background: "linear-gradient(to right, transparent, #2a9678, transparent)",
-                boxShadow: "0 0 8px 1px rgba(42,150,120,0.65)",
+                height: 1,
+                background: "linear-gradient(to right, transparent, #2a9678 15%, #2a9678 85%, transparent)",
+                boxShadow: "0 0 3px rgba(42,150,120,0.7)",
               }}
             />
           ))}
