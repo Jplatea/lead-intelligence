@@ -25,12 +25,19 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
     onUpdate(c.id, { contact: { ...c.contact, ...patch } });
 
   return (
-    <div className="relative flex-1 min-h-[70vh] rounded-3xl overflow-hidden" style={{ background: "#0b1220" }}>
+    <div className="relative flex flex-col flex-1 min-h-[70vh] rounded-3xl overflow-hidden" style={{ background: "#0b1220" }}>
       <div className="login-cloud login-cloud-a" style={{ width: 560, height: 560, top: "-15%", left: "-10%" }} />
       <div className="login-cloud login-cloud-b" style={{ width: 500, height: 500, bottom: "-20%", right: "-8%" }} />
       <div className="login-cloud login-cloud-c" style={{ width: 380, height: 380, top: "30%", left: "60%" }} />
 
-      <div className="relative z-10 p-5 flex flex-col gap-4 h-full">
+      <div
+        className="relative z-10 m-5 flex-1 flex flex-col gap-4 rounded-3xl p-6 backdrop-blur-xl overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6)",
+        }}
+      >
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-sm font-semibold text-white">Datos Clientes</h2>
@@ -62,7 +69,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl">
+        <div className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-black/20">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10">
               <tr className="bg-white/10 backdrop-blur-xl">
