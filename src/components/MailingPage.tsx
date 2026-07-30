@@ -70,6 +70,7 @@ export function MailingPage({ contacts }: Props) {
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [designCopied, setDesignCopied] = useState(false);
   const [guides, setGuides] = useState<{ vertical: number[]; horizontal: number[] }>({ vertical: [], horizontal: [] });
   const blocksRef = useRef<Block[]>([]);
   useEffect(() => {
@@ -204,10 +205,30 @@ export function MailingPage({ contacts }: Props) {
     });
   };
 
+  // Copies the design as rendered HTML (not raw source) via the clipboard's
+  // text/html MIME type — pasting this into Gmail/Outlook's rich-text compose
+  // box drops in the actual formatted template (images, layout, colors),
+  // which is what makes a mail client "already have the template inside".
+  const copyRichDesign = async () => {
+    const html = buildMarketingEmailHtml(blocks);
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob(["Pega este diseño (Ctrl+V) dentro del cuerpo de tu correo."], { type: "text/plain" }),
+        }),
+      ]);
+      setDesignCopied(true);
+      setTimeout(() => setDesignCopied(false), 1800);
+    } catch {
+      copyHtml();
+    }
+  };
+
   const openMailClient = () => {
     const subject = encodeURIComponent("Novedades de Prestige Ibérica");
     const body = encodeURIComponent(
-      "Adjunta el archivo HTML descargado (mailing-prestige-iberica.html) o pégalo en tu plataforma de envío para conservar el diseño."
+      "Pega aquí (Ctrl+V) el diseño copiado con \"Copiar diseño\" para incluir la plantilla ya formateada."
     );
     const bcc = encodeURIComponent(recipients.join(","));
     window.location.href = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
@@ -431,6 +452,19 @@ export function MailingPage({ contacts }: Props) {
 
             <div className="flex items-center gap-2 flex-wrap">
               <button
+                onClick={copyRichDesign}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800"
+              >
+                {designCopied ? <Check size={13} /> : <Copy size={13} />} {designCopied ? "Copiado" : "Copiar diseño"}
+              </button>
+              <button
+                onClick={openMailClient}
+                disabled={recipients.length === 0}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-[#a79bcb]/25 border border-[#a79bcb] text-[#6a56a0] font-medium disabled:opacity-40"
+              >
+                <Mail size={13} /> Abrir borrador con destinatarios
+              </button>
+              <button
                 onClick={downloadHtml}
                 className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-[#a8dfcf]/60 text-black/80 font-medium hover:bg-[#a8dfcf]/80"
               >
@@ -442,18 +476,11 @@ export function MailingPage({ contacts }: Props) {
               >
                 {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado" : "Copiar HTML"}
               </button>
-              <button
-                onClick={openMailClient}
-                disabled={recipients.length === 0}
-                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-[#a79bcb]/25 border border-[#a79bcb] text-[#6a56a0] font-medium disabled:opacity-40"
-              >
-                <Mail size={13} /> Abrir borrador con destinatarios
-              </button>
             </div>
             <p className="text-[11px] text-neutral-400 leading-relaxed">
-              El botón de correo abre tu cliente con los destinatarios en CCO; adjunta o pega el HTML descargado para
-              conservar el diseño. Para envíos masivos, usa una plataforma de email marketing (Mailchimp, Brevo...) e
-              importa ahí el HTML exportado.
+              <strong>Copiar diseño</strong> + <strong>Abrir borrador</strong> + pegar (Ctrl+V) en el cuerpo: el correo
+              se abre con los destinatarios en CCO y el diseño ya formateado, listo para enviar. "Descargar HTML" y
+              "Copiar HTML" son para importar la plantilla en una plataforma de email marketing (Mailchimp, Brevo...).
             </p>
           </div>
         </div>
