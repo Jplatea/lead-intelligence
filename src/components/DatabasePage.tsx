@@ -10,8 +10,12 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+// No backdrop-blur here: with 100+ rows this class is applied to
+// thousands of inputs/selects, and per-element backdrop-filter is what
+// was causing the visible scroll jank/"loading in" look. The frosted
+// look still comes from the single backdrop-blur on the outer card.
 const cellClass =
-  "w-full bg-white/35 backdrop-blur-sm outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/70 transition-colors";
+  "w-full bg-white/50 outline-none text-[14px] font-medium text-black placeholder:text-black/40 rounded-lg px-2 py-1 border border-black/10 focus:border-black/40 focus:bg-white/80 transition-colors";
 
 // Rows without a recognized rep (shouldn't normally happen — assignedRep is
 // required — but legacy/imported data isn't guaranteed to match the union at
@@ -83,9 +87,12 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-white/10 bg-black/20">
-          <table className="w-full text-[13px]" style={{ borderCollapse: "separate", borderSpacing: "0 4px" }}>
+          <table
+            className="text-[13px]"
+            style={{ borderCollapse: "separate", borderSpacing: "0 4px", minWidth: 1100, width: "100%" }}
+          >
             <thead className="sticky top-0 z-10">
-              <tr className="bg-white/10 backdrop-blur-xl">
+              <tr className="bg-[#141a2b]">
                 {[
                   "Nombre",
                   "Tipo",
