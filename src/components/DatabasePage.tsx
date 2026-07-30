@@ -345,7 +345,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
           >
             <thead className="sticky top-0 z-10">
               <tr>
-                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap">
+                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap">
                   <button
                     onClick={() => toggleSort("name")}
                     className="w-full flex items-center justify-center gap-1 hover:text-neutral-800"
@@ -358,7 +358,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                 {visibleColumns.map((col) => (
                   <th
                     key={col.key}
-                    className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap"
+                    className="font-semibold text-neutral-500 uppercase tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap"
                   >
                     <button
                       onClick={() => toggleSort(col.key)}
@@ -370,7 +370,7 @@ export function DatabasePage({ companies, onUpdate, onDelete }: Props) {
                     </button>
                   </th>
                 ))}
-                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[10px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap" />
+                <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
