@@ -223,13 +223,17 @@ function App() {
   };
 
   const handleVisitConfirm = (repIds: RepId[], zone: string) => {
-    const matches = companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone);
-    const ids = new Set(matches.map((c) => c.id));
+    const ids = new Set(
+      companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone).map((c) => c.id)
+    );
     setHighlight({ ids, color: "#f0c39a" });
     setVisitModalOpen(false);
-    if (matches.length > 0) {
-      generateVisitPdf(matches, repIds.map((id) => REPS[id].name), zone);
-    }
+  };
+
+  const handleGenerateVisitPdf = (repIds: RepId[], zone: string) => {
+    const matches = companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone);
+    if (matches.length === 0) return;
+    generateVisitPdf(matches, repIds.map((id) => REPS[id].name), zone);
   };
 
   const handleShowUncontacted = () => {
@@ -415,6 +419,7 @@ function App() {
           companies={companies}
           onClose={() => setVisitModalOpen(false)}
           onConfirm={handleVisitConfirm}
+          onGeneratePdf={handleGenerateVisitPdf}
         />
       )}
 

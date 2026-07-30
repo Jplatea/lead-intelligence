@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MapPin, X } from "lucide-react";
+import { FileDown, MapPin, X } from "lucide-react";
 import type { Company, RepId } from "../types";
 import { REPS } from "../data/config";
 
@@ -7,6 +7,7 @@ interface Props {
   companies: Company[];
   onClose: () => void;
   onConfirm: (repIds: RepId[], zone: string) => void;
+  onGeneratePdf: (repIds: RepId[], zone: string) => void;
 }
 
 function repCircleShadow(active: boolean): string {
@@ -15,7 +16,7 @@ function repCircleShadow(active: boolean): string {
     : "inset 0 0 0 1.5px rgba(255,255,255,0.6), inset 0 0 0 1px rgba(33,31,29,0.12), 0 1px 2px rgba(33,31,29,0.14)";
 }
 
-export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
+export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf }: Props) {
   const [repIds, setRepIds] = useState<Set<RepId>>(new Set());
   const [zone, setZone] = useState("");
 
@@ -41,6 +42,11 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
   const confirm = () => {
     if (repIds.size === 0 || !zone) return;
     onConfirm([...repIds], zone);
+  };
+
+  const generatePdf = () => {
+    if (repIds.size === 0 || !zone || matchCount === 0) return;
+    onGeneratePdf([...repIds], zone);
   };
 
   return (
@@ -123,6 +129,14 @@ export function VisitPlannerModal({ companies, onClose, onConfirm }: Props) {
             Marcar clientes
           </button>
         </div>
+
+        <button
+          onClick={generatePdf}
+          disabled={repIds.size === 0 || !zone || matchCount === 0}
+          className="w-full flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-black/[0.03] border border-black/10 text-neutral-600 hover:bg-black/[0.06] disabled:opacity-40 mt-2"
+        >
+          <FileDown size={13} /> Generar PDF
+        </button>
       </div>
     </div>
   );
