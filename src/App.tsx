@@ -1,0 +1,300 @@
+import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { TopNav } from "./components/TopNav";
+import { FiltersPanel, type Filters } from "./components/FiltersPanel";
+import { IberiaMap } from "./components/IberiaMap";
+import { ResultsList, type ResultsHighlight } from "./components/ResultsList";
+import { CompanyCard } from "./components/CompanyCard";
+import { StatsRow } from "./components/StatsRow";
+import { SourcesPanel } from "./components/SourcesPanel";
+import { NewCompanyModal } from "./components/NewCompanyModal";
+import { VisitPlannerModal } from "./components/VisitPlannerModal";
+import { MailingModal } from "./components/MailingModal";
+import { COMPANIES } from "./data/mockCompanies";
+import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
+import { checkUrlAndScan } from "./lib/robotsCheck";
+import type { Company, RepId } from "./types";
+
+const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
+
+function loadCustomSources(): LeadSource[] {
+  try {
+    const raw = localStorage.getItem(SOURCES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function hostnameLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" }).replace(".", "");
+}
+
+function App() {
+  const [companies, setCompanies] = useState<Company[]>(COMPANIES);
+  const [filters, setFilters] = useState<Filters>({
+    types: new Set(),
+    brands: new Set(),
+    specialties: new Set(),
+  });
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
+
+  const [resultsExpanded, setResultsExpanded] = useState(false);
+  const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
+  const [visitModalOpen, setVisitModalOpen] = useState(false);
+  const [mailingModalOpen, setMailingModalOpen] = useState(false);
+
+  const [sources, setSources] = useState<LeadSource[]>(() => [...DEFAULT_SOURCES, ...loadCustomSources()]);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+    const custom = sources.filter((s) => s.custom);
+    localStorage.setItem(SOURCES_STORAGE_KEY, JSON.stringify(custom));
+  }, [sources]);
+
+  const updateCompany = (id: string, patch: Partial<Company>) => {
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
+  const deleteCompany = (id: string) => {
+    setCompanies((prev) => prev.filter((c) => c.id !== id));
+    setSelectedId((prev) => (prev === id ? null : prev));
+  };
+
+  const addComment = (id: string, repId: RepId, text: string) => {
+    setCompanies((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, comments: [...c.comments, { repId, text, date: todayLabel() }] }
+          : c
+      )
+    );
+  };
+
+  const toggleFilter = (group: keyof Filters, value: string) => {
+    setFilters((prev) => {
+      const next = new Set(prev[group]);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return { ...prev, [group]: next };
+    });
+  };
+
+  const createCompany = (company: Company) => {
+    setCompanies((prev) => [...prev, company]);
+    setPendingPosition(null);
+    setSelectedId(company.id);
+  };
+
+  const clearFilters = () =>
+    setFilters({ types: new Set(), brands: new Set(), specialties: new Set() });
+
+  const addSource = (rawUrl: string): string | null => {
+    const withProtocol = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    try {
+      new URL(withProtocol);
+    } catch {
+      return "URL no válida";
+    }
+    const id = `custom-${Date.now()}`;
+    setSources((prev) => [
+      ...prev,
+      {
+        id,
+        name: hostnameLabel(withProtocol),
+        url: withProtocol,
+        note: "Añadida manualmente.",
+        custom: true,
+        robotsStatus: "checking",
+      },
+    ]);
+    checkUrlAndScan(withProtocol).then((result) => {
+      setSources((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                robotsStatus: result.status,
+                robotsNote: result.note,
+                note: result.snippet ? `"${result.snippet}..."` : s.note,
+              }
+            : s
+        )
+      );
+    });
+    return null;
+  };
+
+  const removeSource = (id: string) => setSources((prev) => prev.filter((s) => s.id !== id));
+
+  const scanAllSources = async () => {
+    setScanning(true);
+    await Promise.all(
+      sources.map(async (s) => {
+        const result = await checkUrlAndScan(s.url);
+        setSources((prev) =>
+          prev.map((x) =>
+            x.id === s.id
+              ? {
+                  ...x,
+                  robotsStatus: result.status,
+                  robotsNote: result.note,
+                  note: result.snippet ? `"${result.snippet}..."` : x.note,
+                }
+              : x
+          )
+        );
+      })
+    );
+    setScanning(false);
+  };
+
+  const handleVisitConfirm = (repId: RepId, zone: string) => {
+    const ids = new Set(
+      companies.filter((c) => c.assignedRep === repId && c.province === zone).map((c) => c.id)
+    );
+    setHighlight({ ids, color: "#f0c39a" });
+    setResultsExpanded(true);
+    setVisitModalOpen(false);
+  };
+
+  const handleShowUncontacted = () => {
+    const ids = new Set(
+      companies
+        .filter((c) => c.alarm === "nunca_contactado" || c.alarm === "mas_30_dias")
+        .map((c) => c.id)
+    );
+    setHighlight({ ids, color: "#eda18f" });
+    setResultsExpanded(true);
+  };
+
+  const filteredCompanies = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const terms = q.length ? q.split(/\s+/) : [];
+
+    return companies.filter((c) => {
+      if (filters.types.size && !filters.types.has(c.type)) return false;
+      if (filters.brands.size && ![...filters.brands].every((b) => c.brands.includes(b)))
+        return false;
+      if (
+        filters.specialties.size &&
+        ![...filters.specialties].every((s) => c.specialties.includes(s))
+      )
+        return false;
+
+      if (terms.length) {
+        const haystack = [c.name, c.city, c.type, ...c.brands, ...c.specialties]
+          .join(" ")
+          .toLowerCase();
+        if (!terms.every((t) => haystack.includes(t))) return false;
+      }
+      return true;
+    });
+  }, [companies, filters, query]);
+
+  const selectedCompany = companies.find((c) => c.id === selectedId) ?? null;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <TopNav />
+
+      <main className="flex-1 flex flex-col gap-5 p-5 max-w-[1600px] w-full mx-auto">
+        <StatsRow
+          companies={filteredCompanies}
+          scanning={scanning}
+          onScan={scanAllSources}
+          onOpenVisit={() => setVisitModalOpen(true)}
+          onOpenMailing={() => setMailingModalOpen(true)}
+          onShowUncontacted={handleShowUncontacted}
+        />
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <FiltersPanel filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
+
+          <div className="relative flex-1 min-w-[240px]">
+            <Search
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar: Madrid KNX Control4..."
+              className="w-full glass rounded-2xl pl-11 pr-36 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] truncate"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-neutral-500 bg-surface px-2 py-1 rounded-full pointer-events-none whitespace-nowrap">
+              {filteredCompanies.length} empresas
+            </span>
+          </div>
+        </div>
+
+        <div className="h-[560px]">
+          <IberiaMap
+            companies={filteredCompanies}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onPlaceNew={(lat, lng) => setPendingPosition({ lat, lng })}
+            highlight={highlight}
+          />
+        </div>
+
+        <ResultsList
+          companies={filteredCompanies}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onDelete={deleteCompany}
+          expanded={resultsExpanded}
+          onExpandedChange={setResultsExpanded}
+          highlight={highlight}
+        />
+
+        <SourcesPanel sources={sources} onAddSource={addSource} onRemoveSource={removeSource} />
+      </main>
+
+      {pendingPosition && (
+        <NewCompanyModal
+          lat={pendingPosition.lat}
+          lng={pendingPosition.lng}
+          onCancel={() => setPendingPosition(null)}
+          onCreate={createCompany}
+        />
+      )}
+
+      {visitModalOpen && (
+        <VisitPlannerModal
+          companies={companies}
+          onClose={() => setVisitModalOpen(false)}
+          onConfirm={handleVisitConfirm}
+        />
+      )}
+
+      {mailingModalOpen && <MailingModal onClose={() => setMailingModalOpen(false)} />}
+
+      {selectedCompany && (
+        <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-40 flex flex-col gap-5 pointer-events-none">
+          <div className="pointer-events-auto">
+            <CompanyCard
+              key={selectedCompany.id}
+              company={selectedCompany}
+              onClose={() => setSelectedId(null)}
+              onUpdate={(patch) => updateCompany(selectedCompany.id, patch)}
+              onAddComment={(repId, text) => addComment(selectedCompany.id, repId, text)}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

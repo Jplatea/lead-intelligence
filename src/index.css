@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #f9f3ec;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%, rgba(232, 196, 104, 0.08), transparent),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(184, 197, 240, 0.12), transparent),
+    #e6dcd2;
+  color: #211f1d;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(33, 31, 29, 0.15);
+  border-radius: 999px;
+}
+
+.glass {
+  background: var(--color-surface);
+  border: 1px solid rgba(33, 31, 29, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 10px 30px -14px rgba(33, 31, 29, 0.18);
+}
+
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+.soft-pulse {
+  animation: soft-pulse 2.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes dash-flow {
+  to { stroke-dashoffset: -200; }
+}
+.line-flow {
+  stroke-dasharray: 3 5;
+  animation: dash-flow 8s linear infinite;
+}
+
+@keyframes packet-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.packet-glow {
+  animation: packet-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes radar-ping {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+.radar-ping {
+  animation: radar-ping 1.1s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes radar-sweep {
+  to { transform: rotate(360deg); }
+}
+.radar-sweep {
+  animation: radar-sweep 1.4s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.22s ease-out;
+}
+
+@keyframes float-card {
+  0%, 100% {
+    box-shadow: 0 20px 35px -18px rgba(33, 31, 29, 0.4), 0 8px 16px -10px rgba(33, 31, 29, 0.22);
+  }
+  50% {
+    box-shadow: 0 40px 60px -20px rgba(33, 31, 29, 0.22), 0 16px 28px -14px rgba(33, 31, 29, 0.12);
+  }
+}
+.float-card {
+  animation: float-card 4.5s ease-in-out infinite;
+}
+
+@keyframes highlight-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.highlight-blink {
+  animation: highlight-blink 1s ease-in-out infinite;
+}
+
+@keyframes highlight-ring-blink {
+  0%, 100% { opacity: 0.9; stroke-width: 1.5; }
+  50% { opacity: 0.15; stroke-width: 3; }
+}
+.highlight-ring-blink {
+  animation: highlight-ring-blink 1s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
