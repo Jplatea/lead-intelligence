@@ -295,14 +295,12 @@ export function ImportModal({
                         >
                           Abrir <ExternalLink size={9} />
                         </a>
-                        {source.custom && (
-                          <button
-                            onClick={() => onRemoveSource(source.id)}
-                            className="text-neutral-400 hover:text-[#b9503a] shrink-0 p-0.5"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => onRemoveSource(source.id)}
+                          className="text-neutral-400 hover:text-[#b9503a] shrink-0 p-0.5"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     );
                   })}

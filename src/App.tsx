@@ -17,8 +17,10 @@ import { ImportModal } from "./components/ImportModal";
 import { MailingImportModal } from "./components/MailingImportModal";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
+import { REPS } from "./data/config";
 import { checkUrlAndScan } from "./lib/robotsCheck";
 import { clearSession, loadSession, saveSession } from "./lib/auth";
+import { generateVisitPdf } from "./lib/visitPdf";
 import type { Company, MailingContact, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
@@ -221,11 +223,13 @@ function App() {
   };
 
   const handleVisitConfirm = (repIds: RepId[], zone: string) => {
-    const ids = new Set(
-      companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone).map((c) => c.id)
-    );
+    const matches = companies.filter((c) => repIds.includes(c.assignedRep) && c.province === zone);
+    const ids = new Set(matches.map((c) => c.id));
     setHighlight({ ids, color: "#f0c39a" });
     setVisitModalOpen(false);
+    if (matches.length > 0) {
+      generateVisitPdf(matches, repIds.map((id) => REPS[id].name), zone);
+    }
   };
 
   const handleShowUncontacted = () => {
