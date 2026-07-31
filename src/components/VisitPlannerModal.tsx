@@ -51,7 +51,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex items-center py-5 pr-5 pointer-events-none">
+    <div className="fixed inset-y-0 right-0 z-40 flex items-center py-5 pr-5 pointer-events-none">
       <div className="glass rounded-3xl p-5 w-[380px] shrink-0 animate-fade-in-up pointer-events-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800">Voy de visita</h2>

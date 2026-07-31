@@ -467,7 +467,7 @@ function App() {
       )}
 
       {selectedCompany && (
-        <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-40 flex flex-col gap-5 pointer-events-none">
+        <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-50 flex flex-col gap-5 pointer-events-none">
           <div className="pointer-events-auto">
             <CompanyCard
               key={selectedCompany.id}

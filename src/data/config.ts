@@ -32,30 +32,40 @@ export const PASTEL_TEXT = {
   lime: "#7a9a3a",
 };
 
+// Per-rep brand colors — kept separate from the shared PASTEL palette above
+// (which STATUS_CONFIG/ALARM_CONFIG also draw from) so recoloring a rep
+// never bleeds into unrelated status/alarm badges that happen to reuse the
+// same pastel tokens.
+const REP_COLORS = {
+  jose: { color: "#F0BA19", textColor: "#84660e" },
+  fran: { color: "#C8B592", textColor: "#786d58" },
+  victor: { color: "#97DFD7", textColor: "#537b76" },
+};
+
 export const REPS: Record<RepId, Rep & { textColor: string }> = {
   jose: {
     id: "jose",
     name: "José",
-    color: PASTEL.purple,
-    textColor: PASTEL_TEXT.purple,
-    bg: "bg-[#a79bcb]",
-    ring: "ring-[#a79bcb]/50",
+    color: REP_COLORS.jose.color,
+    textColor: REP_COLORS.jose.textColor,
+    bg: "bg-[#F0BA19]",
+    ring: "ring-[#F0BA19]/50",
   },
   fran: {
     id: "fran",
     name: "Fran",
-    color: PASTEL.mint,
-    textColor: PASTEL_TEXT.mint,
-    bg: "bg-[#a8dfcf]",
-    ring: "ring-[#a8dfcf]/50",
+    color: REP_COLORS.fran.color,
+    textColor: REP_COLORS.fran.textColor,
+    bg: "bg-[#C8B592]",
+    ring: "ring-[#C8B592]/50",
   },
   victor: {
     id: "victor",
     name: "Víctor",
-    color: PASTEL.peach,
-    textColor: PASTEL_TEXT.peach,
-    bg: "bg-[#f0c39a]",
-    ring: "ring-[#f0c39a]/50",
+    color: REP_COLORS.victor.color,
+    textColor: REP_COLORS.victor.textColor,
+    bg: "bg-[#97DFD7]",
+    ring: "ring-[#97DFD7]/50",
   },
 };
 
