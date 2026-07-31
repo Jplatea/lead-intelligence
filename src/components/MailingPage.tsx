@@ -7,6 +7,7 @@ import {
   Code2,
   Copy,
   Download,
+  GripVertical,
   Heading2,
   Image as ImageIcon,
   Mail,
@@ -326,6 +327,7 @@ export function MailingPage({ contacts }: Props) {
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(sections));
@@ -337,6 +339,24 @@ export function MailingPage({ contacts }: Props) {
   const removeSection = (id: string) => setSections((prev) => removeFromSections(prev, id));
 
   const addSection = (type: SectionType) => setSections((prev) => [...prev, newSection(type, prev.length)]);
+
+  // Top-level reordering only (a "row" moves as one unit; its two columns
+  // don't get individually reordered) — drag the grip handle on any
+  // section onto another to drop it there.
+  const moveSection = (targetId: string) => {
+    setSections((prev) => {
+      if (!draggedId || draggedId === targetId) return prev;
+      const dragIdx = prev.findIndex((s) => s.id === draggedId);
+      if (dragIdx === -1) return prev;
+      const next = [...prev];
+      const [item] = next.splice(dragIdx, 1);
+      const insertAt = next.findIndex((s) => s.id === targetId);
+      if (insertAt === -1) return prev;
+      next.splice(insertAt, 0, item);
+      return next;
+    });
+    setDraggedId(null);
+  };
 
   const handleFile = async (section: Section, file: File | undefined) => {
     if (!file) return;
@@ -489,6 +509,21 @@ export function MailingPage({ contacts }: Props) {
         <div className="relative group/img">
           <img src={section.content} alt="" className="w-full max-h-64 object-cover rounded-xl border border-black/10" />
           <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 bg-black/70 rounded-md pl-2 pr-1 py-1">
+              <input
+                value={urlDrafts[section.id] ?? ""}
+                onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [section.id]: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && submitUrl(section)}
+                placeholder="Pegar URL"
+                className="w-28 bg-transparent text-white placeholder:text-white/50 text-[10px] outline-none"
+              />
+              <button
+                onClick={() => submitUrl(section)}
+                className="shrink-0 text-[10px] font-medium text-white/90 hover:text-white px-1"
+              >
+                Usar
+              </button>
+            </div>
             <label className="text-[10px] font-medium px-2 py-1 rounded-md bg-black/70 text-white cursor-pointer hover:bg-black/85">
               Cambiar
               <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(section, e.target.files?.[0])} />
@@ -708,19 +743,38 @@ export function MailingPage({ contacts }: Props) {
             {sections.length === 0 && (
               <p className="text-center text-xs text-neutral-400 py-10">Añade texto, imágenes, botones o un separador para empezar.</p>
             )}
-            {sections.map((section) =>
-              section.type === "row" ? (
-                <div key={section.id} className="flex gap-4 items-start bg-black/[0.015] border border-black/5 rounded-2xl p-2 my-1">
-                  {(section.columns ?? []).map((col) => (
-                    <div key={col.id} className="flex-1 min-w-0">
-                      {renderSectionWrapper(col)}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                renderSectionWrapper(section)
-              )
-            )}
+            {sections.map((section) => (
+              <div
+                key={section.id}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => moveSection(section.id)}
+                className={`relative group/row transition-opacity ${draggedId === section.id ? "opacity-40" : ""}`}
+              >
+                <span
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedId(section.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => setDraggedId(null)}
+                  title="Arrastrar para reordenar"
+                  className="absolute -top-1.5 -left-1.5 z-20 p-1 rounded-full bg-white border border-black/10 text-neutral-400 opacity-0 group-hover/row:opacity-100 transition-opacity shadow-sm cursor-grab active:cursor-grabbing"
+                >
+                  <GripVertical size={11} />
+                </span>
+                {section.type === "row" ? (
+                  <div className="flex gap-4 items-start bg-black/[0.015] border border-black/5 rounded-2xl p-2 my-1">
+                    {(section.columns ?? []).map((col) => (
+                      <div key={col.id} className="flex-1 min-w-0">
+                        {renderSectionWrapper(col)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  renderSectionWrapper(section)
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
