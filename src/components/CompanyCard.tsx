@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X, Mail, Phone, Sparkles, Check, Send, ChevronDown } from "lucide-react";
+import { X, Mail, Phone, Sparkles, Check, Send, ChevronDown, MapPin, Loader2 } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
 import {
   REPS,
@@ -10,6 +10,7 @@ import {
   PROVINCE_OPTIONS_PT,
   PASTEL_TEXT,
 } from "../data/config";
+import { geocodeAddress } from "../lib/geocode";
 import { CustomSelect } from "./CustomSelect";
 import { TagInput } from "./TagInput";
 
@@ -66,12 +67,38 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
   const [statusOpen, setStatusOpen] = useState(false);
   const [commentRep, setCommentRep] = useState<RepId>(company.assignedRep);
   const [commentText, setCommentText] = useState("");
+  const [geocoding, setGeocoding] = useState(false);
+  const [addressMsg, setAddressMsg] = useState<string | null>(null);
 
   const submitComment = () => {
     const trimmed = commentText.trim();
     if (!trimmed) return;
     onAddComment(commentRep, trimmed);
     setCommentText("");
+  };
+
+  // Explicit action only (button/Enter), never as-you-type, per Nominatim's
+  // usage policy — confirms the address is real and moves the map point to
+  // it, the same verification flow NewCompanyModal uses when creating one.
+  const verifyAddress = async () => {
+    const query = company.address?.trim();
+    if (!query) return;
+    setGeocoding(true);
+    setAddressMsg(null);
+    try {
+      const results = await geocodeAddress(query);
+      if (results.length === 0) {
+        setAddressMsg("No se ha encontrado esa dirección. Prueba a afinarla.");
+      } else {
+        const r = results[0];
+        onUpdate({ lat: r.lat, lng: r.lng });
+        setAddressMsg(`Verificada: ${r.displayName}`);
+      }
+    } catch {
+      setAddressMsg("No se pudo verificar la dirección ahora mismo. Inténtalo de nuevo.");
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const patchContact = (patch: Partial<Company["contact"]>) => onUpdate({ contact: { ...company.contact, ...patch } });
@@ -209,6 +236,29 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
               placeholder="Ciudad"
               className={fieldClass(!company.city)}
             />
+            <div>
+              <div className="flex gap-1.5">
+                <input
+                  value={company.address ?? ""}
+                  onChange={(e) => {
+                    onUpdate({ address: e.target.value });
+                    setAddressMsg(null);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), verifyAddress())}
+                  placeholder="Dirección"
+                  className={fieldClass(!company.address)}
+                />
+                <button
+                  onClick={verifyAddress}
+                  disabled={geocoding || !company.address?.trim()}
+                  title="Verificar dirección en el mapa"
+                  className="shrink-0 w-8 h-8 rounded-lg bg-black/[0.03] border border-black/10 text-neutral-600 hover:bg-black/[0.06] disabled:opacity-40 flex items-center justify-center"
+                >
+                  {geocoding ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
+                </button>
+              </div>
+              {addressMsg && <p className="text-[10px] text-neutral-500 mt-1 leading-snug">{addressMsg}</p>}
+            </div>
             <CustomSelect
               value={company.province}
               options={provinceOptions}

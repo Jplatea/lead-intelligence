@@ -31,6 +31,7 @@ export interface Company {
   province: string;
   country: string;
   postalCode: string;
+  address?: string;
   lat: number;
   lng: number;
   contact: {
