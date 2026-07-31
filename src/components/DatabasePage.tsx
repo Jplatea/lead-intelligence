@@ -22,7 +22,7 @@ type Dataset = "clients" | "newsletter";
 // full value on hover, since Nombre/columns are truncated to a single line.
 function CellTip({ value, children }: { value: string; children: React.ReactNode }) {
   return (
-    <span className="relative inline-block group/tip max-w-full align-middle">
+    <span className="relative inline-block min-w-0 max-w-full group/tip align-middle">
       {children}
       <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 z-20 opacity-0 scale-95 group-hover/tip:opacity-100 group-hover/tip:scale-100 transition-[opacity,transform] duration-150 whitespace-nowrap rounded-lg bg-neutral-900 text-white text-[11px] font-medium px-2.5 py-1.5 shadow-lg">
         {value}
