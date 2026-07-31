@@ -10,11 +10,13 @@ import {
   GripVertical,
   Heading2,
   Image as ImageIcon,
+  LayoutTemplate,
   Mail,
   Minus,
   MousePointerClick,
   Plus,
   RotateCcw,
+  Save,
   Send,
   Trash2,
   Type,
@@ -248,6 +250,123 @@ function loadSections(): Section[] {
   return buildDefaultSections();
 }
 
+// User-saved templates, separate from the "current" template above and
+// from the two built-in, non-editable/non-deletable entries ("Restaurar" -
+// the real starter content, and "Default" - a blank canvas).
+interface SavedTemplate {
+  id: string;
+  name: string;
+  sections: Section[];
+}
+
+const SAVED_TEMPLATES_KEY = "lead-intelligence:mailing-saved-templates";
+
+function loadSavedTemplates(): SavedTemplate[] {
+  try {
+    const raw = localStorage.getItem(SAVED_TEMPLATES_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return [];
+}
+
+function TemplatesMenu({
+  savedTemplates,
+  onLoadDefault,
+  onLoadBlank,
+  onLoadSaved,
+  onSaveCurrent,
+  onDeleteSaved,
+}: {
+  savedTemplates: SavedTemplate[];
+  onLoadDefault: () => void;
+  onLoadBlank: () => void;
+  onLoadSaved: (t: SavedTemplate) => void;
+  onSaveCurrent: () => void;
+  onDeleteSaved: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+          open ? "bg-white border-black/20 text-neutral-900" : "bg-black/[0.04] border-black/10 text-neutral-600 hover:bg-black/[0.07]"
+        }`}
+      >
+        <LayoutTemplate size={12} /> Plantillas
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute top-full right-0 mt-1.5 z-30 rounded-xl bg-white border border-black/10 shadow-lg p-1.5 w-56 max-h-80 overflow-y-auto">
+            <button
+              onClick={() => {
+                onLoadDefault();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors"
+            >
+              <RotateCcw size={12} className="text-neutral-400 shrink-0" />
+              Restaurar
+            </button>
+            <button
+              onClick={() => {
+                onLoadBlank();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors"
+            >
+              <LayoutTemplate size={12} className="text-neutral-400 shrink-0" />
+              Default
+            </button>
+
+            {savedTemplates.length > 0 && (
+              <>
+                <div className="h-px bg-black/10 my-1.5" />
+                {savedTemplates.map((t) => (
+                  <div key={t.id} className="group/tpl flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        onLoadSaved(t);
+                        setOpen(false);
+                      }}
+                      title={t.name}
+                      className="flex-1 min-w-0 text-left px-2.5 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors truncate"
+                    >
+                      {t.name}
+                    </button>
+                    <button
+                      onClick={() => onDeleteSaved(t.id)}
+                      title="Eliminar plantilla"
+                      className="shrink-0 p-1.5 rounded-lg text-neutral-400 hover:text-[#b9503a] opacity-0 group-hover/tpl:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+
+            <div className="h-px bg-black/10 my-1.5" />
+            <button
+              onClick={() => {
+                onSaveCurrent();
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg text-xs text-[#2a9678] font-medium hover:bg-[#a8dfcf]/15 transition-colors"
+            >
+              <Save size={12} className="shrink-0" />
+              Guardar plantilla actual
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Recursively finds a section by id — checking top-level sections and, for
 // "row" sections, their two columns — and applies an update. There is no
 // deeper nesting than one level (a row's columns are always leaves).
@@ -328,10 +447,33 @@ export function MailingPage({ contacts }: Props) {
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>(loadSavedTemplates);
 
   useEffect(() => {
     localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(sections));
   }, [sections]);
+
+  useEffect(() => {
+    localStorage.setItem(SAVED_TEMPLATES_KEY, JSON.stringify(savedTemplates));
+  }, [savedTemplates]);
+
+  const loadTemplate = (newSections: Section[]) => {
+    if (sections.length === 0 || window.confirm("Esto sustituye el contenido actual de la plantilla. ¿Continuar?")) {
+      setSections(newSections);
+    }
+  };
+
+  const saveCurrentAsTemplate = () => {
+    const name = window.prompt("Nombre de la plantilla:");
+    if (!name || !name.trim()) return;
+    setSavedTemplates((prev) => [...prev, { id: `tpl-${Date.now()}`, name: name.trim(), sections }]);
+  };
+
+  const deleteSavedTemplate = (id: string) => {
+    if (window.confirm("¿Eliminar esta plantilla guardada?")) {
+      setSavedTemplates((prev) => prev.filter((t) => t.id !== id));
+    }
+  };
 
   const updateSection = (id: string, patch: Partial<Section>) =>
     setSections((prev) => mapSections(prev, id, (s) => ({ ...s, ...patch })));
@@ -719,16 +861,14 @@ export function MailingPage({ contacts }: Props) {
                 <Plus size={12} /> <btn.icon size={13} /> {btn.label}
               </button>
             ))}
-            <button
-              onClick={() => {
-                if (sections.length === 0 || window.confirm("Esto sustituye el contenido actual de la plantilla por el diseño de partida. ¿Continuar?")) {
-                  setSections(buildDefaultSections());
-                }
-              }}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-black/[0.04] border border-black/10 text-neutral-600 hover:bg-black/[0.07]"
-            >
-              <RotateCcw size={12} /> Restaurar plantilla
-            </button>
+            <TemplatesMenu
+              savedTemplates={savedTemplates}
+              onLoadDefault={() => loadTemplate(buildDefaultSections())}
+              onLoadBlank={() => loadTemplate([])}
+              onLoadSaved={(t) => loadTemplate(t.sections)}
+              onSaveCurrent={saveCurrentAsTemplate}
+              onDeleteSaved={deleteSavedTemplate}
+            />
             <button
               onClick={() => setExportOpen(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800"
