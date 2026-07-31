@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Mail,
   Plus,
+  RotateCcw,
   Send,
   Trash2,
   Type,
@@ -57,6 +58,82 @@ function newBlock(type: BlockType, index: number): Block {
   };
 }
 
+// The starting layout the canvas loads with — the classic "hero + two-
+// column promo banner + alternating image/text category rows" structure
+// common to product-marketing email templates: a real starting point to
+// click into and replace, rather than a blank canvas. Placeholders and
+// generic copy only — no imagery/text copied from any specific template.
+function buildDefaultTemplate(): Block[] {
+  const centered = { fontFamily: "system" as const, textAlign: "center" as const };
+  const left = { fontFamily: "system" as const, textAlign: "left" as const };
+  return [
+    { id: "tpl-hero-img", type: "image", x: 0, y: 0, width: 500, height: 170, content: "" },
+    {
+      id: "tpl-hero-title",
+      type: "text",
+      x: 0,
+      y: 180,
+      width: 500,
+      height: 50,
+      content: "Novedades destacadas",
+      ...centered,
+    },
+    {
+      id: "tpl-promo-left",
+      type: "text",
+      x: 0,
+      y: 240,
+      width: 240,
+      height: 110,
+      content: "Oferta del mes\n\nHasta 20% de descuento",
+      ...left,
+    },
+    {
+      id: "tpl-promo-right",
+      type: "text",
+      x: 250,
+      y: 240,
+      width: 250,
+      height: 110,
+      content: "Condiciones especiales para pedidos de este mes. Consulta con tu comercial antes de fin de mes.",
+      ...left,
+    },
+    { id: "tpl-cat1-img", type: "image", x: 0, y: 360, width: 240, height: 150, content: "" },
+    {
+      id: "tpl-cat1-text",
+      type: "text",
+      x: 250,
+      y: 360,
+      width: 250,
+      height: 150,
+      content: "Domótica\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
+      ...left,
+    },
+    {
+      id: "tpl-cat2-text",
+      type: "text",
+      x: 0,
+      y: 520,
+      width: 250,
+      height: 150,
+      content: "Audio\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
+      ...left,
+    },
+    { id: "tpl-cat2-img", type: "image", x: 260, y: 520, width: 240, height: 150, content: "" },
+    { id: "tpl-cat3-img", type: "image", x: 0, y: 680, width: 240, height: 150, content: "" },
+    {
+      id: "tpl-cat3-text",
+      type: "text",
+      x: 250,
+      y: 680,
+      width: 250,
+      height: 150,
+      content: "Iluminación\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
+      ...left,
+    },
+  ];
+}
+
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -89,7 +166,7 @@ function blockStyle(type: BlockType): BlockStyle {
 }
 
 export function MailingPage({ contacts }: Props) {
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>(buildDefaultTemplate);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -270,6 +347,16 @@ export function MailingPage({ contacts }: Props) {
                 <Plus size={12} /> <btn.icon size={13} /> {btn.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                if (blocks.length === 0 || window.confirm("Esto sustituye el contenido actual de la plantilla por el diseño de partida. ¿Continuar?")) {
+                  setBlocks(buildDefaultTemplate());
+                }
+              }}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-black/[0.04] border border-black/10 text-neutral-600 hover:bg-black/[0.07]"
+            >
+              <RotateCcw size={12} /> Restaurar plantilla
+            </button>
             <button
               onClick={() => setExportOpen(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-neutral-900 text-white font-medium hover:bg-neutral-800"
