@@ -32,6 +32,9 @@ interface Props {
 
 const MIN_SIZE = 60;
 const SNAP_DISTANCE = 6;
+// Matches the 600px card width used when actually building the email in
+// mailingTemplate.ts, so what's arranged here maps 1:1 onto the export.
+const CANVAS_WIDTH = 600;
 
 // Finds the first candidate edge (left/center/right or top/center/bottom of
 // the block being dragged) that lands within SNAP_DISTANCE of another
@@ -51,8 +54,8 @@ function newBlock(type: BlockType, index: number): Block {
     type,
     x: 24 + index * 18,
     y: 24 + index * 18,
-    width: type === "text" ? 240 : 260,
-    height: type === "text" ? 110 : 170,
+    width: 180,
+    height: 180,
     content: "",
     ...(type === "text" ? { fontFamily: "system", textAlign: "left" as const } : {}),
   };
@@ -149,16 +152,42 @@ interface BlockStyle {
   icon: typeof ImageIcon;
   border: string;
   bg: string;
+  fill: string;
   text: string;
 }
 
 // Each block type keeps the same color as its "add" button — the block
-// header/border reuse these instead of a separate palette, so the canvas
-// visually maps back to the buttons that created it.
+// header/border/fill reuse these instead of a separate palette, so the
+// canvas visually maps back to the buttons that created it, and every
+// block reads as "belonging" to its type's color at a glance.
 const ADD_BUTTONS: BlockStyle[] = [
-  { type: "text", label: "Texto", icon: Type, border: "border-[#a79bcb]", bg: "bg-[#a79bcb]/25", text: "text-[#6a56a0]" },
-  { type: "image", label: "Imagen", icon: ImageIcon, border: "border-[#a8dfcf]", bg: "bg-[#a8dfcf]/30", text: "text-[#2a9678]" },
-  { type: "video", label: "Vídeo", icon: Video, border: "border-[#f0c39a]", bg: "bg-[#f0c39a]/35", text: "text-[#a3672c]" },
+  {
+    type: "text",
+    label: "Texto",
+    icon: Type,
+    border: "border-[#a79bcb]",
+    bg: "bg-[#a79bcb]/25",
+    fill: "bg-[#a79bcb]/10",
+    text: "text-[#6a56a0]",
+  },
+  {
+    type: "image",
+    label: "Imagen",
+    icon: ImageIcon,
+    border: "border-[#a8dfcf]",
+    bg: "bg-[#a8dfcf]/30",
+    fill: "bg-[#a8dfcf]/12",
+    text: "text-[#2a9678]",
+  },
+  {
+    type: "video",
+    label: "Vídeo",
+    icon: Video,
+    border: "border-[#f0c39a]",
+    bg: "bg-[#f0c39a]/35",
+    fill: "bg-[#f0c39a]/15",
+    text: "text-[#a3672c]",
+  },
 ];
 
 function blockStyle(type: BlockType): BlockStyle {
@@ -282,6 +311,8 @@ export function MailingPage({ contacts }: Props) {
     setUrlDrafts((prev) => ({ ...prev, [block.id]: "" }));
   };
 
+  const canvasHeight = Math.max(500, ...blocks.map((b) => b.y + b.height + 40));
+
   const recipients = Array.from(
     new Set(contacts.map((c) => c.email.trim()).filter(Boolean))
   );
@@ -366,18 +397,24 @@ export function MailingPage({ contacts }: Props) {
           </div>
         </div>
 
-        <div
-          className="flex-1 min-h-[480px] relative rounded-2xl border border-black/10 bg-black/[0.02] overflow-auto"
-        >
-          {blocks.length === 0 && (
-            <p className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400">
-              Añade texto, imágenes o vídeo para empezar la plantilla.
+        <div className="flex-1 min-h-[480px] relative rounded-2xl border border-black/10 bg-black/[0.02] overflow-auto">
+          <div className="flex flex-col items-center py-6">
+            <p className="text-[11px] text-neutral-400 mb-2 tabular-nums">
+              Plantilla: {CANVAS_WIDTH} × {Math.round(canvasHeight)} px
             </p>
-          )}
+            <div
+              className="relative bg-white/50 rounded-xl border border-dashed border-black/15 shrink-0"
+              style={{ width: CANVAS_WIDTH, height: canvasHeight }}
+            >
+              {blocks.length === 0 && (
+                <p className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400">
+                  Añade texto, imágenes o vídeo para empezar la plantilla.
+                </p>
+              )}
 
-          {/* Alignment guides: while dragging a block, a glowing "neural
-              link" line appears wherever an edge or center lines up with
-              another block's, and the drag snaps to it. */}
+              {/* Alignment guides: while dragging a block, a glowing "neural
+                  link" line appears wherever an edge or center lines up with
+                  another block's, and the drag snaps to it. */}
           {guides.vertical.map((x) => (
             <div
               key={`v-${x}`}
@@ -408,7 +445,7 @@ export function MailingPage({ contacts }: Props) {
             return (
             <div
               key={block.id}
-              className={`absolute rounded-2xl border bg-white/90 backdrop-blur-sm shadow-[0_10px_24px_-14px_rgba(33,31,29,0.4)] flex flex-col overflow-hidden ${style.border}`}
+              className={`absolute rounded-2xl border-2 ${style.fill} backdrop-blur-sm shadow-[0_10px_24px_-14px_rgba(33,31,29,0.4)] flex flex-col overflow-hidden ${style.border}`}
               style={{ left: block.x, top: block.y, width: block.width, height: block.height }}
             >
               <div
@@ -418,6 +455,9 @@ export function MailingPage({ contacts }: Props) {
                 <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${style.text}`}>
                   <style.icon size={11} />
                   {style.label}
+                </span>
+                <span className={`text-[9px] tabular-nums opacity-70 ${style.text}`}>
+                  {Math.round(block.width)}×{Math.round(block.height)}
                 </span>
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
@@ -560,6 +600,8 @@ export function MailingPage({ contacts }: Props) {
             </div>
             );
           })}
+            </div>
+          </div>
         </div>
       </div>
 
