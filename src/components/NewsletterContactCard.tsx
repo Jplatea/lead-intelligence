@@ -23,7 +23,7 @@ export function NewsletterContactCard({ contact, onClose, onDelete, onUpdate }: 
     <div className="fixed top-0 right-0 h-screen w-[420px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-50 flex flex-col gap-5 pointer-events-none">
       <div className="pointer-events-auto glass float-card rounded-3xl p-6 pb-10 animate-fade-in-up">
         <div className="flex items-start justify-between mb-5">
-          <h2 className="text-sm font-semibold text-neutral-900">Contacto Newsletter</h2>
+          <h2 className="type-h2 text-neutral-900">Contacto Newsletter</h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
             <X size={16} />
           </button>

@@ -670,7 +670,7 @@ export function MailingPage({ contacts }: Props) {
       >
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-neutral-900">Plantilla de mailing</h2>
+            <h2 className="type-h2 text-neutral-900">Plantilla de mailing</h2>
             <p className="text-xs text-neutral-500">Pulsa sobre cualquier campo para editarlo directamente.</p>
           </div>
 
@@ -730,7 +730,7 @@ export function MailingPage({ contacts }: Props) {
           <div className="glass rounded-3xl p-5 w-full max-w-2xl max-h-[90vh] flex flex-col gap-4 animate-fade-in-up">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-800">Generar email de marketing</h2>
+                <h2 className="type-h2 text-neutral-800">Generar email de marketing</h2>
                 <p className="text-xs text-neutral-500">
                   {recipients.length} destinatario{recipients.length === 1 ? "" : "s"} en la base de datos de mailing.
                 </p>

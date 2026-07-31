@@ -5,20 +5,19 @@ import { ALARM_CONFIG, PASTEL, REPS, STATUS_CONFIG } from "../data/config";
 import { TEXT_FONT_OPTIONS } from "../lib/mailingTemplate";
 import { CompanyCard } from "./CompanyCard";
 
+// Epilogue is now the app's real base typeface (loaded in index.html),
+// falling back to San Francisco/system sans — matches src/index.css.
 const WEB_FONT_STACK =
-  "-apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif";
+  "'Epilogue', -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif";
 const NEWSLETTER_FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-// Extra fonts available to try out in this design sandbox only — not used
-// anywhere in the real web app or newsletter unless explicitly asked.
-// Epilogue is a free Google Font, loaded via the <link> below (scoped to
-// this page — it's never added to index.html, so it only ever loads while
-// this page is open). Nexa is a commercial Fontfabric typeface with no free
-// web-embeddable source; it's listed as an option for comparison, but
-// without an actual license/font file it'll just fall back to the
-// browser's default sans-serif rather than rendering true Nexa.
+// Extra fonts available to try out here for comparison only — the "Sistema"
+// option above already covers the real current default for each section.
+// Nexa and Cloud are commercial/unverified typefaces with no free
+// web-embeddable source; listed for comparison, but without an actual
+// licensed font file they'll just fall back to the browser's default
+// sans-serif rather than rendering the real typeface.
 const EXTRA_FONT_CHOICES: { label: string; value: string }[] = [
-  { label: "Epilogue", value: "'Epilogue', sans-serif" },
   { label: "Nexa (sin licencia cargada)", value: "'Nexa', sans-serif" },
   { label: "Cloud (sin licencia cargada)", value: "'Cloud', sans-serif" },
 ];
@@ -317,14 +316,8 @@ export function StyleGuidePage() {
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
-      {/* Scoped to this page only — never added to index.html, so Epilogue
-          never loads (or affects layout/CLS) anywhere else in the app. */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700;800&display=swap"
-      />
+      {/* Epilogue is now loaded app-wide (index.html) since it's the base
+          typeface, so no page-scoped <link> is needed here anymore. */}
       <div
         className="relative z-10 flex-1 min-h-0 overflow-auto rounded-3xl p-6 backdrop-blur-xl w-full"
         style={{
@@ -336,7 +329,7 @@ export function StyleGuidePage() {
         <div className="max-w-5xl mx-auto flex flex-col gap-5 pb-10">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Guía de estilo</h2>
+              <h2 className="type-h2 text-neutral-900">Guía de estilo</h2>
               <p className="text-xs text-neutral-500">
                 Referencia interna de diseño — solo visible para José. Cada campo es editable para comparar
                 combinaciones; son cambios de solo vista previa en esta página, nunca afectan a la web real.

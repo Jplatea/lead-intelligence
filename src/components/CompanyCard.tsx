@@ -126,7 +126,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
             value={company.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
             placeholder="Nombre de la empresa"
-            className="text-lg font-semibold text-neutral-900 leading-tight bg-transparent outline-none border-b border-transparent focus:border-[#a8dfcf] w-full"
+            className="type-h1 text-neutral-900 bg-transparent outline-none border-b border-transparent focus:border-[#a8dfcf] w-full"
           />
           {company.needsReview && (
             <div className="mt-1.5">
@@ -366,7 +366,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                     </span>
                     <span className="text-neutral-400">· {c.date}</span>
                   </div>
-                  <p className="text-neutral-700">{c.text}</p>
+                  <p className="type-body text-neutral-700">{c.text}</p>
                 </div>
               );
             })}

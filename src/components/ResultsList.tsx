@@ -76,7 +76,7 @@ export function ResultsList({
     <div className="glass rounded-3xl p-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <button onClick={() => onExpandedChange(!expanded)} className="flex items-center gap-2 shrink-0">
-          <h2 className="text-sm font-semibold text-neutral-800">Clientes</h2>
+          <h2 className="type-h2 text-neutral-800">Clientes</h2>
           <ChevronDown
             size={14}
             className={`text-neutral-400 transition-transform ${expanded ? "rotate-180" : ""}`}

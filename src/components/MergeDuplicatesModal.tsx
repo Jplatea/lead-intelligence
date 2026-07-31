@@ -38,7 +38,7 @@ export function MergeDuplicatesModal({ conflicts, onApply, onClose }: Props) {
       <div className="glass rounded-3xl p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-neutral-800">Clientes duplicados</h2>
+            <h2 className="type-h2 text-neutral-800">Clientes duplicados</h2>
             <p className="text-xs text-neutral-500 mt-0.5">
               {conflicts.length} nombre{conflicts.length === 1 ? "" : "s"} ya exist{conflicts.length === 1 ? "e" : "en"}{" "}
               en la base de datos.

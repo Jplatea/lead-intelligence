@@ -56,7 +56,7 @@ export function MailingImportModal({ contacts, onClose, onImport, onDeleteContac
       <div className="glass rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-semibold text-neutral-800">Base de datos de mailing</h2>
+            <h2 className="type-h2 text-neutral-800">Base de datos de mailing</h2>
             <p className="text-xs text-neutral-500">
               {contacts.length} contacto{contacts.length === 1 ? "" : "s"} — independiente de la base de clientes.
             </p>

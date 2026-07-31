@@ -55,7 +55,7 @@ function HelpPopup({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-5">
       <div className="glass rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-800">Campos a rellenar</h2>
+          <h2 className="type-h2 text-neutral-800">Campos a rellenar</h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
             <X size={16} />
           </button>
@@ -174,7 +174,7 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
       <div className="glass rounded-3xl p-5 w-full max-w-sm animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-neutral-800">Nuevo cliente</h2>
+            <h2 className="type-h2 text-neutral-800">Nuevo cliente</h2>
             <button
               onClick={() => setHelpOpen(true)}
               title="Qué campos rellenar"

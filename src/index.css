@@ -19,12 +19,33 @@ body {
     radial-gradient(ellipse 60% 45% at 100% 100%, rgba(184, 197, 240, 0.12), transparent),
     #e6dcd2;
   color: #211f1d;
-  /* Apple's San Francisco has no web-embeddable license — the standard way
-     to get it is asking for the OS's own system font by keyword, which
-     resolves to San Francisco on macOS/iOS/Safari. Non-Apple platforms
-     fall back to their own native system sans (Segoe UI on Windows, Roboto
-     on Android) rather than nothing. */
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-sans-serif, system-ui, "Segoe UI", Roboto, "Inter", sans-serif;
+  /* Epilogue (loaded in index.html) is now the app's base typeface, per
+     explicit request — falls back to San Francisco/system sans (see prior
+     note: Apple's SF has no web-embeddable license, so -apple-system is the
+     standard way to reach it on macOS/iOS) if the webfont hasn't loaded yet. */
+  font-family: "Epilogue", -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-sans-serif, system-ui, "Segoe UI", Roboto, "Inter", sans-serif;
+}
+
+/* Three-level typographic hierarchy, per explicit spec:
+   H1 36-48px/bold for a view's central title, H2 20-28px/semibold for
+   section headers, body 16px/normal for actual reading copy (not dense
+   UI chrome like table cells/badges/field labels, which stay at their
+   existing compact sizes on purpose — this is a dashboard, not a
+   marketing page, and most of its "text" is data, not prose). */
+.type-h1 {
+  font-size: clamp(2.25rem, 2rem + 1vw, 3rem); /* 36px – 48px */
+  font-weight: 700;
+  line-height: 1.15;
+}
+.type-h2 {
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem); /* 20px – 28px */
+  font-weight: 600;
+  line-height: 1.25;
+}
+.type-body {
+  font-size: 1rem; /* 16px */
+  font-weight: 400;
+  line-height: 1.6;
 }
 
 ::-webkit-scrollbar {

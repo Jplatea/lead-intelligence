@@ -178,7 +178,7 @@ export function ImportModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-5">
       <div className="glass rounded-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto animate-fade-in-up">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-800">Empresas detectadas</h2>
+          <h2 className="type-h2 text-neutral-800">Empresas detectadas</h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-800 p-1 rounded-lg hover:bg-black/5">
             <X size={16} />
           </button>

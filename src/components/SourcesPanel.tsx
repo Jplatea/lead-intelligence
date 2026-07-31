@@ -24,7 +24,7 @@ export function SourcesPanel({ sources, onRemoveSource }: Props) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between"
       >
-        <h2 className="text-sm font-semibold text-neutral-800">Fuentes de prospección</h2>
+        <h2 className="type-h2 text-neutral-800">Fuentes de prospección</h2>
         <span className="flex items-center gap-2">
           <span className="text-xs text-neutral-400">{sources.length} fuentes</span>
           <ChevronDown

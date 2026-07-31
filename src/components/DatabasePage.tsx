@@ -101,7 +101,7 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
         {dataset === "clients" ? (
             <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Datos Clientes</h2>
+                <h2 className="type-h2 text-neutral-900">Datos Clientes</h2>
                 <p className="text-xs text-neutral-500">{companies.length} clientes</p>
               </div>
 
@@ -169,7 +169,7 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
           ) : (
             <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div>
-                <h2 className="text-sm font-semibold text-neutral-900">Newsletter</h2>
+                <h2 className="type-h2 text-neutral-900">Newsletter</h2>
                 <p className="text-xs text-neutral-500">
                   {mailingContacts.length} contactos — independiente de la base de clientes.
                 </p>

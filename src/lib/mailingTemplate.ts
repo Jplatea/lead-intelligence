@@ -49,6 +49,14 @@ export const TEXT_FONT_OPTIONS: { value: string; label: string; stack: string }[
   { value: "verdana", label: "Verdana", stack: "Verdana, Geneva, sans-serif" },
   { value: "trebuchet", label: "Trebuchet MS", stack: "'Trebuchet MS', sans-serif" },
   { value: "courier", label: "Courier New", stack: "'Courier New', Courier, monospace" },
+  // Loaded via a <link> in the exported HTML's <head> for clients that
+  // support web fonts (Apple Mail, Gmail webmail...) — Outlook and others
+  // that don't just fall back to the same web-safe stack as "Sistema".
+  { value: "epilogue", label: "Epilogue (si el cliente de correo lo soporta)", stack: `'Epilogue', ${FONT_STACK}` },
+  // Nexa/Cloud have no free web-embeddable source — without a licensed
+  // font file these always render as the fallback stack, in every client.
+  { value: "nexa", label: "Nexa (sin licencia cargada)", stack: `'Nexa', ${FONT_STACK}` },
+  { value: "cloud", label: "Cloud (sin licencia cargada)", stack: `'Cloud', ${FONT_STACK}` },
 ];
 
 export function textFontStack(value: string | undefined): string {
@@ -222,6 +230,12 @@ export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailM
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="light" />
 <title>${heading}</title>
+<!-- Progressive enhancement only: clients that support web fonts (Apple
+     Mail, Gmail's webmail, etc.) render Epilogue; Outlook and others that
+     don't just fall back to the family's own web-safe stack below. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 <body style="margin:0;padding:0;background-color:#e6dcd2;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#e6dcd2;">
