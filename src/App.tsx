@@ -130,6 +130,10 @@ function App() {
     setMailingContacts((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const updateMailingContact = (id: string, patch: Partial<MailingContact>) => {
+    setMailingContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
   const deleteCompany = (id: string) => {
     setCompanies((prev) => prev.filter((c) => c.id !== id));
     setSelectedId((prev) => (prev === id ? null : prev));
@@ -400,7 +404,9 @@ function App() {
             <DatabasePage
               companies={companies}
               mailingContacts={mailingContacts}
+              onSelectCompany={setSelectedId}
               onDeleteMailingContact={deleteMailingContact}
+              onUpdateMailingContact={updateMailingContact}
             />
           </motion.main>
         )}

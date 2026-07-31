@@ -8,7 +8,9 @@ import { NewsletterContactCard } from "./NewsletterContactCard";
 interface Props {
   companies: Company[];
   mailingContacts: MailingContact[];
+  onSelectCompany: (id: string) => void;
   onDeleteMailingContact: (id: string) => void;
+  onUpdateMailingContact: (id: string, patch: Partial<MailingContact>) => void;
 }
 
 type Dataset = "clients" | "newsletter";
@@ -62,7 +64,13 @@ function cellText(c: Company, key: ColumnKey): string {
 // export, or per-row editing/deleting — just the data laid out plainly on
 // the rep's color, per explicit request to simplify it down to information
 // only.
-export function DatabasePage({ companies, mailingContacts, onDeleteMailingContact }: Props) {
+export function DatabasePage({
+  companies,
+  mailingContacts,
+  onSelectCompany,
+  onDeleteMailingContact,
+  onUpdateMailingContact,
+}: Props) {
   const [dataset, setDataset] = useState<Dataset>("clients");
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const selectedContact = mailingContacts.find((c) => c.id === selectedContactId) ?? null;
@@ -121,7 +129,7 @@ export function DatabasePage({ companies, mailingContacts, onDeleteMailingContac
                   className="text-[13px]"
                   style={{ borderCollapse: "separate", borderSpacing: "0 4px", minWidth: 1100, width: "100%" }}
                 >
-                  <thead className="sticky top-0 z-10">
+                  <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
                       <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
                         Nombre
@@ -140,10 +148,19 @@ export function DatabasePage({ companies, mailingContacts, onDeleteMailingContac
                     {companies.map((c) => {
                       const bg = rowBg(c);
                       return (
-                        <tr key={c.id} className="h-7">
-                          <td className="pl-3 pr-1 py-1 rounded-l-xl whitespace-nowrap" style={{ background: bg }}>
+                        <tr
+                          key={c.id}
+                          className="h-7 cursor-pointer hover:brightness-95 transition-[filter]"
+                          onClick={() => onSelectCompany(c.id)}
+                        >
+                          <td
+                            className="pl-3 pr-1 py-1 rounded-l-xl whitespace-nowrap max-w-[160px] overflow-hidden"
+                            style={{ background: bg }}
+                          >
                             <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-black">{c.name}</span>
+                              <span className="font-medium text-black truncate" title={c.name}>
+                                {c.name}
+                              </span>
                               {c.needsReview && (
                                 <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
                                   Revisar
@@ -156,6 +173,7 @@ export function DatabasePage({ companies, mailingContacts, onDeleteMailingContac
                               key={col.key}
                               className={`px-2 py-1 text-black/80 whitespace-nowrap ${i === ALL_COLUMNS.length - 1 ? "rounded-r-xl" : ""}`}
                               style={{ background: bg }}
+                              title={cellText(c, col.key)}
                             >
                               {cellText(c, col.key)}
                             </td>
@@ -185,7 +203,7 @@ export function DatabasePage({ companies, mailingContacts, onDeleteMailingContac
 
               <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-black/10 bg-black/[0.03]">
                 <table className="text-[13px]" style={{ borderCollapse: "separate", borderSpacing: "0 4px", width: "100%" }}>
-                  <thead className="sticky top-0 z-10">
+                  <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
                       <th className="font-semibold text-neutral-500 uppercase tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
                         Nombre contacto
@@ -242,6 +260,7 @@ export function DatabasePage({ companies, mailingContacts, onDeleteMailingContac
           contact={selectedContact}
           onClose={() => setSelectedContactId(null)}
           onDelete={onDeleteMailingContact}
+          onUpdate={onUpdateMailingContact}
         />
       )}
     </div>

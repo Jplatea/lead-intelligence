@@ -5,13 +5,20 @@ interface Props {
   contact: MailingContact;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, patch: Partial<MailingContact>) => void;
 }
 
-// The read-only counterpart to the client "tarjeta de contactos": clicking a
-// row in the Newsletter table opens this instead of editing inline — it
-// only shows the three fields plus a delete action, matching the
-// database page's "information only" simplification.
-export function NewsletterContactCard({ contact, onClose, onDelete }: Props) {
+// Same visual language as the client "tarjeta de contactos": a dashed,
+// tinted box while empty, solid once filled in.
+function fieldClass(isEmpty: boolean): string {
+  return `w-full rounded-lg px-2.5 py-1.5 text-sm font-medium text-neutral-800 placeholder:text-neutral-400 outline-none focus:border-[#a79bcb] transition-colors ${
+    isEmpty
+      ? "bg-black/[0.015] border border-dashed border-neutral-300 hover:border-neutral-400"
+      : "bg-black/[0.03] border border-black/10 hover:border-black/20"
+  }`;
+}
+
+export function NewsletterContactCard({ contact, onClose, onDelete, onUpdate }: Props) {
   return (
     <div className="fixed top-0 right-0 h-screen w-[420px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-50 flex flex-col gap-5 pointer-events-none">
       <div className="pointer-events-auto glass float-card rounded-3xl p-6 pb-10 animate-fade-in-up">
@@ -25,15 +32,30 @@ export function NewsletterContactCard({ contact, onClose, onDelete }: Props) {
         <div className="space-y-4">
           <div>
             <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Nombre contacto</label>
-            <p className="text-sm font-medium text-neutral-800">{contact.contactName || "—"}</p>
+            <input
+              value={contact.contactName}
+              onChange={(e) => onUpdate(contact.id, { contactName: e.target.value })}
+              placeholder="Sin nombre"
+              className={fieldClass(!contact.contactName)}
+            />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Email</label>
-            <p className="text-sm font-medium text-neutral-800">{contact.email}</p>
+            <input
+              value={contact.email}
+              onChange={(e) => onUpdate(contact.id, { email: e.target.value })}
+              placeholder="Sin email"
+              className={fieldClass(!contact.email)}
+            />
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Empresa</label>
-            <p className="text-sm font-medium text-neutral-800">{contact.companyName || "—"}</p>
+            <input
+              value={contact.companyName}
+              onChange={(e) => onUpdate(contact.id, { companyName: e.target.value })}
+              placeholder="Sin empresa"
+              className={fieldClass(!contact.companyName)}
+            />
           </div>
         </div>
 
