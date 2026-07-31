@@ -163,8 +163,8 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           <div className="relative">
             <button
               onClick={() => setStatusOpen((v) => !v)}
-              style={{ background: status.hex, boxShadow: crispEdge(false) }}
-              className="flex items-center gap-1 text-[10px] font-semibold text-black/75 px-2.5 py-1 rounded-full"
+              style={{ borderColor: status.hex, color: status.hex }}
+              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border-2 hover:bg-black/[0.02] transition-colors"
             >
               {status.label}
               <ChevronDown size={11} className={`transition-transform ${statusOpen ? "rotate-180" : ""}`} />

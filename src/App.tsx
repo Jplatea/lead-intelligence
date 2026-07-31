@@ -522,10 +522,12 @@ function App() {
           onClose={() => setActionBubble(null)}
           onViewCard={() => {
             setSelectedId(actionBubble.company.id);
+            setCommunicationId(null);
             setActionBubble(null);
           }}
           onCommunicate={() => {
             setCommunicationId(actionBubble.company.id);
+            setSelectedId(null);
             setActionBubble(null);
           }}
         />

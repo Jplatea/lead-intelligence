@@ -5,10 +5,10 @@ import { ALARM_CONFIG, PASTEL, REPS, STATUS_CONFIG } from "../data/config";
 import { TEXT_FONT_OPTIONS } from "../lib/mailingTemplate";
 import { CompanyCard } from "./CompanyCard";
 
-// Epilogue is now the app's real base typeface (loaded in index.html),
+// Poppins is now the app's real base typeface (self-hosted, src/fonts.css),
 // falling back to San Francisco/system sans — matches src/index.css.
 const WEB_FONT_STACK =
-  "'Epilogue', -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif";
+  "'Poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif";
 const NEWSLETTER_FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 // Pulls the first (primary) font name out of a font-family stack, e.g.
@@ -27,9 +27,9 @@ function primaryFontName(stack: string): string {
 // catalog (confirmed against its public metadata endpoint), so there's no
 // free, licensed source to embed for either.
 const EXTRA_FONT_CHOICES: { label: string; value: string }[] = [
+  { label: "Epilogue", value: "'Epilogue', sans-serif" },
   { label: "Fredoka", value: "'Fredoka', sans-serif" },
   { label: "Quicksand", value: "'Quicksand', sans-serif" },
-  { label: "Poppins", value: "'Poppins', sans-serif" },
   { label: "Instrument Sans", value: "'Instrument Sans', sans-serif" },
   { label: "Montserrat Alternates", value: "'Montserrat Alternates', sans-serif" },
   { label: "Questrial", value: "'Questrial', sans-serif" },
@@ -394,7 +394,7 @@ export function StyleGuidePage() {
 
           <style>{buildPreviewCss(WEB_TYPE_FIELDS.map(resolveType))}</style>
 
-          <SectionCard title="Jerarquía tipográfica — Web" subtitle="Fuente base: Epilogue (con San Francisco / sistema como respaldo)">
+          <SectionCard title="Jerarquía tipográfica — Web" subtitle="Fuente base: Poppins (con San Francisco / sistema como respaldo)">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
               <div>{renderTypeGroup(WEB_TYPE_FIELDS)}</div>
               <div className="lg:sticky lg:top-0">
