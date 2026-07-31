@@ -4,7 +4,7 @@
 // Google's Identity Services) + the Microsoft Graph REST API, directly from
 // the browser. No backend involved — the access token is kept in memory
 // only for this tab's session and is never persisted.
-const MSAL_SRC = "https://alcdn.msauth.net/browser/3.7.1/js/msal-browser.min.js";
+const MSAL_SRC = "https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.30.0/lib/msal-browser.min.js";
 const CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID as string | undefined;
 const SCOPES = ["Mail.Read"];
 
