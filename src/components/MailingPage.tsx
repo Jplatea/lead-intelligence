@@ -4,6 +4,7 @@ import {
   AlignLeft,
   AlignRight,
   Check,
+  Code2,
   Copy,
   Download,
   Heading2,
@@ -281,6 +282,7 @@ const ADD_BUTTONS: AddButtonDef[] = [
   { type: "video", label: "Vídeo", icon: Video, text: "text-[#a3672c]" },
   { type: "button", label: "Botón", icon: MousePointerClick, text: "text-[#8a7238]" },
   { type: "divider", label: "Separador", icon: Minus, text: "text-neutral-600" },
+  { type: "html", label: "HTML", icon: Code2, text: "text-[#5a6bc0]" },
 ];
 
 // A textarea that grows to fit its content — so a text field reads as a
@@ -601,6 +603,26 @@ export function MailingPage({ contacts }: Props) {
     </div>
   );
 
+  const renderHtmlField = (section: Section) => (
+    <div className="w-full flex flex-col gap-1.5">
+      <textarea
+        value={section.content}
+        onChange={(e) => updateSection(section.id, { content: e.target.value })}
+        placeholder="Pega aquí el código HTML..."
+        spellCheck={false}
+        className="w-full h-40 resize-y outline-none border border-black/10 focus:border-[#5a6bc0] rounded-lg p-2 text-[11px] font-mono text-neutral-700 bg-black/[0.02] placeholder:text-neutral-400"
+      />
+      {section.content.trim() && (
+        <iframe
+          title="Vista previa del bloque HTML"
+          srcDoc={section.content}
+          className="w-full h-64 rounded-lg border border-black/10 bg-white"
+          sandbox=""
+        />
+      )}
+    </div>
+  );
+
   const renderField = (section: Section) => {
     switch (section.type) {
       case "text":
@@ -613,6 +635,8 @@ export function MailingPage({ contacts }: Props) {
         return renderButtonField(section);
       case "divider":
         return renderDividerField(section);
+      case "html":
+        return renderHtmlField(section);
       case "row":
         return null;
     }

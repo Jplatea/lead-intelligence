@@ -1,4 +1,4 @@
-export type SectionType = "text" | "image" | "video" | "button" | "divider" | "row";
+export type SectionType = "text" | "image" | "video" | "button" | "divider" | "html" | "row";
 export type TextAlign = "left" | "center" | "right";
 export type TextStyle = "heading" | "body";
 
@@ -160,6 +160,8 @@ function renderLeafHtml(section: MailingSection): string {
       return renderButtonHtml(section);
     case "divider":
       return renderDividerHtml(section);
+    case "html":
+      return section.content;
     case "row":
       return "";
   }
@@ -190,6 +192,12 @@ function renderSectionRow(section: MailingSection): string {
 
   const content = renderLeafHtml(section);
   if (!content) return "";
+  // A raw "html" section is typically a whole pasted-in email fragment that
+  // already manages its own margins/background — wrapping it in the usual
+  // side padding would just nest it inside padding it doesn't need.
+  if (section.type === "html") {
+    return `<tr><td style="padding:0;">${content}</td></tr>`;
+  }
   return `<tr><td style="padding:8px 36px;">${content}</td></tr>`;
 }
 
