@@ -69,6 +69,17 @@ export function isOutlookConfigured(): boolean {
   return !!CLIENT_ID;
 }
 
+// Fire-and-forget: loads MSAL and constructs+initializes the
+// PublicClientApplication as soon as the Comunicación card mounts, well
+// before the user clicks "Conectar Outlook". Popup blockers only allow
+// window.open() reliably when it's called with minimal delay after the
+// user gesture — doing the script fetch + MSAL init ahead of time means
+// the click handler's loginPopup() call isn't stuck waiting on a network
+// round trip first.
+export function preloadOutlook(): void {
+  if (CLIENT_ID) void getPca();
+}
+
 let cachedToken: { value: string; account: MsalAccount } | null = null;
 
 export async function requestOutlookAccessToken(): Promise<string> {

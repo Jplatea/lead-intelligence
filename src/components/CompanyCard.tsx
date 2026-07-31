@@ -27,7 +27,7 @@ const selectClass =
 // uniformly to text inputs, CustomSelect triggers, and TagInput so nothing
 // reads as a different "kind" of control.
 const FIELD_BASE =
-  "rounded-lg px-2.5 py-1.5 text-xs text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] transition-colors w-full";
+  "gd-field rounded-lg px-2.5 py-1.5 text-xs text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf] transition-colors w-full";
 
 function fieldTone(isEmpty: boolean): string {
   return isEmpty
@@ -139,14 +139,14 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
               onBlur={() => setEditingName(false)}
               onKeyDown={(e) => e.key === "Enter" && setEditingName(false)}
               placeholder="Nombre de la empresa"
-              className="type-h1 text-neutral-900 bg-transparent outline-none border-b border-[#a8dfcf] w-full"
+              className="type-h1 gd-title text-neutral-900 bg-transparent outline-none border-b border-[#a8dfcf] w-full"
             />
           ) : (
             <button
               type="button"
               onClick={() => setEditingName(true)}
               title="Editar nombre"
-              className="type-h1 text-neutral-900 text-left bg-transparent outline-none border-b border-transparent hover:border-black/10 w-full truncate"
+              className="type-h1 gd-title text-neutral-900 text-left bg-transparent outline-none border-b border-transparent hover:border-black/10 w-full truncate"
             >
               {company.name ? toSentenceCase(company.name) : "Nombre de la empresa"}
             </button>
@@ -205,7 +205,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Contacto</h3>
+          <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Contacto</h3>
           <div className="space-y-2">
             <div className="relative">
               <Mail size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
@@ -243,7 +243,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Ubicación</h3>
+          <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Ubicación</h3>
           <div className="space-y-2">
             <input
               value={company.city}
@@ -272,7 +272,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                   {geocoding ? <Loader2 size={13} className="animate-spin" /> : <MapPin size={13} />}
                 </button>
               </div>
-              {addressMsg && <p className="text-[10px] text-neutral-500 mt-1 leading-snug">{addressMsg}</p>}
+              {addressMsg && <p className="gd-hint text-[10px] text-neutral-500 mt-1 leading-snug">{addressMsg}</p>}
             </div>
             <CustomSelect
               value={company.province}
@@ -302,7 +302,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Marcas</h3>
+          <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Marcas</h3>
           <TagInput
             value={company.brands}
             options={allBrands}
@@ -311,7 +311,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           />
         </div>
         <div>
-          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Especialidades</h3>
+          <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Especialidades</h3>
           <TagInput
             value={company.specialties}
             options={allSpecialties}
@@ -325,7 +325,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <div>
-          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Comercial</p>
+          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Comercial</p>
           <div className="flex items-center justify-center gap-2">
             {Object.values(REPS).map((r) => {
               const isActive = r.id === company.assignedRep;
@@ -347,7 +347,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Tipo</p>
+          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Tipo</p>
           <CustomSelect
             value={company.type}
             options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
@@ -358,7 +358,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Alarma</p>
+          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Alarma</p>
           <CustomSelect
             value={company.alarm}
             options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
@@ -375,7 +375,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
       <Divider />
 
       <div>
-        <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Comentarios</h3>
+        <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Comentarios</h3>
 
         {company.comments.length > 0 && (
           <div className="space-y-2.5 mb-3">
@@ -413,7 +413,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitComment()}
             placeholder="Escribe un comentario..."
-            className="flex-1 min-w-0 text-xs bg-black/[0.03] border border-black/10 rounded-lg px-2 py-1.5 text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf]"
+            className="gd-field flex-1 min-w-0 text-xs bg-black/[0.03] border border-black/10 rounded-lg px-2 py-1.5 text-neutral-700 placeholder:text-neutral-400 outline-none focus:border-[#a8dfcf]"
           />
           <button
             onClick={submitComment}

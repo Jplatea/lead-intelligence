@@ -172,6 +172,42 @@ const PASTEL_COLOR_FIELDS: ColorField[] = Object.entries(PASTEL).map(([key, hex]
 
 const FONT_WEIGHTS = [400, 500, 600, 700, 800];
 
+// Maps each Web typography field to the marker class it corresponds to on
+// the real CompanyCard (see src/components/CompanyCard.tsx: gd-title/
+// gd-section/gd-label/gd-hint/gd-field, plus the two already-shared
+// .type-h1/.type-body classes) — used to build a scoped stylesheet so the
+// live preview card reflects whatever's being tried here, without ever
+// touching CompanyCard's real styles or the rest of the app.
+const WEB_FIELD_SELECTOR: Record<string, string> = {
+  "web-title": ".type-h1",
+  "web-section": ".gd-section",
+  "web-label": ".gd-label",
+  "web-hint": ".gd-hint",
+  "web-body": ".type-body",
+  "web-field": ".gd-field",
+};
+
+function buildPreviewCss(fields: TypeField[]): string {
+  return fields
+    .map((f) => {
+      const selector = WEB_FIELD_SELECTOR[f.id];
+      if (!selector) return "";
+      const decls = [
+        `font-family: ${f.fontFamily}`,
+        `font-size: ${f.fontSize}px`,
+        `font-weight: ${f.fontWeight}`,
+        `color: ${f.color}`,
+        f.lineHeight ? `line-height: ${f.lineHeight}` : "",
+        f.letterSpacing ? `letter-spacing: ${f.letterSpacing}` : "",
+      ]
+        .filter(Boolean)
+        .map((d) => `${d} !important`)
+        .join("; ");
+      return `#gd-web-preview ${selector} { ${decls}; }`;
+    })
+    .join("\n");
+}
+
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-white/70 border border-black/10 p-5">
@@ -356,8 +392,26 @@ export function StyleGuidePage() {
             </button>
           </div>
 
+          <style>{buildPreviewCss(WEB_TYPE_FIELDS.map(resolveType))}</style>
+
           <SectionCard title="Jerarquía tipográfica — Web" subtitle="Fuente base: Epilogue (con San Francisco / sistema como respaldo)">
-            <div>{renderTypeGroup(WEB_TYPE_FIELDS)}</div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
+              <div>{renderTypeGroup(WEB_TYPE_FIELDS)}</div>
+              <div className="lg:sticky lg:top-0">
+                <p className="text-xs font-medium text-neutral-700 mb-2">
+                  Tarjeta clientes — vista previa en vivo
+                </p>
+                <div id="gd-web-preview">
+                  <CompanyCard
+                    company={sampleCompany}
+                    allCompanies={COMPANIES}
+                    onClose={() => {}}
+                    onUpdate={() => {}}
+                    onAddComment={() => {}}
+                  />
+                </div>
+              </div>
+            </div>
           </SectionCard>
 
           <SectionCard
@@ -408,23 +462,6 @@ export function StyleGuidePage() {
               <div className="col-span-2">
                 <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Paleta pastel completa</p>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">{renderColorGroup(PASTEL_COLOR_FIELDS)}</div>
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Objetos" subtitle="Componentes reutilizables, mostrados en vivo tal como aparecen en la web">
-            <div className="flex flex-wrap gap-6">
-              <div>
-                <p className="text-xs font-medium text-neutral-700 mb-2">Tarjeta clientes</p>
-                <div className="w-[420px]">
-                  <CompanyCard
-                    company={sampleCompany}
-                    allCompanies={COMPANIES}
-                    onClose={() => {}}
-                    onUpdate={() => {}}
-                    onAddComment={() => {}}
-                  />
-                </div>
               </div>
             </div>
           </SectionCard>

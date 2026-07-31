@@ -48,13 +48,27 @@ export function isGmailConfigured(): boolean {
   return !!CLIENT_ID;
 }
 
+// Fire-and-forget: kicks off loading the GIS script as soon as the
+// Comunicación card mounts, well before the user clicks "Conectar Gmail".
+// Popup blockers (Safari especially) only allow window.open() when it's
+// called synchronously within the click handler itself — if the script
+// still needed a real network fetch first, that async gap loses the
+// "user gesture" and the OAuth popup gets silently blocked. Preloading
+// means the click handler finds the script already cached.
+export function preloadGmail(): void {
+  if (CLIENT_ID) void loadGis();
+}
+
 export async function requestGmailAccessToken(): Promise<string> {
   if (!CLIENT_ID) {
     throw new Error("Falta configurar VITE_GOOGLE_CLIENT_ID para conectar Gmail.");
   }
   if (cachedToken && cachedToken.expiresAt > Date.now()) return cachedToken.value;
 
-  await loadGis();
+  // Skip the extra microtask hop when the script is already loaded (the
+  // common case, thanks to preloadGmail()) — keeps this as close to
+  // synchronous-with-the-click as possible for popup blockers.
+  if (!window.google) await loadGis();
   const google = window.google;
   if (!google) throw new Error("Google Identity Services no está disponible.");
 

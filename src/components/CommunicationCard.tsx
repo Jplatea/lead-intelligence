@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Mail, RefreshCw, AlertCircle } from "lucide-react";
 import type { Company } from "../types";
-import { fetchRecentEmails as fetchGmail, isGmailConfigured, requestGmailAccessToken } from "../lib/gmail";
-import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, requestOutlookAccessToken } from "../lib/outlook";
+import { fetchRecentEmails as fetchGmail, isGmailConfigured, preloadGmail, requestGmailAccessToken } from "../lib/gmail";
+import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 
 interface Props {
   company: Company;
@@ -26,6 +26,15 @@ export function CommunicationCard({ company, onClose }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
+
+  // Load Google/Microsoft's auth SDKs as soon as this card appears, so the
+  // click handlers below can call requestAccessToken()/loginPopup() with as
+  // little delay as possible — popup blockers only reliably allow the OAuth
+  // window when it opens right after the user's gesture.
+  useEffect(() => {
+    preloadGmail();
+    preloadOutlook();
+  }, []);
 
   const connect = async (provider: Provider) => {
     setStatus("loading");
