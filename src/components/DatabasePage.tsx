@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Mail, Search, SlidersHorizontal } from "lucide-react";
+import { Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 
@@ -243,7 +243,8 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 >
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="font-semibold text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
+                      <th className="w-8 border-b border-black/10" aria-hidden="true"></th>
+                      <th className="font-semibold text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
                         Nombre
                       </th>
                       {shownColumns.map((col) => (
@@ -268,20 +269,20 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                             onRowClick(c, x, e.clientY);
                           }}
                         >
+                          <td className="pl-3 pr-1 py-1 rounded-l-xl w-8" style={{ background: bg }}>
+                            {c.needsReview && (
+                              <CellTip value="Necesita revisión">
+                                <AlertCircle size={14} className="text-black/60" />
+                              </CellTip>
+                            )}
+                          </td>
                           <td
-                            className="pl-3 pr-1 py-1 rounded-l-xl whitespace-nowrap max-w-[160px]"
+                            className="px-2 py-1 whitespace-nowrap max-w-[160px]"
                             style={{ background: bg }}
                           >
-                            <div className="flex items-center gap-1.5 max-w-full">
-                              <CellTip value={c.name}>
-                                <span className="font-medium text-black truncate block">{c.name}</span>
-                              </CellTip>
-                              {c.needsReview && (
-                                <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
-                                  Revisar
-                                </span>
-                              )}
-                            </div>
+                            <CellTip value={c.name}>
+                              <span className="font-medium text-black truncate block">{c.name}</span>
+                            </CellTip>
                           </td>
                           {shownColumns.map((col, i) => (
                             <td
