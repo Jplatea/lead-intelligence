@@ -183,6 +183,20 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                 className={fieldClassIcon(!company.contact.phone)}
               />
             </div>
+            <a
+              href={company.contact.email ? `mailto:${company.contact.email}` : undefined}
+              onClick={(e) => {
+                if (!company.contact.email) e.preventDefault();
+              }}
+              aria-disabled={!company.contact.email}
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                company.contact.email
+                  ? "bg-[#2a9678]/10 border border-[#2a9678]/40 text-[#2a9678] hover:bg-[#2a9678]/20"
+                  : "bg-black/[0.015] border border-dashed border-neutral-300 text-neutral-400 cursor-not-allowed"
+              }`}
+            >
+              <Send size={13} /> Mandar mail
+            </a>
           </div>
         </div>
 
