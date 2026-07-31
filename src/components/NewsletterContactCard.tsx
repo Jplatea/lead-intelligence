@@ -31,7 +31,7 @@ export function NewsletterContactCard({ contact, onClose, onDelete, onUpdate }: 
 
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Nombre contacto</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Nombre contacto</label>
             <input
               value={contact.contactName}
               onChange={(e) => onUpdate(contact.id, { contactName: e.target.value })}
@@ -40,7 +40,7 @@ export function NewsletterContactCard({ contact, onClose, onDelete, onUpdate }: 
             />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Email</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Email</label>
             <input
               value={contact.email}
               onChange={(e) => onUpdate(contact.id, { email: e.target.value })}
@@ -49,7 +49,7 @@ export function NewsletterContactCard({ contact, onClose, onDelete, onUpdate }: 
             />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Empresa</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Empresa</label>
             <input
               value={contact.companyName}
               onChange={(e) => onUpdate(contact.id, { companyName: e.target.value })}

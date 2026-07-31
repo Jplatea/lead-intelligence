@@ -692,7 +692,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
 
       {selectedCompany && (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-52 max-h-[88%] overflow-y-auto space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-1 px-1 truncate">
+          <p className="text-[10px] tracking-wide text-neutral-400 mb-1 px-1 truncate">
             {selectedCompany.name}
           </p>
           {connectors.map((item) => (
@@ -724,7 +724,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
           style={{ left: hover.x, top: hover.y, transform: "translate(-50%, -100%) translateY(-14px)" }}
         >
           <div className="glass rounded-2xl px-3.5 py-3 w-52 shadow-[0_12px_32px_rgba(33,31,29,0.22)]">
-            <p className="text-[10px] uppercase tracking-wide" style={{ color: ALARM_CONFIG[hover.company.alarm].textHex }}>
+            <p className="text-[10px] tracking-wide" style={{ color: ALARM_CONFIG[hover.company.alarm].textHex }}>
               {hover.company.type}
             </p>
             <p className="text-sm font-semibold text-neutral-900 leading-tight">{hover.company.name}</p>

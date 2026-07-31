@@ -55,13 +55,13 @@ export function MergeDuplicatesModal({ conflicts, onApply, onClose }: Props) {
               <p className="text-sm font-medium text-neutral-800 mb-1.5">{c.existing.name}</p>
               <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-500 mb-2">
                 <div>
-                  <p className="uppercase tracking-wide text-neutral-400 mb-0.5">Existente</p>
+                  <p className="tracking-wide text-neutral-400 mb-0.5">Existente</p>
                   <p className="truncate">{c.existing.contact.email || "—"}</p>
                   <p className="truncate">{c.existing.contact.phone || "—"}</p>
                   <p className="truncate">{c.existing.city || "—"}</p>
                 </div>
                 <div>
-                  <p className="uppercase tracking-wide text-neutral-400 mb-0.5">Nuevo</p>
+                  <p className="tracking-wide text-neutral-400 mb-0.5">Nuevo</p>
                   <p className="truncate">{c.incoming.contact.email || "—"}</p>
                   <p className="truncate">{c.incoming.contact.phone || "—"}</p>
                   <p className="truncate">{c.incoming.city || "—"}</p>

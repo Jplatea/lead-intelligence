@@ -33,9 +33,11 @@ body {
    existing compact sizes on purpose — this is a dashboard, not a
    marketing page, and most of its "text" is data, not prose). */
 .type-h1 {
-  font-size: clamp(2.25rem, 2rem + 1vw, 3rem); /* 36px – 48px */
+  /* Reduced to less than half the original 36-48px per explicit feedback —
+     36-48px reads fine on a marketing hero, not on a 420px-wide card. */
+  font-size: 1.125rem; /* 18px */
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 .type-h2 {
   font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem); /* 20px – 28px */
@@ -43,7 +45,7 @@ body {
   line-height: 1.25;
 }
 .type-body {
-  font-size: 1rem; /* 16px */
+  font-size: 0.875rem; /* 14px — 2px down from the original 16px */
   font-weight: 400;
   line-height: 1.6;
 }

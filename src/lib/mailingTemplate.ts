@@ -264,7 +264,7 @@ export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailM
           </tr>
           <tr>
             <td style="padding:32px 36px 24px;background:linear-gradient(135deg,#a8dfcf,#a79bcb);">
-              <p style="margin:0 0 6px;font-family:${FONT_STACK};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#211f1d;opacity:0.65;">${eyebrow}</p>
+              <p style="margin:0 0 6px;font-family:${FONT_STACK};font-size:11px;letter-spacing:0.14em;color:#211f1d;opacity:0.65;">${eyebrow}</p>
               <h1 style="margin:0;font-family:${FONT_STACK};font-weight:700;font-size:24px;line-height:1.3;color:#211f1d;">${heading}</h1>
             </td>
           </tr>

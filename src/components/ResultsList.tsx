@@ -133,7 +133,7 @@ export function ResultsList({
             return (
               <div key={c.id}>
                 {groupLabel && (
-                  <p className="text-[10px] uppercase tracking-wide text-neutral-400 px-3 pt-3 pb-1 first:pt-0">
+                  <p className="text-[10px] tracking-wide text-neutral-400 px-3 pt-3 pb-1 first:pt-0">
                     {groupLabel}
                   </p>
                 )}

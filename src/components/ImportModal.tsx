@@ -186,7 +186,7 @@ export function ImportModal({
 
         <div className="space-y-5">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">
               Buscar clientes por URL
             </label>
             <div className="flex items-center gap-2">
@@ -216,7 +216,7 @@ export function ImportModal({
           <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">
               Subir archivo (CSV, KML, KMZ, Excel)
             </label>
 
@@ -268,7 +268,7 @@ export function ImportModal({
             <>
               <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
               <div>
-                <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+                <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">
                   Fuentes añadidas
                 </label>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">

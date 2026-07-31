@@ -19,7 +19,7 @@ const FLUOR = "#d4ff00";
 function Req() {
   return (
     <span
-      className="ml-1.5 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded"
+      className="ml-1.5 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded"
       style={{ background: FLUOR, color: "#1a1a1a" }}
     >
       Obligatorio
@@ -28,7 +28,7 @@ function Req() {
 }
 
 function Opt() {
-  return <span className="ml-1.5 text-[9px] text-neutral-400 uppercase tracking-wide">Opcional</span>;
+  return <span className="ml-1.5 text-[9px] text-neutral-400 tracking-wide">Opcional</span>;
 }
 
 function HelpItem({ label, required, note }: { label: string; required?: boolean; note?: string }) {
@@ -44,7 +44,7 @@ function HelpItem({ label, required, note }: { label: string; required?: boolean
 function HelpSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-1.5">{title}</h3>
+      <h3 className="text-[11px] tracking-widest text-neutral-400 mb-1.5">{title}</h3>
       <ul className="space-y-1.5">{children}</ul>
     </div>
   );
@@ -190,12 +190,12 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
 
         <div className="space-y-3">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Nombre *</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Nombre *</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Nombre de la empresa" />
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Tipo</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Tipo</label>
             <select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}>
               {TYPE_OPTIONS.map((t) => (
                 <option key={t} value={t}>
@@ -206,7 +206,7 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">
               Dirección completa *
             </label>
             <div className="flex gap-2">
@@ -238,17 +238,17 @@ export function NewCompanyModal({ lat: initialLat, lng: initialLng, onCancel, on
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Email *</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Email *</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="contacto@empresa.com" />
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Teléfono *</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Teléfono *</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} placeholder="+34 ..." />
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1 block">Comercial asignado</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-1 block">Comercial asignado</label>
             <select value={assignedRep} onChange={(e) => setAssignedRep(e.target.value as RepId)} className={inputClass}>
               {Object.values(REPS).map((r) => (
                 <option key={r.id} value={r.id}>

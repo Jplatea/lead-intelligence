@@ -11,6 +11,14 @@ const WEB_FONT_STACK =
   "'Epilogue', -apple-system, BlinkMacSystemFont, 'SF Pro Text', ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Inter', sans-serif";
 const NEWSLETTER_FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
+// Pulls the first (primary) font name out of a font-family stack, e.g.
+// "'Epilogue', -apple-system, ..." -> "Epilogue" — used so the font picker's
+// default option names the real typeface instead of a generic "Sistema".
+function primaryFontName(stack: string): string {
+  const first = stack.split(",")[0].trim();
+  return first.replace(/^['"]|['"]$/g, "");
+}
+
 // Extra fonts available to try out here for comparison only — the "Sistema"
 // option above already covers the real current default for each section.
 // Nexa and Cloud are commercial/unverified typefaces with no free
@@ -32,17 +40,16 @@ interface TypeField {
   color: string;
   lineHeight?: number;
   letterSpacing?: string;
-  textTransform?: "uppercase";
 }
 
 const WEB_TYPE_FIELDS: TypeField[] = [
   {
     id: "web-title",
     label: "Nombre de empresa (título de tarjeta)",
-    code: "text-lg font-semibold text-neutral-900 (18px)",
+    code: ".type-h1 — 18px, bold (reducido de 36-48px original)",
     fontFamily: WEB_FONT_STACK,
     fontSize: 18,
-    fontWeight: 600,
+    fontWeight: 700,
     color: "#171614",
   },
   {
@@ -56,14 +63,13 @@ const WEB_TYPE_FIELDS: TypeField[] = [
   },
   {
     id: "web-label",
-    label: "ETIQUETA DE CAMPO",
-    code: "text-[11px] uppercase tracking-widest text-neutral-400",
+    label: "Etiqueta de campo",
+    code: "text-[11px] tracking-widest text-neutral-400 (sin mayúsculas forzadas)",
     fontFamily: WEB_FONT_STACK,
     fontSize: 11,
     fontWeight: 400,
     color: "#a3a29e",
     letterSpacing: "0.08em",
-    textTransform: "uppercase",
   },
   {
     id: "web-hint",
@@ -162,7 +168,7 @@ const FONT_WEIGHTS = [400, 500, 600, 700, 800];
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-white/70 border border-black/10 p-5">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400">{title}</h3>
+      <h3 className="text-xs font-semibold tracking-widest text-neutral-400">{title}</h3>
       {subtitle && <p className="text-[11px] text-neutral-400 mt-0.5 mb-4">{subtitle}</p>}
       <div className={subtitle ? "" : "mt-4"}>{children}</div>
     </div>
@@ -188,7 +194,6 @@ function TypeSample({
           color: field.color,
           lineHeight: field.lineHeight,
           letterSpacing: field.letterSpacing,
-          textTransform: field.textTransform,
         }}
       >
         {field.label}
@@ -202,7 +207,7 @@ function TypeSample({
             onChange={(e) => onChange({ fontFamily: e.target.value })}
             className="bg-black/[0.03] border border-black/10 rounded px-1 py-0.5 text-[11px] text-neutral-700 outline-none cursor-pointer max-w-[140px]"
           >
-            <option value={defaultFontFamily}>Sistema (predeterminada)</option>
+            <option value={defaultFontFamily}>{primaryFontName(defaultFontFamily)} (predeterminada)</option>
             {EXTRA_FONT_CHOICES.map((f) => (
               <option key={f.value} value={f.value}>
                 {f.label}
@@ -344,7 +349,7 @@ export function StyleGuidePage() {
             </button>
           </div>
 
-          <SectionCard title="Jerarquía tipográfica — Web" subtitle="Fuente base: San Francisco / -apple-system">
+          <SectionCard title="Jerarquía tipográfica — Web" subtitle="Fuente base: Epilogue (con San Francisco / sistema como respaldo)">
             <div>{renderTypeGroup(WEB_TYPE_FIELDS)}</div>
           </SectionCard>
 
@@ -374,27 +379,27 @@ export function StyleGuidePage() {
           <SectionCard title="Colores usados">
             <div className="grid grid-cols-2 gap-x-8 gap-y-6">
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">Comerciales</p>
+                <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Comerciales</p>
                 <div className="space-y-2">{renderColorGroup(REP_COLOR_FIELDS)}</div>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">Base</p>
+                <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Base</p>
                 <div className="space-y-2">{renderColorGroup(BASE_COLOR_FIELDS)}</div>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">Estados de cliente</p>
+                <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Estados de cliente</p>
                 <div className="space-y-2">{renderColorGroup(STATUS_COLOR_FIELDS)}</div>
               </div>
 
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">Niveles de alarma</p>
+                <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Niveles de alarma</p>
                 <div className="space-y-2">{renderColorGroup(ALARM_COLOR_FIELDS)}</div>
               </div>
 
               <div className="col-span-2">
-                <p className="text-[10px] uppercase tracking-wide text-neutral-400 mb-2">Paleta pastel completa</p>
+                <p className="text-[10px] tracking-wide text-neutral-400 mb-2">Paleta pastel completa</p>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">{renderColorGroup(PASTEL_COLOR_FIELDS)}</div>
               </div>
             </div>

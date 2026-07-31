@@ -328,6 +328,11 @@ function App() {
     }
     setVisited((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
     setView(next);
+    // Explicit request: any open floating card/modal should close when
+    // switching between the 4 main sections, not follow you across tabs.
+    setSelectedId(null);
+    setSelectedContactId(null);
+    setVisitModalOpen(false);
   };
 
   const pageMotionProps = (pageView: AppView) => ({

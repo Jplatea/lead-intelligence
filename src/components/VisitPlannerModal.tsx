@@ -62,7 +62,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
 
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">
               ¿Quién eres? <span className="normal-case text-neutral-400">(elige uno, dos o los tres)</span>
             </label>
             <div className="flex items-center gap-3">
@@ -86,7 +86,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">¿A dónde vas?</label>
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">¿A dónde vas?</label>
             <div className="relative">
               <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <select

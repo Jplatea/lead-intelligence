@@ -54,7 +54,7 @@ export function LoginPage({ onLogin }: Props) {
         <h1 className="text-xl font-semibold text-white mb-1">Bienvenido</h1>
         <p className="text-xs text-white/50 mb-6">Selecciona tu usuario e introduce tu contraseña.</p>
 
-        <label className="text-[11px] uppercase tracking-wide text-white/50 mb-2 block">Usuario</label>
+        <label className="text-[11px] tracking-wide text-white/50 mb-2 block">Usuario</label>
         <div className="flex items-center justify-center gap-4 mb-2">
           <button
             onClick={() => cycle(-1)}
@@ -85,7 +85,7 @@ export function LoginPage({ onLogin }: Props) {
           ))}
         </div>
 
-        <label className="text-[11px] uppercase tracking-wide text-white/50 mb-2 block">Contraseña</label>
+        <label className="text-[11px] tracking-wide text-white/50 mb-2 block">Contraseña</label>
         <div className="relative mb-4">
           <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input

@@ -52,6 +52,14 @@ function crispEdge(active: boolean): string {
     : "inset 0 0 0 1.5px rgba(255,255,255,0.6), inset 0 0 0 1px rgba(33,31,29,0.12), 0 1px 2px rgba(33,31,29,0.14)";
 }
 
+// Data can arrive in any case (imports, manual typing in ALL CAPS...) — the
+// title always displays as sentence case (only its first letter capital)
+// regardless, without touching the stored value itself.
+function toSentenceCase(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddComment }: Props) {
   const status = STATUS_CONFIG[company.status];
   const alarm = ALARM_CONFIG[company.alarm];
@@ -61,6 +69,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
   const [commentText, setCommentText] = useState("");
   const [geocoding, setGeocoding] = useState(false);
   const [addressMsg, setAddressMsg] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
 
   const submitComment = () => {
     const trimmed = commentText.trim();
@@ -116,18 +125,32 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <p
-            className={`text-[10px] uppercase tracking-widest mb-1 ${
+            className={`text-[10px] tracking-widest mb-1 ${
               company.importedType === "manual" ? "text-[#3f6fc0]" : "text-[#2a9678]"
             }`}
           >
             {company.importedType === "manual" ? "Introducido manualmente" : "Detectado automáticamente"}
           </p>
-          <input
-            value={company.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            placeholder="Nombre de la empresa"
-            className="type-h1 text-neutral-900 bg-transparent outline-none border-b border-transparent focus:border-[#a8dfcf] w-full"
-          />
+          {editingName ? (
+            <input
+              autoFocus
+              value={company.name}
+              onChange={(e) => onUpdate({ name: e.target.value })}
+              onBlur={() => setEditingName(false)}
+              onKeyDown={(e) => e.key === "Enter" && setEditingName(false)}
+              placeholder="Nombre de la empresa"
+              className="type-h1 text-neutral-900 bg-transparent outline-none border-b border-[#a8dfcf] w-full"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              title="Editar nombre"
+              className="type-h1 text-neutral-900 text-left bg-transparent outline-none border-b border-transparent hover:border-black/10 w-full truncate"
+            >
+              {company.name ? toSentenceCase(company.name) : "Nombre de la empresa"}
+            </button>
+          )}
           {company.needsReview && (
             <div className="mt-1.5">
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#b9503a]/15 text-[#b9503a]">
@@ -182,7 +205,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Contacto</h3>
+          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Contacto</h3>
           <div className="space-y-2">
             <div className="relative">
               <Mail size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
@@ -220,7 +243,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Ubicación</h3>
+          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Ubicación</h3>
           <div className="space-y-2">
             <input
               value={company.city}
@@ -279,7 +302,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Marcas</h3>
+          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Marcas</h3>
           <TagInput
             value={company.brands}
             options={allBrands}
@@ -288,7 +311,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           />
         </div>
         <div>
-          <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Especialidades</h3>
+          <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Especialidades</h3>
           <TagInput
             value={company.specialties}
             options={allSpecialties}
@@ -302,7 +325,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Comercial</p>
+          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Comercial</p>
           <div className="flex items-center justify-center gap-2">
             {Object.values(REPS).map((r) => {
               const isActive = r.id === company.assignedRep;
@@ -324,7 +347,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Tipo</p>
+          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Tipo</p>
           <CustomSelect
             value={company.type}
             options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
@@ -335,7 +358,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <p className="text-[9px] uppercase tracking-wide text-neutral-400 mb-1.5">Alarma</p>
+          <p className="text-[9px] tracking-wide text-neutral-400 mb-1.5">Alarma</p>
           <CustomSelect
             value={company.alarm}
             options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
@@ -352,7 +375,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
       <Divider />
 
       <div>
-        <h3 className="text-[11px] uppercase tracking-widest text-neutral-400 mb-2">Comentarios</h3>
+        <h3 className="text-[11px] tracking-widest text-neutral-400 mb-2">Comentarios</h3>
 
         {company.comments.length > 0 && (
           <div className="space-y-2.5 mb-3">

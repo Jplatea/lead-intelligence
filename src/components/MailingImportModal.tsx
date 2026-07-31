@@ -68,7 +68,7 @@ export function MailingImportModal({ contacts, onClose, onImport, onDeleteContac
 
         <div className="space-y-5">
           <div>
-            <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">
+            <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">
               Subir archivo (CSV, Excel)
             </label>
 
@@ -105,7 +105,7 @@ export function MailingImportModal({ contacts, onClose, onImport, onDeleteContac
             <>
               <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
               <div>
-                <label className="text-[11px] uppercase tracking-wide text-neutral-400 mb-2 block">Contactos</label>
+                <label className="text-[11px] tracking-wide text-neutral-400 mb-2 block">Contactos</label>
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {contacts.map((c) => (
                     <div
