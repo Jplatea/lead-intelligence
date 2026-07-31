@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -24,8 +24,9 @@ import {
   buildEmlFile,
   buildMarketingEmailHtml,
   TEXT_FONT_OPTIONS,
-  type BlockType,
-  type MailingBlock as Block,
+  textFontStack,
+  type SectionType,
+  type MailingSection as Section,
   type TextAlign,
 } from "../lib/mailingTemplate";
 
@@ -33,314 +34,8 @@ interface Props {
   contacts: MailingContact[];
 }
 
-const MIN_SIZE = 60;
-const SNAP_DISTANCE = 6;
-// Matches the 600px card width used when actually building the email in
-// mailingTemplate.ts, so what's arranged here maps 1:1 onto the export.
-const CANVAS_WIDTH = 600;
-
-// Finds the first candidate edge (left/center/right or top/center/bottom of
-// the block being dragged) that lands within SNAP_DISTANCE of another
-// block's matching edge, so the two can be reported as aligned.
-function findSnap(candidates: number[], targets: number[], threshold: number): { candidate: number; value: number } | null {
-  for (const c of candidates) {
-    for (const t of targets) {
-      if (Math.abs(c - t) <= threshold) return { candidate: c, value: t };
-    }
-  }
-  return null;
-}
-
-function newBlock(type: BlockType, index: number): Block {
-  const base = {
-    id: `${type}-${Date.now()}-${index}`,
-    type,
-    x: 24 + index * 18,
-    y: 24 + index * 18,
-  };
-  switch (type) {
-    case "text":
-      return { ...base, width: 180, height: 180, content: "", fontFamily: "system", textAlign: "left", textStyle: "body" };
-    case "button":
-      return { ...base, width: 220, height: 90, content: "Ver más", url: "", color: "#bea05a" };
-    case "divider":
-      return { ...base, width: 560, height: 60, content: "", color: "#1a1a1a" };
-    default:
-      return { ...base, width: 180, height: 180, content: "" };
-  }
-}
-
-// The starting layout the canvas loads with. This mirrors the real Prestige
-// Ibérica / Le Groupe Prestige newsletter (Artcoustic / TruAudio / Screen
-// Innovations, Sept. 2025 Mailchimp send) — real copy and real product
-// photos (hosted on Mailchimp's own mcusercontent.com CDN) instead of
-// generic placeholders, so the base template is the company's actual
-// newsletter and future edits refine it in place rather than starting from
-// filler text.
-function buildDefaultTemplate(): Block[] {
-  const centered = { fontFamily: "system" as const, textAlign: "center" as const };
-  const left = { fontFamily: "system" as const, textAlign: "left" as const };
-  const headingCentered = { ...centered, textStyle: "heading" as const };
-  const headingLeft = { ...left, textStyle: "heading" as const };
-  const gold = "#bea05a";
-  const button = (id: string, x: number, y: number, width: number, content: string, url: string): Block => ({
-    id,
-    type: "button",
-    x,
-    y,
-    width,
-    height: 60,
-    content,
-    url,
-    color: gold,
-  });
-  const divider = (id: string, y: number): Block => ({
-    id,
-    type: "divider",
-    x: 20,
-    y,
-    width: 560,
-    height: 30,
-    content: "",
-    color: "#1a1a1a",
-  });
-
-  return [
-    { id: "tpl-hero-title", type: "text", x: 0, y: 0, width: 600, height: 60, content: "Su equipo audiovisual para la nueva temporada", ...headingCentered },
-    {
-      id: "tpl-hero-subtitle",
-      type: "text",
-      x: 0,
-      y: 70,
-      width: 600,
-      height: 60,
-      content: "Nos complace añadir Artcoustic a nuestra oferta. ¿Conoce nuestras marcas TruAudio y Screen Innovations?",
-      ...centered,
-    },
-    {
-      id: "tpl-hero-img",
-      type: "image",
-      x: 0,
-      y: 150,
-      width: 600,
-      height: 280,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/96122623-d53a-5fe2-4367-f7fb92f64574.jpg",
-    },
-    divider("tpl-div-1", 450),
-
-    { id: "tpl-artcoustic-heading", type: "text", x: 0, y: 500, width: 600, height: 50, content: "1| Artcoustic, nueva marca de Prestige", ...headingLeft },
-    {
-      id: "tpl-artcoustic-body",
-      type: "text",
-      x: 0,
-      y: 560,
-      width: 600,
-      height: 200,
-      content:
-        "Estamos muy contentos de iniciar una nueva colaboración con la marca de audio Artcoustic. El fabricante danés cuenta con una amplia gama de productos, principalmente para montaje en pared, con tecnología acústica avanzada.\n\nArtcoustic combina el audio de alta fidelidad y la integración arquitectónica con altavoces finos, gamas específicas para cada uso y modelos personalizables. Confíe en la gama Spitfire para obtener potentes altavoces de cine o en la serie SL para sistemas multiroom. Artcoustic también hace énfasis en la integración estética con colores personalizados.",
-      ...left,
-    },
-    button("tpl-artcoustic-cta", 150, 770, 300, "Descubre Artcoustic en su página web", "https://www.artcoustic.com/"),
-    {
-      id: "tpl-artcoustic-img",
-      type: "image",
-      x: 0,
-      y: 850,
-      width: 280,
-      height: 200,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/78917137-b437-a8a4-a9f9-24ab0a976969.jpg",
-    },
-    {
-      id: "tpl-artcoustic-products",
-      type: "text",
-      x: 300,
-      y: 850,
-      width: 300,
-      height: 200,
-      content: "Los productos Artcoustic\n\n» Ver altavoces multiroom\n» Ver altavoces de cinema\n» Ver barras de sonido",
-      ...left,
-    },
-    divider("tpl-div-2", 1070),
-
-    { id: "tpl-truaudio-heading", type: "text", x: 0, y: 1120, width: 600, height: 50, content: "2| TruAudio", ...headingLeft },
-    {
-      id: "tpl-truaudio-body",
-      type: "text",
-      x: 0,
-      y: 1180,
-      width: 600,
-      height: 200,
-      content:
-        "Especializada en altavoces empotrables multiroom, TruAudio ofrece a los instaladores productos diseñados para combinar rendimiento sonoro, fiabilidad y discreción estética. Gracias a una amplia gama pensada para satisfacer las necesidades tanto residenciales como comerciales, TruAudio facilita la creación de experiencias sonoras inmersivas y duraderas. Innovadora y orientada a los profesionales, la marca ofrece soluciones técnicas adaptadas a todos los entornos, con una amplia selección de altavoces empotrables, pero también una gama muy completa para exteriores, altavoces suspendidos o barras de sonido personalizadas.",
-      ...left,
-    },
-    button("tpl-truaudio-cta", 150, 1390, 300, "Descubre TruAudio en su página web", "https://www.truaudio.com/"),
-    {
-      id: "tpl-phantom-text",
-      type: "text",
-      x: 0,
-      y: 1470,
-      width: 300,
-      height: 240,
-      content:
-        "Zoom sobre Phantom y Shadow\n\nLos modelos empotrados en techo se encuentran entre nuestros productos TruAudio más vendidos, y tienen un precio atractivo:\n\n• Distribución clara del sonido en espacios amplios\n• Integración discreta sin marco\n• Resistencia a entornos húmedos\n• 8,5”, 6,5” o 4”",
-      ...left,
-    },
-    {
-      id: "tpl-phantom-img",
-      type: "image",
-      x: 310,
-      y: 1470,
-      width: 280,
-      height: 240,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/d57795ae-252a-3568-1dbc-5252f02e30af.jpg",
-    },
-    divider("tpl-div-3", 1730),
-
-    {
-      id: "tpl-screen-heading",
-      type: "text",
-      x: 0,
-      y: 1780,
-      width: 600,
-      height: 60,
-      content: "Screen Innovations: pantallas de proyección de alta gama en el punto de mira",
-      ...headingCentered,
-    },
-    {
-      id: "tpl-screen-body",
-      type: "text",
-      x: 0,
-      y: 1850,
-      width: 600,
-      height: 180,
-      content:
-        "Especializada en pantallas de proyección y persianas motorizadas, Screen Innovations combina tecnología, diseño y rendimiento. Sus pantallas (como Black Diamond® y Maestro 2™) ofrecen una calidad de imagen excepcional, incluso con luz ambiental. Las elegantes persianas conectadas se integran a la perfección tanto en espacios interiores como exteriores. Aproveche este equipo de calidad profesional para sus instalaciones de alta gama.",
-      ...centered,
-    },
-    button("tpl-screen-cta", 150, 2040, 300, "Descubra Screen Innovations en su web", "https://www.screeninnovations.com/screen/fixed/"),
-    {
-      id: "tpl-screens-img",
-      type: "image",
-      x: 0,
-      y: 2120,
-      width: 280,
-      height: 200,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/5298add2-eb83-8051-116f-6d0f9826a2af.jpg",
-    },
-    {
-      id: "tpl-screens-text",
-      type: "text",
-      x: 300,
-      y: 2120,
-      width: 300,
-      height: 200,
-      content:
-        "Pantallas a medida\n\nSI le permite crear la pantalla fija, motorizada u oculta que desee gracias a su configurador en línea: dimensiones, encofrado, color, descenso motorizado, relación de aspecto, montaje, especificidad de la tela... Hay disponibles una quincena de telas para adaptarse a numerosos entornos de proyección, como la Black Diamond, que rechaza la luz ambiental, o la Maestro 2, acústicamente transparente.",
-      ...left,
-    },
-    {
-      id: "tpl-blinds-text",
-      type: "text",
-      x: 0,
-      y: 2340,
-      width: 300,
-      height: 240,
-      content:
-        "Amplia selección de persianas\n\nSe le ofrecen diferentes tecnologías de persianas, algunas de ellas patentadas. El modo de apertura, el color, la motorización y los tejidos se combinan según sus instrucciones, para una integración perfecta en el diseño del espacio. En cuanto a la integración técnica, estas persianas se integran fácilmente en una instalación conectada, incluyendo un control nativo mediante Control4.",
-      ...left,
-    },
-    {
-      id: "tpl-blinds-img",
-      type: "image",
-      x: 310,
-      y: 2340,
-      width: 280,
-      height: 240,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/b7061841-c302-f51b-e2dc-93bc9d427abc.jpg",
-    },
-    divider("tpl-div-4", 2600),
-
-    { id: "tpl-youtube-heading", type: "text", x: 0, y: 2650, width: 600, height: 50, content: "Nuestros tutoriales en YouTube", ...headingCentered },
-    {
-      id: "tpl-youtube-body",
-      type: "text",
-      x: 0,
-      y: 2710,
-      width: 600,
-      height: 90,
-      content: "¿Necesita consejos para sus instalaciones? Nuestros vídeos responden a las preguntas más frecuentes.\n\nBúsquelos por temas en nuestra página:",
-      ...centered,
-    },
-    button(
-      "tpl-youtube-cta",
-      120,
-      2810,
-      360,
-      "Canal Le Groupe Prestige en YouTube",
-      "https://www.youtube.com/@legroupeprestige/videos"
-    ),
-    {
-      id: "tpl-youtube-video",
-      type: "video",
-      x: 0,
-      y: 2890,
-      width: 600,
-      height: 140,
-      content: "https://www.youtube.com/watch?v=zc6UXZ-XUxU",
-    },
-    {
-      id: "tpl-youtube-caption",
-      type: "text",
-      x: 0,
-      y: 3050,
-      width: 600,
-      height: 50,
-      content: "Aquí está la más reciente, de la semana pasada.",
-      ...centered,
-    },
-    divider("tpl-div-5", 3120),
-
-    { id: "tpl-control4-heading", type: "text", x: 0, y: 3170, width: 600, height: 50, content: "Formación Control4", ...headingCentered },
-    {
-      id: "tpl-control4-body",
-      type: "text",
-      x: 0,
-      y: 3230,
-      width: 600,
-      height: 120,
-      content:
-        "Las formaciones de Control4 le permiten convertirse en integrador certificado de la marca, requisito necesario para instalar sus productos. Se imparten en nuestras instalaciones de Murcia para poner en práctica todo lo que aprende.\n\nSi está interesado, póngase en contacto con Víctor.",
-      ...centered,
-    },
-    button("tpl-control4-cta", 150, 3360, 300, "+34 6 86 05 72 05", "tel:+34686057205"),
-    {
-      id: "tpl-control4-img",
-      type: "image",
-      x: 0,
-      y: 3440,
-      width: 600,
-      height: 260,
-      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/8e92a952-68d2-1917-1b31-83fbe47f9985.png",
-    },
-  ];
-}
-
-const TEMPLATE_STORAGE_KEY = "lead-intelligence:mailing-template";
-
-// The canvas is meant to be a base template that keeps getting refined over
-// time, not something that resets every visit — so it persists to
-// localStorage the same way companies/mailingContacts do, and only falls
-// back to the built-in starter layout the very first time there's nothing
-// saved yet.
-function loadTemplate(): Block[] {
-  try {
-    const raw = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    // fall through to the default template
-  }
-  return buildDefaultTemplate();
+function isRemoteUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -352,201 +47,312 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-interface BlockStyle {
-  type: BlockType;
+function newSection(type: SectionType, index: number): Section {
+  const base = { id: `${type}-${Date.now()}-${index}`, type, content: "" };
+  switch (type) {
+    case "text":
+      return { ...base, fontFamily: "system", textAlign: "left", textStyle: "body" };
+    case "button":
+      return { ...base, content: "Ver más", url: "", color: "#bea05a" };
+    case "divider":
+      return { ...base, color: "#1a1a1a" };
+    default:
+      return base;
+  }
+}
+
+// The starting layout the template loads with. This mirrors the real
+// Prestige Ibérica / Le Groupe Prestige newsletter (Artcoustic / TruAudio /
+// Screen Innovations, Sept. 2025 Mailchimp send) — real copy, real product
+// photos, and real CTA links, structured as an ordered list of sections
+// instead of freely positioned cards. There is no canvas to arrange: the
+// layout (what's full-width, what's a two-column pair) is fixed by the
+// template, and every field inside it is edited directly in place.
+function buildDefaultSections(): Section[] {
+  const centered = { fontFamily: "system" as const, textAlign: "center" as const };
+  const left = { fontFamily: "system" as const, textAlign: "left" as const };
+  const headingCentered = { ...centered, textStyle: "heading" as const };
+  const headingLeft = { ...left, textStyle: "heading" as const };
+  const gold = "#bea05a";
+  const button = (id: string, content: string, url: string): Section => ({
+    id,
+    type: "button",
+    content,
+    url,
+    color: gold,
+  });
+  const divider = (id: string): Section => ({ id, type: "divider", content: "", color: "#1a1a1a" });
+  const row = (id: string, colA: Section, colB: Section): Section => ({
+    id,
+    type: "row",
+    content: "",
+    columns: [colA, colB],
+  });
+
+  return [
+    { id: "tpl-hero-title", type: "text", content: "Su equipo audiovisual para la nueva temporada", ...headingCentered },
+    {
+      id: "tpl-hero-subtitle",
+      type: "text",
+      content: "Nos complace añadir Artcoustic a nuestra oferta. ¿Conoce nuestras marcas TruAudio y Screen Innovations?",
+      ...centered,
+    },
+    {
+      id: "tpl-hero-img",
+      type: "image",
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/96122623-d53a-5fe2-4367-f7fb92f64574.jpg",
+    },
+    divider("tpl-div-1"),
+
+    { id: "tpl-artcoustic-heading", type: "text", content: "1| Artcoustic, nueva marca de Prestige", ...headingLeft },
+    {
+      id: "tpl-artcoustic-body",
+      type: "text",
+      content:
+        "Estamos muy contentos de iniciar una nueva colaboración con la marca de audio Artcoustic. El fabricante danés cuenta con una amplia gama de productos, principalmente para montaje en pared, con tecnología acústica avanzada.\n\nArtcoustic combina el audio de alta fidelidad y la integración arquitectónica con altavoces finos, gamas específicas para cada uso y modelos personalizables. Confíe en la gama Spitfire para obtener potentes altavoces de cine o en la serie SL para sistemas multiroom. Artcoustic también hace énfasis en la integración estética con colores personalizados.",
+      ...left,
+    },
+    button("tpl-artcoustic-cta", "Descubre Artcoustic en su página web", "https://www.artcoustic.com/"),
+    row(
+      "tpl-artcoustic-row",
+      {
+        id: "tpl-artcoustic-img",
+        type: "image",
+        content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/78917137-b437-a8a4-a9f9-24ab0a976969.jpg",
+      },
+      {
+        id: "tpl-artcoustic-products",
+        type: "text",
+        content: "Los productos Artcoustic\n\n» Ver altavoces multiroom\n» Ver altavoces de cinema\n» Ver barras de sonido",
+        ...left,
+      }
+    ),
+    divider("tpl-div-2"),
+
+    { id: "tpl-truaudio-heading", type: "text", content: "2| TruAudio", ...headingLeft },
+    {
+      id: "tpl-truaudio-body",
+      type: "text",
+      content:
+        "Especializada en altavoces empotrables multiroom, TruAudio ofrece a los instaladores productos diseñados para combinar rendimiento sonoro, fiabilidad y discreción estética. Gracias a una amplia gama pensada para satisfacer las necesidades tanto residenciales como comerciales, TruAudio facilita la creación de experiencias sonoras inmersivas y duraderas. Innovadora y orientada a los profesionales, la marca ofrece soluciones técnicas adaptadas a todos los entornos, con una amplia selección de altavoces empotrables, pero también una gama muy completa para exteriores, altavoces suspendidos o barras de sonido personalizadas.",
+      ...left,
+    },
+    button("tpl-truaudio-cta", "Descubre TruAudio en su página web", "https://www.truaudio.com/"),
+    row(
+      "tpl-phantom-row",
+      {
+        id: "tpl-phantom-text",
+        type: "text",
+        content:
+          "Zoom sobre Phantom y Shadow\n\nLos modelos empotrados en techo se encuentran entre nuestros productos TruAudio más vendidos, y tienen un precio atractivo:\n\n• Distribución clara del sonido en espacios amplios\n• Integración discreta sin marco\n• Resistencia a entornos húmedos\n• 8,5”, 6,5” o 4”",
+        ...left,
+      },
+      {
+        id: "tpl-phantom-img",
+        type: "image",
+        content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/d57795ae-252a-3568-1dbc-5252f02e30af.jpg",
+      }
+    ),
+    divider("tpl-div-3"),
+
+    {
+      id: "tpl-screen-heading",
+      type: "text",
+      content: "Screen Innovations: pantallas de proyección de alta gama en el punto de mira",
+      ...headingCentered,
+    },
+    {
+      id: "tpl-screen-body",
+      type: "text",
+      content:
+        "Especializada en pantallas de proyección y persianas motorizadas, Screen Innovations combina tecnología, diseño y rendimiento. Sus pantallas (como Black Diamond® y Maestro 2™) ofrecen una calidad de imagen excepcional, incluso con luz ambiental. Las elegantes persianas conectadas se integran a la perfección tanto en espacios interiores como exteriores. Aproveche este equipo de calidad profesional para sus instalaciones de alta gama.",
+      ...centered,
+    },
+    button("tpl-screen-cta", "Descubra Screen Innovations en su web", "https://www.screeninnovations.com/screen/fixed/"),
+    row(
+      "tpl-screens-row",
+      {
+        id: "tpl-screens-img",
+        type: "image",
+        content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/5298add2-eb83-8051-116f-6d0f9826a2af.jpg",
+      },
+      {
+        id: "tpl-screens-text",
+        type: "text",
+        content:
+          "Pantallas a medida\n\nSI le permite crear la pantalla fija, motorizada u oculta que desee gracias a su configurador en línea: dimensiones, encofrado, color, descenso motorizado, relación de aspecto, montaje, especificidad de la tela... Hay disponibles una quincena de telas para adaptarse a numerosos entornos de proyección, como la Black Diamond, que rechaza la luz ambiental, o la Maestro 2, acústicamente transparente.",
+        ...left,
+      }
+    ),
+    row(
+      "tpl-blinds-row",
+      {
+        id: "tpl-blinds-text",
+        type: "text",
+        content:
+          "Amplia selección de persianas\n\nSe le ofrecen diferentes tecnologías de persianas, algunas de ellas patentadas. El modo de apertura, el color, la motorización y los tejidos se combinan según sus instrucciones, para una integración perfecta en el diseño del espacio. En cuanto a la integración técnica, estas persianas se integran fácilmente en una instalación conectada, incluyendo un control nativo mediante Control4.",
+        ...left,
+      },
+      {
+        id: "tpl-blinds-img",
+        type: "image",
+        content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/b7061841-c302-f51b-e2dc-93bc9d427abc.jpg",
+      }
+    ),
+    divider("tpl-div-4"),
+
+    { id: "tpl-youtube-heading", type: "text", content: "Nuestros tutoriales en YouTube", ...headingCentered },
+    {
+      id: "tpl-youtube-body",
+      type: "text",
+      content: "¿Necesita consejos para sus instalaciones? Nuestros vídeos responden a las preguntas más frecuentes.\n\nBúsquelos por temas en nuestra página:",
+      ...centered,
+    },
+    button("tpl-youtube-cta", "Canal Le Groupe Prestige en YouTube", "https://www.youtube.com/@legroupeprestige/videos"),
+    { id: "tpl-youtube-video", type: "video", content: "https://www.youtube.com/watch?v=zc6UXZ-XUxU" },
+    { id: "tpl-youtube-caption", type: "text", content: "Aquí está la más reciente, de la semana pasada.", ...centered },
+    divider("tpl-div-5"),
+
+    { id: "tpl-control4-heading", type: "text", content: "Formación Control4", ...headingCentered },
+    {
+      id: "tpl-control4-body",
+      type: "text",
+      content:
+        "Las formaciones de Control4 le permiten convertirse en integrador certificado de la marca, requisito necesario para instalar sus productos. Se imparten en nuestras instalaciones de Murcia para poner en práctica todo lo que aprende.\n\nSi está interesado, póngase en contacto con Víctor.",
+      ...centered,
+    },
+    button("tpl-control4-cta", "+34 6 86 05 72 05", "tel:+34686057205"),
+    {
+      id: "tpl-control4-img",
+      type: "image",
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/8e92a952-68d2-1917-1b31-83fbe47f9985.png",
+    },
+  ];
+}
+
+const TEMPLATE_STORAGE_KEY = "lead-intelligence:mailing-template";
+
+// The template is meant to be a base that keeps getting refined over time,
+// not something that resets every visit — so it persists to localStorage
+// the same way companies/mailingContacts do, and only falls back to the
+// built-in starter layout the very first time there's nothing saved yet.
+function loadSections(): Section[] {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // fall through to the default template
+  }
+  return buildDefaultSections();
+}
+
+// Recursively finds a section by id — checking top-level sections and, for
+// "row" sections, their two columns — and applies an update. There is no
+// deeper nesting than one level (a row's columns are always leaves).
+function mapSections(sections: Section[], id: string, fn: (s: Section) => Section): Section[] {
+  return sections.map((s) => {
+    if (s.id === id) return fn(s);
+    if (s.type === "row" && s.columns) {
+      return { ...s, columns: s.columns.map((c) => (c.id === id ? fn(c) : c)) };
+    }
+    return s;
+  });
+}
+
+// Removing a row's column just shrinks that row; a row left with no
+// columns disappears entirely rather than rendering an empty card.
+function removeFromSections(sections: Section[], id: string): Section[] {
+  return sections
+    .filter((s) => s.id !== id)
+    .map((s) => (s.type === "row" && s.columns ? { ...s, columns: s.columns.filter((c) => c.id !== id) } : s))
+    .filter((s) => s.type !== "row" || (s.columns && s.columns.length > 0));
+}
+
+interface AddButtonDef {
+  type: SectionType;
   label: string;
   icon: typeof ImageIcon;
-  border: string;
-  bg: string;
-  fill: string;
   text: string;
 }
 
-// Each block type keeps the same color as its "add" button — the block
-// header/border/fill reuse these instead of a separate palette, so the
-// canvas visually maps back to the buttons that created it, and every
-// block reads as "belonging" to its type's color at a glance.
-const ADD_BUTTONS: BlockStyle[] = [
-  {
-    type: "text",
-    label: "Texto",
-    icon: Type,
-    border: "border-[#a79bcb]",
-    bg: "bg-[#a79bcb]/25",
-    fill: "bg-[#a79bcb]/10",
-    text: "text-[#6a56a0]",
-  },
-  {
-    type: "image",
-    label: "Imagen",
-    icon: ImageIcon,
-    border: "border-[#a8dfcf]",
-    bg: "bg-[#a8dfcf]/30",
-    fill: "bg-[#a8dfcf]/12",
-    text: "text-[#2a9678]",
-  },
-  {
-    type: "video",
-    label: "Vídeo",
-    icon: Video,
-    border: "border-[#f0c39a]",
-    bg: "bg-[#f0c39a]/35",
-    fill: "bg-[#f0c39a]/15",
-    text: "text-[#a3672c]",
-  },
-  {
-    type: "button",
-    label: "Botón",
-    icon: MousePointerClick,
-    border: "border-[#bea05a]",
-    bg: "bg-[#bea05a]/25",
-    fill: "bg-[#bea05a]/10",
-    text: "text-[#8a7238]",
-  },
-  {
-    type: "divider",
-    label: "Separador",
-    icon: Minus,
-    border: "border-neutral-400",
-    bg: "bg-neutral-400/20",
-    fill: "bg-neutral-400/10",
-    text: "text-neutral-600",
-  },
+const ADD_BUTTONS: AddButtonDef[] = [
+  { type: "text", label: "Texto", icon: Type, text: "text-[#6a56a0]" },
+  { type: "image", label: "Imagen", icon: ImageIcon, text: "text-[#2a9678]" },
+  { type: "video", label: "Vídeo", icon: Video, text: "text-[#a3672c]" },
+  { type: "button", label: "Botón", icon: MousePointerClick, text: "text-[#8a7238]" },
+  { type: "divider", label: "Separador", icon: Minus, text: "text-neutral-600" },
 ];
 
-function blockStyle(type: BlockType): BlockStyle {
-  return ADD_BUTTONS.find((b) => b.type === type)!;
+// A textarea that grows to fit its content — so a text field reads as a
+// natural piece of the template's flow (no fixed box clipping the copy),
+// not a fixed-size input.
+function AutoTextarea({
+  value,
+  onChange,
+  placeholder,
+  style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={1}
+      style={style}
+      className="w-full resize-none outline-none border border-transparent hover:border-black/10 focus:border-[#a8dfcf] rounded-lg transition-colors placeholder:text-neutral-400"
+    />
+  );
 }
 
 export function MailingPage({ contacts }: Props) {
-  const [blocks, setBlocks] = useState<Block[]>(loadTemplate);
+  const [sections, setSections] = useState<Section[]>(loadSections);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [guides, setGuides] = useState<{ vertical: number[]; horizontal: number[] }>({ vertical: [], horizontal: [] });
-  const blocksRef = useRef<Block[]>([]);
 
   useEffect(() => {
-    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(blocks));
-  }, [blocks]);
-  useEffect(() => {
-    blocksRef.current = blocks;
-  }, [blocks]);
-  const dragState = useRef<{
-    id: string;
-    mode: "move" | "resize";
-    startX: number;
-    startY: number;
-    origX: number;
-    origY: number;
-    origW: number;
-    origH: number;
-  } | null>(null);
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(sections));
+  }, [sections]);
 
-  const updateBlock = (id: string, patch: Partial<Block>) => {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
-  };
+  const updateSection = (id: string, patch: Partial<Section>) =>
+    setSections((prev) => mapSections(prev, id, (s) => ({ ...s, ...patch })));
 
-  const removeBlock = (id: string) => setBlocks((prev) => prev.filter((b) => b.id !== id));
+  const removeSection = (id: string) => setSections((prev) => removeFromSections(prev, id));
 
-  const addBlock = (type: BlockType) => setBlocks((prev) => [...prev, newBlock(type, prev.length)]);
+  const addSection = (type: SectionType) => setSections((prev) => [...prev, newSection(type, prev.length)]);
 
-  const onPointerMove = useCallback((e: MouseEvent) => {
-    const drag = dragState.current;
-    if (!drag) return;
-    const dx = e.clientX - drag.startX;
-    const dy = e.clientY - drag.startY;
-
-    if (drag.mode === "resize") {
-      updateBlock(drag.id, {
-        width: Math.max(MIN_SIZE, drag.origW + dx),
-        height: Math.max(MIN_SIZE, drag.origH + dy),
-      });
-      return;
-    }
-
-    const moving = blocksRef.current.find((b) => b.id === drag.id);
-    if (!moving) return;
-
-    const newX = Math.max(0, drag.origX + dx);
-    const newY = Math.max(0, drag.origY + dy);
-    const xCandidates = [newX, newX + moving.width / 2, newX + moving.width];
-    const yCandidates = [newY, newY + moving.height / 2, newY + moving.height];
-
-    let snappedX: number | null = null;
-    let snappedY: number | null = null;
-    const vLines = new Set<number>();
-    const hLines = new Set<number>();
-
-    for (const other of blocksRef.current) {
-      if (other.id === drag.id) continue;
-      if (snappedX === null) {
-        const hit = findSnap(xCandidates, [other.x, other.x + other.width / 2, other.x + other.width], SNAP_DISTANCE);
-        if (hit) {
-          snappedX = newX + (hit.value - hit.candidate);
-          vLines.add(hit.value);
-        }
-      }
-      if (snappedY === null) {
-        const hit = findSnap(yCandidates, [other.y, other.y + other.height / 2, other.y + other.height], SNAP_DISTANCE);
-        if (hit) {
-          snappedY = newY + (hit.value - hit.candidate);
-          hLines.add(hit.value);
-        }
-      }
-    }
-
-    setGuides({ vertical: [...vLines], horizontal: [...hLines] });
-    updateBlock(drag.id, { x: snappedX ?? newX, y: snappedY ?? newY });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const stopDragging = useCallback(() => {
-    dragState.current = null;
-    setGuides({ vertical: [], horizontal: [] });
-    window.removeEventListener("mousemove", onPointerMove);
-    window.removeEventListener("mouseup", stopDragging);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onPointerMove]);
-
-  const startDrag = (block: Block, mode: "move" | "resize") => (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragState.current = {
-      id: block.id,
-      mode,
-      startX: e.clientX,
-      startY: e.clientY,
-      origX: block.x,
-      origY: block.y,
-      origW: block.width,
-      origH: block.height,
-    };
-    window.addEventListener("mousemove", onPointerMove);
-    window.addEventListener("mouseup", stopDragging);
-  };
-
-  const handleFile = async (block: Block, file: File | undefined) => {
+  const handleFile = async (section: Section, file: File | undefined) => {
     if (!file) return;
     const dataUrl = await readAsDataUrl(file);
-    updateBlock(block.id, { content: dataUrl });
+    updateSection(section.id, { content: dataUrl });
   };
 
-  const submitUrl = (block: Block) => {
-    const val = (urlDrafts[block.id] ?? "").trim();
+  const submitUrl = (section: Section) => {
+    const val = (urlDrafts[section.id] ?? "").trim();
     if (!val) return;
-    updateBlock(block.id, { content: val });
-    setUrlDrafts((prev) => ({ ...prev, [block.id]: "" }));
+    updateSection(section.id, { content: val });
+    setUrlDrafts((prev) => ({ ...prev, [section.id]: "" }));
   };
 
-  const canvasHeight = Math.max(500, ...blocks.map((b) => b.y + b.height + 40));
-
-  const recipients = Array.from(
-    new Set(contacts.map((c) => c.email.trim()).filter(Boolean))
-  );
+  const recipients = Array.from(new Set(contacts.map((c) => c.email.trim()).filter(Boolean)));
 
   const downloadHtml = () => {
-    const html = buildMarketingEmailHtml(blocks);
+    const html = buildMarketingEmailHtml(sections);
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -557,7 +363,7 @@ export function MailingPage({ contacts }: Props) {
   };
 
   const copyHtml = () => {
-    navigator.clipboard.writeText(buildMarketingEmailHtml(blocks)).then(() => {
+    navigator.clipboard.writeText(buildMarketingEmailHtml(sections)).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     });
@@ -569,7 +375,7 @@ export function MailingPage({ contacts }: Props) {
   // recipients, subject, and formatted template inside it, no paste step
   // needed.
   const downloadEmlDraft = () => {
-    const html = buildMarketingEmailHtml(blocks);
+    const html = buildMarketingEmailHtml(sections);
     const eml = buildEmlFile(html, "Novedades de Prestige Ibérica", recipients);
     const blob = new Blob([eml], { type: "message/rfc822" });
     const url = URL.createObjectURL(blob);
@@ -579,6 +385,251 @@ export function MailingPage({ contacts }: Props) {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const renderTextField = (section: Section) => {
+    const isHeading = (section.textStyle ?? "body") === "heading";
+    return (
+      <div className="w-full">
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          <select
+            value={section.fontFamily ?? "system"}
+            onChange={(e) => updateSection(section.id, { fontFamily: e.target.value })}
+            className="bg-black/[0.03] border border-black/10 rounded px-1 py-0.5 text-[10px] text-neutral-600 outline-none cursor-pointer"
+          >
+            {TEXT_FONT_OPTIONS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-0.5">
+            {(
+              [
+                { value: "left", icon: AlignLeft },
+                { value: "center", icon: AlignCenter },
+                { value: "right", icon: AlignRight },
+              ] as { value: TextAlign; icon: typeof AlignLeft }[]
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => updateSection(section.id, { textAlign: opt.value })}
+                className={`p-1 rounded ${
+                  (section.textAlign ?? "left") === opt.value
+                    ? "bg-[#a79bcb]/30 text-[#6a56a0]"
+                    : "text-neutral-400 hover:text-neutral-600"
+                }`}
+              >
+                <opt.icon size={11} />
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            title="Alternar título / texto normal"
+            onClick={() => updateSection(section.id, { textStyle: isHeading ? "body" : "heading" })}
+            className={`p-1 rounded ${
+              isHeading ? "bg-[#a79bcb]/30 text-[#6a56a0]" : "text-neutral-400 hover:text-neutral-600"
+            }`}
+          >
+            <Heading2 size={12} />
+          </button>
+          <label className="flex items-center gap-1" title="Color del texto">
+            <span className="text-[9px] text-neutral-400">A</span>
+            <input
+              type="color"
+              value={section.textColor ?? (isHeading ? "#bea05a" : "#211f1d")}
+              onChange={(e) => updateSection(section.id, { textColor: e.target.value })}
+              className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
+            />
+          </label>
+          <label className="flex items-center gap-1" title="Color de fondo de la sección">
+            <span className="text-[9px] text-neutral-400">Fondo</span>
+            <input
+              type="color"
+              value={section.bgColor ?? "#ffffff"}
+              onChange={(e) => updateSection(section.id, { bgColor: e.target.value })}
+              className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
+            />
+          </label>
+          {section.bgColor && (
+            <button
+              type="button"
+              title="Quitar color de fondo"
+              onClick={() => updateSection(section.id, { bgColor: undefined })}
+              className="text-neutral-400 hover:text-neutral-600"
+            >
+              <X size={10} />
+            </button>
+          )}
+        </div>
+        <AutoTextarea
+          value={section.content}
+          onChange={(v) => updateSection(section.id, { content: v })}
+          placeholder="Escribe tu texto..."
+          style={{
+            fontFamily: textFontStack(section.fontFamily),
+            textAlign: section.textAlign ?? "left",
+            color: section.textColor || (isHeading ? "#bea05a" : "#211f1d"),
+            backgroundColor: section.bgColor ?? "transparent",
+            fontWeight: isHeading ? 700 : 400,
+            fontSize: isHeading ? "17px" : "14px",
+            padding: section.bgColor ? "14px 16px" : "4px 2px",
+          }}
+        />
+      </div>
+    );
+  };
+
+  const renderImageField = (section: Section) => (
+    <div className="w-full">
+      {section.content ? (
+        <div className="relative group/img">
+          <img src={section.content} alt="" className="w-full max-h-64 object-cover rounded-xl border border-black/10" />
+          <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/img:opacity-100 transition-opacity">
+            <label className="text-[10px] font-medium px-2 py-1 rounded-md bg-black/70 text-white cursor-pointer hover:bg-black/85">
+              Cambiar
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(section, e.target.files?.[0])} />
+            </label>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full rounded-xl border border-dashed border-black/15 bg-black/[0.02] flex flex-col items-center justify-center gap-2 py-8 text-black">
+          <ImageIcon size={18} />
+          <label className="text-xs font-medium cursor-pointer hover:opacity-70">
+            Subir imagen
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(section, e.target.files?.[0])} />
+          </label>
+          <div className="flex items-center gap-1.5 w-full max-w-xs px-4">
+            <input
+              value={urlDrafts[section.id] ?? ""}
+              onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [section.id]: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && submitUrl(section)}
+              placeholder="o pega una URL"
+              className="flex-1 min-w-0 bg-white/70 border border-black/10 rounded-md px-2 py-1 text-[11px] outline-none focus:border-[#a8dfcf]"
+            />
+            <button
+              onClick={() => submitUrl(section)}
+              className="shrink-0 text-[11px] px-2 py-1 rounded-md bg-black/[0.05] hover:bg-black/[0.1] font-medium"
+            >
+              Usar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderVideoField = (section: Section) => (
+    <div className="w-full flex flex-col items-center gap-2 py-2">
+      {section.content && isRemoteUrl(section.content) ? (
+        <a
+          href={section.content}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#2a9678] text-white text-sm font-semibold"
+        >
+          ▶ Ver vídeo
+        </a>
+      ) : section.content ? (
+        <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+          Un vídeo subido como archivo no se incluye en el correo — pega una URL de YouTube/Vimeo abajo.
+        </p>
+      ) : null}
+      <div className="flex items-center gap-1.5 w-full max-w-sm">
+        <input
+          value={urlDrafts[section.id] ?? ""}
+          onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [section.id]: e.target.value }))}
+          onKeyDown={(e) => e.key === "Enter" && submitUrl(section)}
+          placeholder="https://youtube.com/..."
+          className="flex-1 min-w-0 bg-white/70 border border-black/10 rounded-md px-2 py-1 text-[11px] outline-none focus:border-[#f0c39a]"
+        />
+        <button
+          onClick={() => submitUrl(section)}
+          className="shrink-0 text-[11px] px-2 py-1 rounded-md bg-black/[0.05] hover:bg-black/[0.1] font-medium"
+        >
+          Usar
+        </button>
+      </div>
+      <label className="text-[11px] text-neutral-400 cursor-pointer hover:text-neutral-600">
+        o subir archivo de vídeo
+        <input type="file" accept="video/*" className="hidden" onChange={(e) => handleFile(section, e.target.files?.[0])} />
+      </label>
+    </div>
+  );
+
+  const renderButtonField = (section: Section) => (
+    <div className="w-full flex flex-col items-center gap-2 py-1">
+      <span
+        className="inline-block text-center text-sm font-semibold rounded-md px-6 py-3 text-white max-w-full truncate"
+        style={{ background: section.color ?? "#bea05a" }}
+      >
+        {section.content || "Botón"}
+      </span>
+      <div className="flex items-center gap-1.5 w-full flex-wrap">
+        <input
+          value={section.content}
+          onChange={(e) => updateSection(section.id, { content: e.target.value })}
+          placeholder="Texto del botón"
+          className="flex-1 min-w-[100px] bg-white/70 border border-black/10 rounded-md px-2 py-1 text-[11px] outline-none focus:border-[#bea05a]"
+        />
+        <input
+          value={section.url ?? ""}
+          onChange={(e) => updateSection(section.id, { url: e.target.value })}
+          placeholder="https://..."
+          className="flex-1 min-w-[100px] bg-white/70 border border-black/10 rounded-md px-2 py-1 text-[11px] outline-none focus:border-[#bea05a]"
+        />
+        <input
+          type="color"
+          value={section.color ?? "#bea05a"}
+          onChange={(e) => updateSection(section.id, { color: e.target.value })}
+          className="w-6 h-6 shrink-0 rounded cursor-pointer border border-black/10 p-0"
+        />
+      </div>
+    </div>
+  );
+
+  const renderDividerField = (section: Section) => (
+    <div className="w-full flex items-center gap-2 py-2">
+      <input
+        type="color"
+        value={section.color ?? "#1a1a1a"}
+        onChange={(e) => updateSection(section.id, { color: e.target.value })}
+        className="w-5 h-5 shrink-0 rounded cursor-pointer border border-black/10 p-0"
+      />
+      <div className="flex-1 h-0.5 rounded-full" style={{ background: section.color ?? "#1a1a1a" }} />
+    </div>
+  );
+
+  const renderField = (section: Section) => {
+    switch (section.type) {
+      case "text":
+        return renderTextField(section);
+      case "image":
+        return renderImageField(section);
+      case "video":
+        return renderVideoField(section);
+      case "button":
+        return renderButtonField(section);
+      case "divider":
+        return renderDividerField(section);
+      case "row":
+        return null;
+    }
+  };
+
+  const renderSectionWrapper = (section: Section) => (
+    <div key={section.id} className="relative group/section rounded-xl px-2 py-1.5 hover:bg-black/[0.025] transition-colors">
+      <button
+        type="button"
+        onClick={() => removeSection(section.id)}
+        className="absolute -top-1.5 -right-1.5 z-10 p-1 rounded-full bg-white border border-black/10 text-neutral-400 hover:text-[#b9503a] opacity-0 group-hover/section:opacity-100 transition-opacity shadow-sm"
+      >
+        <Trash2 size={11} />
+      </button>
+      {renderField(section)}
+    </div>
+  );
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
@@ -593,23 +644,23 @@ export function MailingPage({ contacts }: Props) {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-sm font-semibold text-neutral-900">Plantilla de mailing</h2>
-            <p className="text-xs text-neutral-500">Añade bloques y colócalos donde quieras.</p>
+            <p className="text-xs text-neutral-500">Pulsa sobre cualquier campo para editarlo directamente.</p>
           </div>
 
           <div className="flex items-center gap-2">
             {ADD_BUTTONS.map((btn) => (
               <button
                 key={btn.type}
-                onClick={() => addBlock(btn.type)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border ${btn.border} ${btn.bg} ${btn.text} font-medium`}
+                onClick={() => addSection(btn.type)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-black/10 bg-black/[0.03] ${btn.text} font-medium hover:bg-black/[0.06]`}
               >
                 <Plus size={12} /> <btn.icon size={13} /> {btn.label}
               </button>
             ))}
             <button
               onClick={() => {
-                if (blocks.length === 0 || window.confirm("Esto sustituye el contenido actual de la plantilla por el diseño de partida. ¿Continuar?")) {
-                  setBlocks(buildDefaultTemplate());
+                if (sections.length === 0 || window.confirm("Esto sustituye el contenido actual de la plantilla por el diseño de partida. ¿Continuar?")) {
+                  setSections(buildDefaultSections());
                 }
               }}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-black/[0.04] border border-black/10 text-neutral-600 hover:bg-black/[0.07]"
@@ -625,308 +676,24 @@ export function MailingPage({ contacts }: Props) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-[480px] relative rounded-2xl border border-black/10 bg-black/[0.02] overflow-auto">
-          <div className="flex flex-col items-center py-6">
-            <p className="text-[11px] text-neutral-400 mb-2 tabular-nums">
-              Plantilla: {CANVAS_WIDTH} × {Math.round(canvasHeight)} px
-            </p>
-            <div
-              className="relative bg-white/50 rounded-xl border border-dashed border-black/15 shrink-0"
-              style={{ width: CANVAS_WIDTH, height: canvasHeight }}
-            >
-              {blocks.length === 0 && (
-                <p className="absolute inset-0 flex items-center justify-center text-xs text-neutral-400">
-                  Añade texto, imágenes o vídeo para empezar la plantilla.
-                </p>
-              )}
-
-              {/* Alignment guides: while dragging a block, a glowing "neural
-                  link" line appears wherever an edge or center lines up with
-                  another block's, and the drag snaps to it. */}
-          {guides.vertical.map((x) => (
-            <div
-              key={`v-${x}`}
-              className="absolute top-0 bottom-0 pointer-events-none z-30"
-              style={{
-                left: x,
-                width: 1,
-                background: "linear-gradient(to bottom, transparent, #2a9678 15%, #2a9678 85%, transparent)",
-                boxShadow: "0 0 3px rgba(42,150,120,0.7)",
-              }}
-            />
-          ))}
-          {guides.horizontal.map((y) => (
-            <div
-              key={`h-${y}`}
-              className="absolute left-0 right-0 pointer-events-none z-30"
-              style={{
-                top: y,
-                height: 1,
-                background: "linear-gradient(to right, transparent, #2a9678 15%, #2a9678 85%, transparent)",
-                boxShadow: "0 0 3px rgba(42,150,120,0.7)",
-              }}
-            />
-          ))}
-
-          {blocks.map((block) => {
-            const style = blockStyle(block.type);
-            return (
-            <div
-              key={block.id}
-              className={`absolute rounded-2xl border-2 ${style.fill} backdrop-blur-sm shadow-[0_10px_24px_-14px_rgba(33,31,29,0.4)] flex flex-col overflow-hidden ${style.border}`}
-              style={{ left: block.x, top: block.y, width: block.width, height: block.height }}
-            >
-              <div
-                onMouseDown={startDrag(block, "move")}
-                className={`flex items-center justify-between gap-2 px-2.5 py-1.5 cursor-move shrink-0 border-b ${style.border} ${style.bg}`}
-              >
-                <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${style.text}`}>
-                  <style.icon size={11} />
-                  {style.label}
-                </span>
-                <span className={`text-[9px] tabular-nums opacity-70 ${style.text}`}>
-                  {Math.round(block.width)}×{Math.round(block.height)}
-                </span>
-                <button
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => removeBlock(block.id)}
-                  className={`${style.text} hover:text-[#b9503a] p-0.5 opacity-60 hover:opacity-100 transition-opacity`}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-
-              <div className="flex-1 min-h-0 relative">
-                {block.type === "text" && (
-                  <div className="w-full h-full flex flex-col">
-                    <div
-                      onMouseDown={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 px-1.5 py-1 border-b border-black/10 bg-black/[0.02] shrink-0"
-                    >
-                      <select
-                        value={block.fontFamily ?? "system"}
-                        onChange={(e) => updateBlock(block.id, { fontFamily: e.target.value })}
-                        className="flex-1 min-w-0 bg-transparent outline-none text-[10px] text-neutral-600 cursor-pointer"
-                      >
-                        {TEXT_FONT_OPTIONS.map((f) => (
-                          <option key={f.value} value={f.value}>
-                            {f.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        {(
-                          [
-                            { value: "left", icon: AlignLeft },
-                            { value: "center", icon: AlignCenter },
-                            { value: "right", icon: AlignRight },
-                          ] as { value: TextAlign; icon: typeof AlignLeft }[]
-                        ).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => updateBlock(block.id, { textAlign: opt.value })}
-                            className={`p-1 rounded ${
-                              (block.textAlign ?? "left") === opt.value
-                                ? "bg-[#a79bcb]/30 text-[#6a56a0]"
-                                : "text-neutral-400 hover:text-neutral-600"
-                            }`}
-                          >
-                            <opt.icon size={11} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div
-                      onMouseDown={(e) => e.stopPropagation()}
-                      className="flex items-center gap-2 px-1.5 py-1 border-b border-black/10 bg-black/[0.02] shrink-0"
-                    >
-                      <button
-                        type="button"
-                        title="Alternar título / texto normal"
-                        onClick={() =>
-                          updateBlock(block.id, {
-                            textStyle: (block.textStyle ?? "body") === "heading" ? "body" : "heading",
-                          })
-                        }
-                        className={`p-1 rounded ${
-                          (block.textStyle ?? "body") === "heading"
-                            ? "bg-[#a79bcb]/30 text-[#6a56a0]"
-                            : "text-neutral-400 hover:text-neutral-600"
-                        }`}
-                      >
-                        <Heading2 size={12} />
-                      </button>
-                      <label className="flex items-center gap-1" title="Color del texto">
-                        <span className="text-[9px] text-neutral-400">A</span>
-                        <input
-                          type="color"
-                          value={block.textColor ?? "#211f1d"}
-                          onChange={(e) => updateBlock(block.id, { textColor: e.target.value })}
-                          className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
-                        />
-                      </label>
-                      <label className="flex items-center gap-1" title="Color de fondo de la sección">
-                        <span className="text-[9px] text-neutral-400">Fondo</span>
-                        <input
-                          type="color"
-                          value={block.bgColor ?? "#ffffff"}
-                          onChange={(e) => updateBlock(block.id, { bgColor: e.target.value })}
-                          className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
-                        />
-                      </label>
-                      {block.bgColor && (
-                        <button
-                          type="button"
-                          title="Quitar color de fondo"
-                          onClick={() => updateBlock(block.id, { bgColor: undefined })}
-                          className="text-neutral-400 hover:text-neutral-600"
-                        >
-                          <X size={10} />
-                        </button>
-                      )}
-                    </div>
-                    <textarea
-                      value={block.content}
-                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                      placeholder="Escribe tu texto..."
-                      style={{
-                        fontFamily: TEXT_FONT_OPTIONS.find((f) => f.value === (block.fontFamily ?? "system"))?.stack,
-                        textAlign: block.textAlign ?? "left",
-                        color: block.textColor ?? undefined,
-                        backgroundColor: block.bgColor ?? "transparent",
-                        fontWeight: (block.textStyle ?? "body") === "heading" ? 700 : 400,
-                        fontSize: (block.textStyle ?? "body") === "heading" ? "1.05rem" : undefined,
-                      }}
-                      className="flex-1 min-h-0 w-full resize-none outline-none p-2 text-sm text-neutral-800 placeholder:text-neutral-400"
-                    />
-                  </div>
-                )}
-
-                {block.type === "image" &&
-                  (block.content ? (
-                    <img src={block.content} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-black p-2">
-                      <ImageIcon size={16} />
-                      <label className="text-[11px] font-medium cursor-pointer hover:opacity-70">
-                        Subir imagen
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFile(block, e.target.files?.[0])}
-                        />
-                      </label>
-                      <div className="flex items-center gap-1 w-full px-1">
-                        <input
-                          value={urlDrafts[block.id] ?? ""}
-                          onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [block.id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && submitUrl(block)}
-                          placeholder="o pega una URL"
-                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#a8dfcf]"
-                        />
-                        <button
-                          onClick={() => submitUrl(block)}
-                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-black font-medium"
-                        >
-                          Usar
-                        </button>
-                      </div>
+        <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-black/10 bg-black/[0.02] p-6">
+          <div className="max-w-[640px] mx-auto bg-white rounded-2xl border border-black/10 shadow-sm p-6 flex flex-col gap-1">
+            {sections.length === 0 && (
+              <p className="text-center text-xs text-neutral-400 py-10">Añade texto, imágenes, botones o un separador para empezar.</p>
+            )}
+            {sections.map((section) =>
+              section.type === "row" ? (
+                <div key={section.id} className="flex gap-4 items-start bg-black/[0.015] border border-black/5 rounded-2xl p-2 my-1">
+                  {(section.columns ?? []).map((col) => (
+                    <div key={col.id} className="flex-1 min-w-0">
+                      {renderSectionWrapper(col)}
                     </div>
                   ))}
-
-                {block.type === "video" &&
-                  (block.content ? (
-                    <video src={block.content} controls className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-black p-2">
-                      <Video size={16} />
-                      <label className="text-[11px] font-medium cursor-pointer hover:opacity-70">
-                        Subir vídeo
-                        <input
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={(e) => handleFile(block, e.target.files?.[0])}
-                        />
-                      </label>
-                      <div className="flex items-center gap-1 w-full px-1">
-                        <input
-                          value={urlDrafts[block.id] ?? ""}
-                          onChange={(e) => setUrlDrafts((prev) => ({ ...prev, [block.id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && submitUrl(block)}
-                          placeholder="o pega una URL"
-                          className="flex-1 min-w-0 bg-white/60 border border-black/10 rounded-md px-1.5 py-0.5 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#a8dfcf]"
-                        />
-                        <button
-                          onClick={() => submitUrl(block)}
-                          className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-black/[0.05] hover:bg-black/[0.1] text-black font-medium"
-                        >
-                          Usar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                {block.type === "button" && (
-                  <div className="w-full h-full flex flex-col gap-1.5 p-2">
-                    <input
-                      value={block.content}
-                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                      placeholder="Texto del botón"
-                      className="w-full bg-white/60 border border-black/10 rounded-md px-1.5 py-1 text-[11px] text-black outline-none focus:border-[#bea05a]"
-                    />
-                    <input
-                      value={block.url ?? ""}
-                      onChange={(e) => updateBlock(block.id, { url: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full bg-white/60 border border-black/10 rounded-md px-1.5 py-1 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#bea05a]"
-                    />
-                    <div className="flex items-center gap-1.5 mt-auto">
-                      <input
-                        type="color"
-                        title="Color del botón"
-                        value={block.color ?? "#bea05a"}
-                        onChange={(e) => updateBlock(block.id, { color: e.target.value })}
-                        className="w-5 h-5 shrink-0 rounded cursor-pointer border border-black/10 p-0"
-                      />
-                      <span
-                        className="flex-1 text-center text-[10px] font-semibold rounded-md py-1 text-white truncate"
-                        style={{ background: block.color ?? "#bea05a" }}
-                      >
-                        {block.content || "Botón"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {block.type === "divider" && (
-                  <div className="w-full h-full flex items-center justify-center gap-2 p-2">
-                    <input
-                      type="color"
-                      title="Color del separador"
-                      value={block.color ?? "#1a1a1a"}
-                      onChange={(e) => updateBlock(block.id, { color: e.target.value })}
-                      className="w-5 h-5 shrink-0 rounded cursor-pointer border border-black/10 p-0"
-                    />
-                    <div className="flex-1 h-0.5 rounded-full" style={{ background: block.color ?? "#1a1a1a" }} />
-                  </div>
-                )}
-              </div>
-
-              <div
-                onMouseDown={startDrag(block, "resize")}
-                className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-nwse-resize"
-                style={{
-                  background:
-                    "linear-gradient(135deg, transparent 0 50%, rgba(33,31,29,0.35) 50% 60%, transparent 60% 70%, rgba(33,31,29,0.35) 70% 80%, transparent 80% 100%)",
-                }}
-              />
-            </div>
-            );
-          })}
-            </div>
+                </div>
+              ) : (
+                renderSectionWrapper(section)
+              )
+            )}
           </div>
         </div>
       </div>
@@ -952,7 +719,7 @@ export function MailingPage({ contacts }: Props) {
             <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-black/10 bg-white">
               <iframe
                 title="Vista previa del email"
-                srcDoc={buildMarketingEmailHtml(blocks)}
+                srcDoc={buildMarketingEmailHtml(sections)}
                 className="w-full h-full"
                 style={{ minHeight: 360 }}
                 sandbox=""

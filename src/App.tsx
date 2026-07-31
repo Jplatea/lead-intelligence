@@ -130,6 +130,10 @@ function App() {
     setMailingContacts((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const updateMailingContact = (id: string, patch: Partial<MailingContact>) => {
+    setMailingContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  };
+
   const deleteCompany = (id: string) => {
     setCompanies((prev) => prev.filter((c) => c.id !== id));
     setSelectedId((prev) => (prev === id ? null : prev));
@@ -398,7 +402,15 @@ function App() {
             {...pageMotionProps("database")}
             className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-hidden"
           >
-            <DatabasePage companies={companies} onUpdate={updateCompany} onDelete={deleteCompany} />
+            <DatabasePage
+              companies={companies}
+              onUpdate={updateCompany}
+              onDelete={deleteCompany}
+              mailingContacts={mailingContacts}
+              onUpdateMailingContact={updateMailingContact}
+              onDeleteMailingContact={deleteMailingContact}
+              onImportMailingContacts={importMailingContacts}
+            />
           </motion.main>
         )}
 

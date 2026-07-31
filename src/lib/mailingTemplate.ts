@@ -1,43 +1,46 @@
-export type BlockType = "image" | "video" | "text" | "button" | "divider";
+export type SectionType = "text" | "image" | "video" | "button" | "divider" | "row";
 export type TextAlign = "left" | "center" | "right";
 export type TextStyle = "heading" | "body";
 
-export interface MailingBlock {
+// No x/y/width/height: the template's layout (order, and which fields sit
+// side by side as a "row") is fixed by its structure, not by dragging boxes
+// around a canvas. Each section is rendered in place, in order, and every
+// field inside it is directly editable — there is no separate positioned
+// "card" standing in for the real content anymore.
+export interface MailingSection {
   id: string;
-  type: BlockType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  type: SectionType;
   content: string;
   fontFamily?: string;
   textAlign?: TextAlign;
-  // Text blocks only: "heading" renders larger/bold in the brand accent
+  // Text sections only: "heading" renders larger/bold in the brand accent
   // color, so a section title reads as a title instead of just another
-  // paragraph — the gap the first version of this tool had against a real
-  // template like Mailchimp's, where headings are visually distinct.
+  // paragraph.
   textStyle?: TextStyle;
   textColor?: string;
   // An optional section background — lets a block sit on its own colored
   // panel (like the gold promo band or dark header in the reference
   // template) instead of every block being plain white.
   bgColor?: string;
-  // Button blocks only.
+  // Button sections only.
   url?: string;
-  // Button/divider blocks: the accent color (button fill / divider rule).
+  // Button/divider sections: the accent color (button fill / divider rule).
   color?: string;
+  // Row sections only: exactly two leaf sections rendered side by side
+  // (e.g. an image next to its description), wrapped in one card.
+  columns?: MailingSection[];
 }
 
 // A clean, professional sans-serif that reads clearly different from plain
 // Arial without depending on a webfont fetch — email clients (and even our
-// own preview iframe) are inconsistent about loading @import/link web
-// fonts, so this leans on each OS's own good system font instead: Segoe UI
-// on Windows, Helvetica Neue on macOS/iOS, falling back to Arial.
+// own preview) are inconsistent about loading @import/link web fonts, so
+// this leans on each OS's own good system font instead: Segoe UI on
+// Windows, Helvetica Neue on macOS/iOS, falling back to Arial.
 const FONT_STACK = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 // Only classic "web-safe" font families — the ones actually pre-installed
-// across Windows/macOS/mail clients — since a text block's font choice has
-// to survive being rendered by whatever the recipient's mail client is,
+// across Windows/macOS/mail clients — since a text section's font choice
+// has to survive being rendered by whatever the recipient's mail client is,
 // with no webfont loading available there at all.
 export const TEXT_FONT_OPTIONS: { value: string; label: string; stack: string }[] = [
   { value: "system", label: "Sistema (recomendado)", stack: FONT_STACK },
@@ -48,7 +51,7 @@ export const TEXT_FONT_OPTIONS: { value: string; label: string; stack: string }[
   { value: "courier", label: "Courier New", stack: "'Courier New', Courier, monospace" },
 ];
 
-function textFontStack(value: string | undefined): string {
+export function textFontStack(value: string | undefined): string {
   return TEXT_FONT_OPTIONS.find((f) => f.value === value)?.stack ?? FONT_STACK;
 }
 
@@ -70,79 +73,19 @@ function isRemoteUrl(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
-// Groups blocks into visual "rows" by vertical overlap — two blocks placed
-// side by side on the canvas (their y-ranges mostly overlapping) become
-// table cells in the same row, instead of every block just stacking in the
-// order it was dropped. This is what makes the exported HTML honor the
-// alignment actually chosen in the editor.
-function groupIntoRows(blocks: MailingBlock[]): MailingBlock[][] {
-  const sorted = [...blocks].sort((a, b) => a.y - b.y);
-  const rows: MailingBlock[][] = [];
-
-  for (const block of sorted) {
-    const last = rows[rows.length - 1];
-    if (last) {
-      const rowTop = Math.min(...last.map((b) => b.y));
-      const rowBottom = Math.max(...last.map((b) => b.y + b.height));
-      const overlap = Math.min(rowBottom, block.y + block.height) - Math.max(rowTop, block.y);
-      const shorterHeight = Math.min(block.height, rowBottom - rowTop);
-      if (overlap > shorterHeight * 0.4) {
-        last.push(block);
-        continue;
-      }
-    }
-    rows.push([block]);
-  }
-
-  rows.forEach((row) => row.sort((a, b) => a.x - b.x));
-  return rows;
-}
-
-// A short final line (≤3 words, on its own line after other content) reads
-// as a "Ver más"-style call to action — style it as a link instead of
-// flat paragraph text, since a wall of identically-styled text is exactly
-// what made the first version of this export look unfinished.
-function renderTextContent(block: MailingBlock): string {
-  const stack = textFontStack(block.fontFamily);
-  const align = block.textAlign ?? "left";
-  const isHeading = block.textStyle === "heading";
-  const color = block.textColor || (isHeading ? "#bea05a" : "#211f1d");
-  const lines = block.content.split("\n");
-  while (lines.length > 1 && lines[lines.length - 1].trim() === "") lines.pop();
-  const lastLine = lines[lines.length - 1]?.trim() ?? "";
-  const hasCta = !isHeading && lines.length > 1 && lastLine.length > 0 && lastLine.split(/\s+/).length <= 3;
-  const bodyLines = hasCta ? lines.slice(0, -1) : lines;
-  const bodyText = bodyLines.join("\n").trim();
-
-  const bodyHtml = bodyText
-    ? `<p style="margin:0;font-family:${stack};font-size:${isHeading ? "23px" : "15px"};font-weight:${isHeading ? "700" : "400"};line-height:${isHeading ? "1.3" : "1.7"};color:${color};text-align:${align};">${textToHtml(bodyText)}</p>`
-    : "";
-  const ctaHtml = hasCta
-    ? `<p style="margin:${bodyHtml ? "10px" : "0"} 0 0;text-align:${align};"><a href="#" style="font-family:${stack};color:#2a9678;font-weight:700;font-size:13px;text-decoration:none;">${escapeHtml(lastLine)} &rarr;</a></p>`
-    : "";
-  return `${bodyHtml}${ctaHtml}`;
-}
-
-// A button block renders as a bulletproof table-based CTA (the pattern
-// email clients actually render buttons with, since plain <button>/<a
-// style="background"> collapses inconsistently in Outlook).
-function renderButtonContent(block: MailingBlock): string {
-  if (!block.content.trim()) return "";
-  const bg = block.color || "#bea05a";
-  const href = (block.url ?? "").trim() || "#";
-  return `
-    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
-      <tr>
-        <td style="border-radius:6px;background-color:${escapeHtml(bg)};text-align:center;">
-          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 30px;font-family:${FONT_STACK};font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(block.content)}</a>
-        </td>
-      </tr>
-    </table>`;
-}
-
-function renderDividerContent(block: MailingBlock): string {
-  const color = block.color || "#1a1a1a";
-  return `<div style="border-top:2px solid ${escapeHtml(color)};line-height:0;font-size:0;">&nbsp;</div>`;
+function renderTextHtml(section: MailingSection): string {
+  if (!section.content.trim()) return "";
+  const stack = textFontStack(section.fontFamily);
+  const align = section.textAlign ?? "left";
+  const isHeading = section.textStyle === "heading";
+  const color = section.textColor || (isHeading ? "#bea05a" : "#211f1d");
+  const html = `<p style="margin:0;font-family:${stack};font-size:${isHeading ? "23px" : "15px"};font-weight:${isHeading ? "700" : "400"};line-height:${isHeading ? "1.3" : "1.7"};color:${color};text-align:${align};">${textToHtml(section.content)}</p>`;
+  // An optional section background — wraps the text in its own colored
+  // panel so it reads as a distinct band (gold promo strip, dark header)
+  // instead of every section sitting on plain white.
+  return section.bgColor
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${escapeHtml(section.bgColor)};border-radius:12px;"><tr><td style="padding:20px 24px;">${html}</td></tr></table>`
+    : html;
 }
 
 // An empty image slot still renders as a placeholder box (not nothing) so
@@ -160,78 +103,94 @@ function renderImagePlaceholder(): string {
     </table>`;
 }
 
-function renderBlockContent(block: MailingBlock): string {
-  switch (block.type) {
-    case "text": {
-      if (!block.content.trim()) return "";
-      const html = renderTextContent(block);
-      // An optional section background — wraps the text in its own colored
-      // panel so it reads as a distinct band (gold promo strip, dark
-      // header) instead of every block sitting on plain white.
-      return block.bgColor
-        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${escapeHtml(
-            block.bgColor
-          )};border-radius:12px;"><tr><td style="padding:20px 24px;">${html}</td></tr></table>`
-        : html;
-    }
+function renderImageHtml(section: MailingSection): string {
+  return section.content.trim()
+    ? `<img src="${escapeHtml(section.content)}" alt="" width="100%" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid rgba(33,31,29,0.1);" />`
+    : renderImagePlaceholder();
+}
 
+function renderVideoHtml(section: MailingSection): string {
+  if (!section.content.trim()) return "";
+  if (!isRemoteUrl(section.content)) {
+    return `<p style="margin:0;font-family:${FONT_STACK};font-size:12px;color:#8a8378;">(Un v&iacute;deo subido como archivo no se incluye aqu&iacute; — los clientes de correo no lo reproducen. Sube el v&iacute;deo a un servicio como YouTube o Vimeo y pega esa URL para que aparezca como bot&oacute;n "Ver v&iacute;deo".)</p>`;
+  }
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid rgba(33,31,29,0.1);border-radius:12px;background-color:#faf6f0;">
+      <tr>
+        <td align="center" style="padding:26px 12px;">
+          <a href="${escapeHtml(section.content)}" style="display:inline-block;padding:14px 32px;border-radius:999px;background-color:#2a9678;color:#ffffff;text-decoration:none;font-family:${FONT_STACK};font-weight:600;font-size:14px;">&#9654; Ver v&iacute;deo</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+// A button section renders as a bulletproof table-based CTA (the pattern
+// email clients actually render buttons with, since plain <button>/<a
+// style="background"> collapses inconsistently in Outlook).
+function renderButtonHtml(section: MailingSection): string {
+  if (!section.content.trim()) return "";
+  const bg = section.color || "#bea05a";
+  const href = (section.url ?? "").trim() || "#";
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
+      <tr>
+        <td style="border-radius:6px;background-color:${escapeHtml(bg)};text-align:center;">
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 30px;font-family:${FONT_STACK};font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(section.content)}</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function renderDividerHtml(section: MailingSection): string {
+  const color = section.color || "#1a1a1a";
+  return `<div style="border-top:2px solid ${escapeHtml(color)};line-height:0;font-size:0;">&nbsp;</div>`;
+}
+
+// Renders a single leaf section (never "row" — a row's columns are each
+// rendered through this function individually).
+function renderLeafHtml(section: MailingSection): string {
+  switch (section.type) {
+    case "text":
+      return renderTextHtml(section);
     case "image":
-      return block.content.trim()
-        ? `<img src="${escapeHtml(block.content)}" alt="" width="100%" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid rgba(33,31,29,0.1);" />`
-        : renderImagePlaceholder();
-
-    case "video": {
-      if (!block.content.trim()) return "";
-      if (!isRemoteUrl(block.content)) {
-        return `<p style="margin:0;font-family:${FONT_STACK};font-size:12px;color:#8a8378;">(Un v&iacute;deo subido como archivo no se incluye aqu&iacute; — los clientes de correo no lo reproducen. Sube el v&iacute;deo a un servicio como YouTube o Vimeo y pega esa URL para que aparezca como bot&oacute;n "Ver v&iacute;deo".)</p>`;
-      }
-      return `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid rgba(33,31,29,0.1);border-radius:12px;background-color:#faf6f0;">
-          <tr>
-            <td align="center" style="padding:26px 12px;">
-              <a href="${escapeHtml(block.content)}" style="display:inline-block;padding:14px 32px;border-radius:999px;background-color:#2a9678;color:#ffffff;text-decoration:none;font-family:${FONT_STACK};font-weight:600;font-size:14px;">&#9654; Ver v&iacute;deo</a>
-            </td>
-          </tr>
-        </table>`;
-    }
-
+      return renderImageHtml(section);
+    case "video":
+      return renderVideoHtml(section);
     case "button":
-      return renderButtonContent(block);
-
+      return renderButtonHtml(section);
     case "divider":
-      return renderDividerContent(block);
+      return renderDividerHtml(section);
+    case "row":
+      return "";
   }
 }
 
-function renderRow(row: MailingBlock[]): string {
-  const contents = row.map(renderBlockContent);
-  if (contents.every((c) => !c)) return "";
-
-  if (row.length === 1) {
-    return `<tr><td style="padding:8px 36px;">${contents[0]}</td></tr>`;
+// Wraps one top-level section in its table row. Plain sections get simple
+// padding; a "row" section's two columns are wrapped as one card — a
+// bordered, rounded, shadowed panel — rather than floating with no visual
+// container.
+function renderSectionRow(section: MailingSection): string {
+  if (section.type === "row") {
+    const columns = section.columns ?? [];
+    const contents = columns.map(renderLeafHtml);
+    if (contents.every((c) => !c)) return "";
+    const cells = columns
+      .map((_, i) => (contents[i] ? `<td width="50%" valign="middle" style="padding:14px;">${contents[i]}</td>` : ""))
+      .filter(Boolean)
+      .join("");
+    return `
+      <tr>
+        <td style="padding:10px 28px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid rgba(33,31,29,0.08);border-radius:16px;box-shadow:0 6px 16px rgba(33,31,29,0.06);">
+            <tr>${cells}</tr>
+          </table>
+        </td>
+      </tr>`;
   }
 
-  // Multi-block rows (an image beside its description, a two-column promo
-  // banner) are wrapped as one card — a bordered, rounded, shadowed panel —
-  // rather than leaving the columns floating with no visual container.
-  const totalWidth = row.reduce((sum, b) => sum + b.width, 0);
-  const cells = row
-    .map((b, i) => {
-      if (!contents[i]) return "";
-      const pct = Math.max(15, Math.round((b.width / totalWidth) * 100));
-      return `<td width="${pct}%" valign="middle" style="padding:14px;">${contents[i]}</td>`;
-    })
-    .filter(Boolean)
-    .join("");
-
-  return `
-    <tr>
-      <td style="padding:10px 28px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid rgba(33,31,29,0.08);border-radius:16px;box-shadow:0 6px 16px rgba(33,31,29,0.06);">
-          <tr>${cells}</tr>
-        </table>
-      </td>
-    </tr>`;
+  const content = renderLeafHtml(section);
+  if (!content) return "";
+  return `<tr><td style="padding:8px 36px;">${content}</td></tr>`;
 }
 
 export interface EmailMeta {
@@ -241,10 +200,10 @@ export interface EmailMeta {
 
 // Builds a self-contained, table-based HTML document (the layout approach
 // email clients actually render consistently — a flattened grid of rows,
-// each row holding one or more blocks side by side exactly as arranged on
-// the canvas, ordered top-to-bottom by position).
-export function buildMarketingEmailHtml(blocks: MailingBlock[], meta: EmailMeta = {}): string {
-  const rows = groupIntoRows(blocks).map(renderRow).filter(Boolean).join("");
+// each row holding one section, or a two-column pair, in the template's
+// fixed order).
+export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailMeta = {}): string {
+  const rows = sections.map(renderSectionRow).filter(Boolean).join("");
   const eyebrow = escapeHtml(meta.eyebrow ?? "Prestige Ibérica");
   const heading = escapeHtml(meta.heading ?? "Novedades para tu negocio");
 
@@ -290,7 +249,7 @@ export function buildMarketingEmailHtml(blocks: MailingBlock[], meta: EmailMeta 
           <tr>
             <td style="padding:20px 0 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                ${rows || `<tr><td style="padding:6px 36px;"><p style="margin:0;font-family:${FONT_STACK};font-size:13px;color:#8a8378;">Añade bloques en la plantilla para ver el contenido aquí.</p></td></tr>`}
+                ${rows || `<tr><td style="padding:6px 36px;"><p style="margin:0;font-family:${FONT_STACK};font-size:13px;color:#8a8378;">Añade secciones a la plantilla para ver el contenido aquí.</p></td></tr>`}
               </table>
             </td>
           </tr>
