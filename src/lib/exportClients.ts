@@ -1,6 +1,6 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import type { Company } from "../types";
+import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 
 function toRecord(c: Company) {
@@ -45,4 +45,26 @@ export function exportCompaniesXLSX(companies: Company[]) {
   XLSX.utils.book_append_sheet(book, sheet, "Clientes");
   const buffer = XLSX.write(book, { type: "array", bookType: "xlsx" });
   downloadBlob(new Blob([buffer], { type: "application/octet-stream" }), "clientes.xlsx");
+}
+
+function toMailingRecord(c: MailingContact) {
+  return {
+    id: c.id,
+    nombre_contacto: c.contactName,
+    email: c.email,
+    empresa: c.companyName,
+  };
+}
+
+export function exportMailingContactsCSV(contacts: MailingContact[]) {
+  const csv = Papa.unparse(contacts.map(toMailingRecord));
+  downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "newsletter.csv");
+}
+
+export function exportMailingContactsXLSX(contacts: MailingContact[]) {
+  const sheet = XLSX.utils.json_to_sheet(contacts.map(toMailingRecord));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Newsletter");
+  const buffer = XLSX.write(book, { type: "array", bookType: "xlsx" });
+  downloadBlob(new Blob([buffer], { type: "application/octet-stream" }), "newsletter.xlsx");
 }

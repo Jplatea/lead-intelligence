@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
-import { Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
+import { Download, Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
+import {
+  exportCompaniesCSV,
+  exportCompaniesXLSX,
+  exportMailingContactsCSV,
+  exportMailingContactsXLSX,
+} from "../lib/exportClients";
 
 interface Props {
   companies: Company[];
@@ -89,6 +95,51 @@ function ColumnManager<K extends string>({
                 {opt.label}
               </label>
             ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// A "backup" download — always exports the full dataset (ignores any
+// active search filter), since the point is a complete snapshot, not just
+// whatever happens to be visible.
+function ExportMenu({ onCSV, onXLSX }: { onCSV: () => void; onXLSX: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${
+          open ? "bg-white border-black/20 text-neutral-900" : "bg-white/70 border-black/10 text-neutral-600 hover:text-neutral-900"
+        }`}
+      >
+        <Download size={13} />
+        Backup
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="absolute top-full right-0 mt-1.5 z-30 rounded-xl bg-white border border-black/10 shadow-lg p-1.5 w-36">
+            <button
+              onClick={() => {
+                onCSV();
+                setOpen(false);
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors"
+            >
+              Descargar CSV
+            </button>
+            <button
+              onClick={() => {
+                onXLSX();
+                setOpen(false);
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-black/[0.04] transition-colors"
+            >
+              Descargar XLSX
+            </button>
           </div>
         </>
       )}
@@ -233,6 +284,10 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 <div className="flex items-center gap-2">
                   <SearchBox value={clientQuery} onChange={setClientQuery} placeholder="Buscar cliente..." />
                   <ColumnManager options={ALL_COLUMNS} visible={visibleCols} onToggle={toggleCol} />
+                  <ExportMenu
+                    onCSV={() => exportCompaniesCSV(companies)}
+                    onXLSX={() => exportCompaniesXLSX(companies)}
+                  />
                 </div>
               </div>
 
@@ -312,6 +367,10 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 <div className="flex items-center gap-2">
                   <SearchBox value={nlQuery} onChange={setNlQuery} placeholder="Buscar contacto..." />
                   <ColumnManager options={NEWSLETTER_COLUMNS} visible={nlVisibleCols} onToggle={toggleNlCol} />
+                  <ExportMenu
+                    onCSV={() => exportMailingContactsCSV(mailingContacts)}
+                    onXLSX={() => exportMailingContactsXLSX(mailingContacts)}
+                  />
                 </div>
               </div>
 
