@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Radar, ChevronDown, LogOut, CircuitBoard, Mail } from "lucide-react";
+import { Radar, ChevronDown, LogOut, CircuitBoard, Mail, Palette } from "lucide-react";
 import type { RepId } from "../types";
 import { REPS } from "../data/config";
 import { NeuralCell } from "./NeuralCell";
 
-export type AppView = "dashboard" | "database" | "mailing";
+export type AppView = "dashboard" | "database" | "mailing" | "guide";
+
+// Only José (jplaza@legroupeprestige.es) gets the internal style-guide tab —
+// a super-admin-only reference page, not something the other reps need.
+const SUPER_ADMIN: RepId = "jose";
 
 interface Props {
   loggedInRep: RepId;
@@ -21,6 +25,7 @@ export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
     { label: "Lead Intelligence", icon: Radar, view: "dashboard" },
     { label: "Database", icon: CircuitBoard, view: "database" },
     { label: "Mailing", icon: Mail, view: "mailing" },
+    ...(loggedInRep === SUPER_ADMIN ? [{ label: "Guía", icon: Palette, view: "guide" as AppView }] : []),
   ];
 
   return (

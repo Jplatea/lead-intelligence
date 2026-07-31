@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import { Mail } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
@@ -99,16 +98,8 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
           ))}
         </div>
 
-        <AnimatePresence mode="wait" initial={false}>
-          {dataset === "clients" ? (
-            <motion.div
-              key="clients"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              className="flex-1 min-h-0 flex flex-col gap-4"
-            >
+        {dataset === "clients" ? (
+            <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div>
                 <h2 className="text-sm font-semibold text-neutral-900">Datos Clientes</h2>
                 <p className="text-xs text-neutral-500">{companies.length} clientes</p>
@@ -140,7 +131,7 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
                       return (
                         <tr
                           key={c.id}
-                          className="h-7 cursor-pointer hover:brightness-95 transition-[filter]"
+                          className="h-7 cursor-pointer"
                           onClick={() => onSelectCompany(c.id)}
                         >
                           <td
@@ -174,16 +165,9 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
                   </tbody>
                 </table>
               </div>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              key="newsletter"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              className="flex-1 min-h-0 flex flex-col gap-4"
-            >
+            <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div>
                 <h2 className="text-sm font-semibold text-neutral-900">Newsletter</h2>
                 <p className="text-xs text-neutral-500">
@@ -218,7 +202,7 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
                       <tr
                         key={c.id}
                         onClick={() => onSelectContact(c.id)}
-                        className="cursor-pointer hover:brightness-95 transition-[filter]"
+                        className="cursor-pointer"
                       >
                         <td className="pl-3 pr-1 py-1.5 rounded-l-xl" style={{ background: "rgba(167,155,203,0.14)" }}>
                           <div className="flex items-center gap-1.5">
@@ -240,9 +224,8 @@ export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSe
                   </tbody>
                 </table>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { NewsletterContactCard } from "./components/NewsletterContactCard";
 import { MailingPage } from "./components/MailingPage";
+import { StyleGuidePage } from "./components/StyleGuidePage";
 import { ImportModal } from "./components/ImportModal";
 import { MailingImportModal } from "./components/MailingImportModal";
 import { COMPANIES } from "./data/mockCompanies";
@@ -419,6 +420,15 @@ function App() {
             className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-hidden"
           >
             <MailingPage contacts={mailingContacts} />
+          </motion.main>
+        )}
+
+        {visited.has("guide") && session === "jose" && (
+          <motion.main
+            {...pageMotionProps("guide")}
+            className="absolute inset-0 flex flex-col p-5 max-w-[1600px] w-full mx-auto overflow-hidden"
+          >
+            <StyleGuidePage />
           </motion.main>
         )}
       </div>
