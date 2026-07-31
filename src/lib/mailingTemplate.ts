@@ -53,6 +53,20 @@ export const TEXT_FONT_OPTIONS: { value: string; label: string; stack: string }[
   // support web fonts (Apple Mail, Gmail webmail...) — Outlook and others
   // that don't just fall back to the same web-safe stack as "Sistema".
   { value: "epilogue", label: "Epilogue (si el cliente de correo lo soporta)", stack: `'Epilogue', ${FONT_STACK}` },
+  { value: "fredoka", label: "Fredoka (si el cliente de correo lo soporta)", stack: `'Fredoka', ${FONT_STACK}` },
+  { value: "quicksand", label: "Quicksand (si el cliente de correo lo soporta)", stack: `'Quicksand', ${FONT_STACK}` },
+  { value: "poppins", label: "Poppins (si el cliente de correo lo soporta)", stack: `'Poppins', ${FONT_STACK}` },
+  {
+    value: "instrument-sans",
+    label: "Instrument Sans (si el cliente de correo lo soporta)",
+    stack: `'Instrument Sans', ${FONT_STACK}`,
+  },
+  {
+    value: "montserrat-alternates",
+    label: "Montserrat Alternates (si el cliente de correo lo soporta)",
+    stack: `'Montserrat Alternates', ${FONT_STACK}`,
+  },
+  { value: "questrial", label: "Questrial (si el cliente de correo lo soporta)", stack: `'Questrial', ${FONT_STACK}` },
   // Nexa/Cloud have no free web-embeddable source — without a licensed
   // font file these always render as the fallback stack, in every client.
   { value: "nexa", label: "Nexa (sin licencia cargada)", stack: `'Nexa', ${FONT_STACK}` },
@@ -231,11 +245,11 @@ export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailM
 <meta name="color-scheme" content="light" />
 <title>${heading}</title>
 <!-- Progressive enhancement only: clients that support web fonts (Apple
-     Mail, Gmail's webmail, etc.) render Epilogue; Outlook and others that
-     don't just fall back to the family's own web-safe stack below. -->
+     Mail, Gmail's webmail, etc.) render the chosen font; Outlook and others
+     that don't just fall back to each family's own web-safe stack below. -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Montserrat+Alternates:wght@400;500;600;700&family=Questrial&display=swap" rel="stylesheet" />
 </head>
 <body style="margin:0;padding:0;background-color:#e6dcd2;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#e6dcd2;">

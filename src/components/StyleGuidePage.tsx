@@ -21,11 +21,18 @@ function primaryFontName(stack: string): string {
 
 // Extra fonts available to try out here for comparison only — the "Sistema"
 // option above already covers the real current default for each section.
-// Nexa and Cloud are commercial/unverified typefaces with no free
-// web-embeddable source; listed for comparison, but without an actual
-// licensed font file they'll just fall back to the browser's default
-// sans-serif rather than rendering the real typeface.
+// The six below are real Google Fonts (SIL Open Font License), self-hosted
+// from public/fonts and loaded via src/fonts.css — they render for real.
+// Nexa and Cloud remain unavailable: neither exists in Google Fonts' own
+// catalog (confirmed against its public metadata endpoint), so there's no
+// free, licensed source to embed for either.
 const EXTRA_FONT_CHOICES: { label: string; value: string }[] = [
+  { label: "Fredoka", value: "'Fredoka', sans-serif" },
+  { label: "Quicksand", value: "'Quicksand', sans-serif" },
+  { label: "Poppins", value: "'Poppins', sans-serif" },
+  { label: "Instrument Sans", value: "'Instrument Sans', sans-serif" },
+  { label: "Montserrat Alternates", value: "'Montserrat Alternates', sans-serif" },
+  { label: "Questrial", value: "'Questrial', sans-serif" },
   { label: "Nexa (sin licencia cargada)", value: "'Nexa', sans-serif" },
   { label: "Cloud (sin licencia cargada)", value: "'Cloud', sans-serif" },
 ];
