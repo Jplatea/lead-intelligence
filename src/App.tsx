@@ -13,6 +13,8 @@ import { StatsRow } from "./components/StatsRow";
 import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { NewsletterContactCard } from "./components/NewsletterContactCard";
+import { CommunicationCard } from "./components/CommunicationCard";
+import { RowActionBubble } from "./components/RowActionBubble";
 import { MailingPage } from "./components/MailingPage";
 import { StyleGuidePage } from "./components/StyleGuidePage";
 import { ImportModal } from "./components/ImportModal";
@@ -92,6 +94,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [communicationId, setCommunicationId] = useState<string | null>(null);
+  const [actionBubble, setActionBubble] = useState<{ company: Company; x: number; y: number } | null>(null);
   const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
@@ -293,6 +297,7 @@ function App() {
 
   const selectedCompany = companies.find((c) => c.id === selectedId) ?? null;
   const selectedContact = mailingContacts.find((c) => c.id === selectedContactId) ?? null;
+  const communicationCompany = companies.find((c) => c.id === communicationId) ?? null;
 
   if (!session) {
     return (
@@ -332,6 +337,8 @@ function App() {
     // switching between the 4 main sections, not follow you across tabs.
     setSelectedId(null);
     setSelectedContactId(null);
+    setCommunicationId(null);
+    setActionBubble(null);
     setVisitModalOpen(false);
   };
 
@@ -413,7 +420,7 @@ function App() {
             <DatabasePage
               companies={companies}
               mailingContacts={mailingContacts}
-              onSelectCompany={setSelectedId}
+              onRowClick={(company, x, y) => setActionBubble({ company, x, y })}
               onSelectContact={setSelectedContactId}
             />
           </motion.main>
@@ -501,6 +508,26 @@ function App() {
           onClose={() => setSelectedContactId(null)}
           onDelete={deleteMailingContact}
           onUpdate={updateMailingContact}
+        />
+      )}
+
+      {communicationCompany && (
+        <CommunicationCard company={communicationCompany} onClose={() => setCommunicationId(null)} />
+      )}
+
+      {actionBubble && (
+        <RowActionBubble
+          x={actionBubble.x}
+          y={actionBubble.y}
+          onClose={() => setActionBubble(null)}
+          onViewCard={() => {
+            setSelectedId(actionBubble.company.id);
+            setActionBubble(null);
+          }}
+          onCommunicate={() => {
+            setCommunicationId(actionBubble.company.id);
+            setActionBubble(null);
+          }}
         />
       )}
     </div>
