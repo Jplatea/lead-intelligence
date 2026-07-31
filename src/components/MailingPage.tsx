@@ -391,8 +391,8 @@ export function MailingPage({ contacts }: Props) {
   const renderTextField = (section: Section) => {
     const isHeading = (section.textStyle ?? "body") === "heading";
     return (
-      <div className="w-full">
-        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+      <div className="w-full group/text">
+        <div className="hidden group-focus-within/text:flex flex-wrap items-center gap-1.5 mb-1">
           <select
             value={section.fontFamily ?? "system"}
             onChange={(e) => updateSection(section.id, { fontFamily: e.target.value })}
@@ -643,7 +643,10 @@ export function MailingPage({ contacts }: Props) {
   };
 
   const renderSectionWrapper = (section: Section) => (
-    <div key={section.id} className="relative group/section rounded-xl px-2 py-1.5 hover:bg-black/[0.025] transition-colors">
+    <div
+      key={section.id}
+      className="relative group/section rounded-xl px-2 py-1.5 border border-black/[0.06] hover:bg-black/[0.025] transition-colors"
+    >
       <button
         type="button"
         onClick={() => removeSection(section.id)}
