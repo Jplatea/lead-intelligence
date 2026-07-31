@@ -61,78 +61,198 @@ function newBlock(type: BlockType, index: number): Block {
   };
 }
 
-// The starting layout the canvas loads with — the classic "hero + two-
-// column promo banner + alternating image/text category rows" structure
-// common to product-marketing email templates: a real starting point to
-// click into and replace, rather than a blank canvas. Placeholders and
-// generic copy only — no imagery/text copied from any specific template.
+// The starting layout the canvas loads with. This mirrors the real Prestige
+// Ibérica / Le Groupe Prestige newsletter (Artcoustic / TruAudio / Screen
+// Innovations, Sept. 2025 Mailchimp send) — real copy and real product
+// photos (hosted on Mailchimp's own mcusercontent.com CDN) instead of
+// generic placeholders, so the base template is the company's actual
+// newsletter and future edits refine it in place rather than starting from
+// filler text.
 function buildDefaultTemplate(): Block[] {
   const centered = { fontFamily: "system" as const, textAlign: "center" as const };
   const left = { fontFamily: "system" as const, textAlign: "left" as const };
   return [
-    { id: "tpl-hero-img", type: "image", x: 0, y: 0, width: 500, height: 170, content: "" },
     {
       id: "tpl-hero-title",
       type: "text",
       x: 0,
-      y: 180,
-      width: 500,
-      height: 50,
-      content: "Novedades destacadas",
+      y: 0,
+      width: 600,
+      height: 100,
+      content:
+        "Su equipo audiovisual para la nueva temporada\n\nNos complace añadir Artcoustic a nuestra oferta. ¿Conoce nuestras marcas TruAudio y Screen Innovations?",
       ...centered,
     },
     {
-      id: "tpl-promo-left",
+      id: "tpl-hero-img",
+      type: "image",
+      x: 0,
+      y: 120,
+      width: 600,
+      height: 280,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/96122623-d53a-5fe2-4367-f7fb92f64574.jpg",
+    },
+    {
+      id: "tpl-artcoustic-text",
       type: "text",
       x: 0,
-      y: 240,
-      width: 240,
-      height: 110,
-      content: "Oferta del mes\n\nHasta 20% de descuento",
+      y: 420,
+      width: 600,
+      height: 240,
+      content:
+        "1| Artcoustic, nueva marca de Prestige\n\nEstamos muy contentos de iniciar una nueva colaboración con la marca de audio Artcoustic. El fabricante danés cuenta con una amplia gama de productos, principalmente para montaje en pared, con tecnología acústica avanzada.\n\nArtcoustic combina el audio de alta fidelidad y la integración arquitectónica con altavoces finos, gamas específicas para cada uso y modelos personalizables. Confíe en la gama Spitfire para obtener potentes altavoces de cine o en la serie SL para sistemas multiroom. Artcoustic también hace énfasis en la integración estética con colores personalizados.\n\nDescubre Artcoustic en su página web.",
       ...left,
     },
     {
-      id: "tpl-promo-right",
-      type: "text",
-      x: 250,
-      y: 240,
-      width: 250,
-      height: 110,
-      content: "Condiciones especiales para pedidos de este mes. Consulta con tu comercial antes de fin de mes.",
-      ...left,
-    },
-    { id: "tpl-cat1-img", type: "image", x: 0, y: 360, width: 240, height: 150, content: "" },
-    {
-      id: "tpl-cat1-text",
-      type: "text",
-      x: 250,
-      y: 360,
-      width: 250,
-      height: 150,
-      content: "Domótica\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
-      ...left,
-    },
-    {
-      id: "tpl-cat2-text",
-      type: "text",
+      id: "tpl-artcoustic-img",
+      type: "image",
       x: 0,
-      y: 520,
-      width: 250,
-      height: 150,
-      content: "Audio\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
-      ...left,
-    },
-    { id: "tpl-cat2-img", type: "image", x: 260, y: 520, width: 240, height: 150, content: "" },
-    { id: "tpl-cat3-img", type: "image", x: 0, y: 680, width: 240, height: 150, content: "" },
-    {
-      id: "tpl-cat3-text",
-      type: "text",
-      x: 250,
       y: 680,
-      width: 250,
-      height: 150,
-      content: "Iluminación\n\nBreve descripción de la categoría y por qué encaja en el proyecto.\n\nVer más",
+      width: 280,
+      height: 200,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/78917137-b437-a8a4-a9f9-24ab0a976969.jpg",
+    },
+    {
+      id: "tpl-artcoustic-products",
+      type: "text",
+      x: 300,
+      y: 680,
+      width: 300,
+      height: 200,
+      content: "Los productos Artcoustic\n\n» Ver altavoces multiroom\n» Ver altavoces de cinema\n» Ver barras de sonido",
       ...left,
+    },
+    {
+      id: "tpl-truaudio-text",
+      type: "text",
+      x: 0,
+      y: 900,
+      width: 600,
+      height: 260,
+      content:
+        "2| TruAudio\n\nEspecializada en altavoces empotrables multiroom, TruAudio ofrece a los instaladores productos diseñados para combinar rendimiento sonoro, fiabilidad y discreción estética. Gracias a una amplia gama pensada para satisfacer las necesidades tanto residenciales como comerciales, TruAudio facilita la creación de experiencias sonoras inmersivas y duraderas. Innovadora y orientada a los profesionales, la marca ofrece soluciones técnicas adaptadas a todos los entornos, con una amplia selección de altavoces empotrables, pero también una gama muy completa para exteriores, altavoces suspendidos o barras de sonido personalizadas.\n\nDescubre TruAudio en su página web.",
+      ...left,
+    },
+    {
+      id: "tpl-phantom-text",
+      type: "text",
+      x: 0,
+      y: 1180,
+      width: 300,
+      height: 240,
+      content:
+        "Zoom sobre Phantom y Shadow\n\nLos modelos empotrados en techo se encuentran entre nuestros productos TruAudio más vendidos, y tienen un precio atractivo:\n\n• Distribución clara del sonido en espacios amplios\n• Integración discreta sin marco\n• Resistencia a entornos húmedos\n• 8,5”, 6,5” o 4”",
+      ...left,
+    },
+    {
+      id: "tpl-phantom-img",
+      type: "image",
+      x: 310,
+      y: 1180,
+      width: 280,
+      height: 240,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/d57795ae-252a-3568-1dbc-5252f02e30af.jpg",
+    },
+    {
+      id: "tpl-screen-text",
+      type: "text",
+      x: 0,
+      y: 1440,
+      width: 600,
+      height: 240,
+      content:
+        "Screen Innovations: pantallas de proyección de alta gama en el punto de mira\n\nEspecializada en pantallas de proyección y persianas motorizadas, Screen Innovations combina tecnología, diseño y rendimiento. Sus pantallas (como Black Diamond® y Maestro 2™) ofrecen una calidad de imagen excepcional, incluso con luz ambiental. Las elegantes persianas conectadas se integran a la perfección tanto en espacios interiores como exteriores. Aproveche este equipo de calidad profesional para sus instalaciones de alta gama.\n\nDescubra Screen Innovations en su sitio web.",
+      ...left,
+    },
+    {
+      id: "tpl-screens-img",
+      type: "image",
+      x: 0,
+      y: 1700,
+      width: 280,
+      height: 200,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/5298add2-eb83-8051-116f-6d0f9826a2af.jpg",
+    },
+    {
+      id: "tpl-screens-text",
+      type: "text",
+      x: 300,
+      y: 1700,
+      width: 300,
+      height: 200,
+      content:
+        "Pantallas a medida\n\nSI le permite crear la pantalla fija, motorizada u oculta que desee gracias a su configurador en línea: dimensiones, encofrado, color, descenso motorizado, relación de aspecto, montaje, especificidad de la tela... Hay disponibles una quincena de telas para adaptarse a numerosos entornos de proyección, como la Black Diamond, que rechaza la luz ambiental, o la Maestro 2, acústicamente transparente.",
+      ...left,
+    },
+    {
+      id: "tpl-blinds-text",
+      type: "text",
+      x: 0,
+      y: 1920,
+      width: 300,
+      height: 240,
+      content:
+        "Amplia selección de persianas\n\nSe le ofrecen diferentes tecnologías de persianas, algunas de ellas patentadas. El modo de apertura, el color, la motorización y los tejidos se combinan según sus instrucciones, para una integración perfecta en el diseño del espacio. En cuanto a la integración técnica, estas persianas se integran fácilmente en una instalación conectada, incluyendo un control nativo mediante Control4.",
+      ...left,
+    },
+    {
+      id: "tpl-blinds-img",
+      type: "image",
+      x: 310,
+      y: 1920,
+      width: 280,
+      height: 240,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/b7061841-c302-f51b-e2dc-93bc9d427abc.jpg",
+    },
+    {
+      id: "tpl-youtube-text",
+      type: "text",
+      x: 0,
+      y: 2180,
+      width: 600,
+      height: 140,
+      content:
+        "Nuestros tutoriales en YouTube\n\n¿Necesita consejos para sus instalaciones? Nuestros vídeos responden a las preguntas más frecuentes.\n\nBúsquelos por temas en nuestra página: Canal Le Groupe Prestige en YouTube",
+      ...centered,
+    },
+    {
+      id: "tpl-youtube-video",
+      type: "video",
+      x: 0,
+      y: 2340,
+      width: 600,
+      height: 140,
+      content: "https://www.youtube.com/watch?v=zc6UXZ-XUxU",
+    },
+    {
+      id: "tpl-youtube-caption",
+      type: "text",
+      x: 0,
+      y: 2500,
+      width: 600,
+      height: 60,
+      content: "Aquí está la más reciente, de la semana pasada.",
+      ...centered,
+    },
+    {
+      id: "tpl-control4-text",
+      type: "text",
+      x: 0,
+      y: 2580,
+      width: 600,
+      height: 200,
+      content:
+        "Formación Control4\n\nLas formaciones de Control4 le permiten convertirse en integrador certificado de la marca, requisito necesario para instalar sus productos. Se imparten en nuestras instalaciones de Murcia para poner en práctica todo lo que aprende.\n\nSi está interesado, póngase en contacto con Víctor. +34 6 86 05 72 05",
+      ...centered,
+    },
+    {
+      id: "tpl-control4-img",
+      type: "image",
+      x: 0,
+      y: 2800,
+      width: 600,
+      height: 260,
+      content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/8e92a952-68d2-1917-1b31-83fbe47f9985.png",
     },
   ];
 }
