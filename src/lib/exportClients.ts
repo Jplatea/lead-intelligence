@@ -5,7 +5,6 @@ import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 
 function toRecord(c: Company) {
   return {
-    id: c.id,
     nombre: c.name,
     tipo: c.type,
     ciudad: c.city,
@@ -22,6 +21,7 @@ function toRecord(c: Company) {
     estado: STATUS_CONFIG[c.status].label,
     alarma: ALARM_CONFIG[c.alarm].label,
     revisar: c.needsReview ? "sí" : "no",
+    id: c.id,
   };
 }
 
@@ -47,12 +47,17 @@ export function exportCompaniesXLSX(companies: Company[]) {
   downloadBlob(new Blob([buffer], { type: "application/octet-stream" }), "clientes.xlsx");
 }
 
+// Column order matters here (unlike toRecord's above): the mailing import
+// (importMailingContacts.ts) reads this file back positionally — column 1
+// = contact name, 2 = email, 3 = company — regardless of header text, so
+// `id` has to stay out of those first three slots or a re-imported backup
+// silently misreads every row.
 function toMailingRecord(c: MailingContact) {
   return {
-    id: c.id,
     nombre_contacto: c.contactName,
     email: c.email,
     empresa: c.companyName,
+    id: c.id,
   };
 }
 
