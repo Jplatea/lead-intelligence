@@ -23,6 +23,7 @@ interface Tile {
   onIconClick?: () => void;
   spinning?: boolean;
   alarm?: boolean;
+  blinkClass?: string;
 }
 
 export function StatsRow({
@@ -52,6 +53,7 @@ export function StatsRow({
       onIconClick: onToggleReviewArrows,
       spinning: scanning,
       alarm: needsReview,
+      blinkClass: "detect-blink",
     },
     {
       label: "Mailing",
@@ -100,7 +102,7 @@ export function StatsRow({
                   tile.onIconClick();
                 }
               }}
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${tile.alarm ? "alarm-blink" : "bg-black/15"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${tile.alarm ? (tile.blinkClass ?? "alarm-blink") : "bg-black/15"}`}
             >
               <tile.icon size={15} className={`text-black/70 ${tile.spinning ? "animate-spin" : ""}`} strokeWidth={2.25} />
             </button>

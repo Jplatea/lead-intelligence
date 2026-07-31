@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import type { MailingContact } from "../types";
+import { SaveTemplateModal } from "./SaveTemplateModal";
 import {
   buildEmlFile,
   buildMarketingEmailHtml,
@@ -448,6 +449,7 @@ export function MailingPage({ contacts }: Props) {
   const [copied, setCopied] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>(loadSavedTemplates);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(sections));
@@ -463,10 +465,9 @@ export function MailingPage({ contacts }: Props) {
     }
   };
 
-  const saveCurrentAsTemplate = () => {
-    const name = window.prompt("Nombre de la plantilla:");
-    if (!name || !name.trim()) return;
-    setSavedTemplates((prev) => [...prev, { id: `tpl-${Date.now()}`, name: name.trim(), sections }]);
+  const saveTemplateAs = (name: string) => {
+    setSavedTemplates((prev) => [...prev, { id: `tpl-${Date.now()}`, name, sections }]);
+    setSaveModalOpen(false);
   };
 
   const deleteSavedTemplate = (id: string) => {
@@ -866,7 +867,7 @@ export function MailingPage({ contacts }: Props) {
               onLoadDefault={() => loadTemplate(buildDefaultSections())}
               onLoadBlank={() => loadTemplate([])}
               onLoadSaved={(t) => loadTemplate(t.sections)}
-              onSaveCurrent={saveCurrentAsTemplate}
+              onSaveCurrent={() => setSaveModalOpen(true)}
               onDeleteSaved={deleteSavedTemplate}
             />
             <button
@@ -977,6 +978,8 @@ export function MailingPage({ contacts }: Props) {
           </div>
         </div>
       )}
+
+      {saveModalOpen && <SaveTemplateModal onSave={saveTemplateAs} onClose={() => setSaveModalOpen(false)} />}
     </div>
   );
 }

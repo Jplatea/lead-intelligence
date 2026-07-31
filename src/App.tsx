@@ -24,6 +24,8 @@ import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { REPS } from "./data/config";
 import { checkUrlAndScan } from "./lib/robotsCheck";
 import { findAllMailingDuplicateGroups } from "./lib/importMailingContacts";
+import { findCompanyMailingMatches, type CompanyMailingMatch } from "./lib/matchMailing";
+import { CompanyMailingMatchesModal } from "./components/CompanyMailingMatchesModal";
 import { clearSession, loadSession, saveSession } from "./lib/auth";
 import { generateVisitPdf } from "./lib/visitPdf";
 import { regionOf } from "./lib/regions";
@@ -101,6 +103,7 @@ function App() {
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [reviewArrowIds, setReviewArrowIds] = useState<Set<string> | null>(null);
+  const [companyMailingMatches, setCompanyMailingMatches] = useState<CompanyMailingMatch[] | null>(null);
   const [visitModalOpen, setVisitModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
 
@@ -277,12 +280,14 @@ function App() {
   };
 
   // "Empresas detectadas" card opens the import modal (unchanged); its
-  // blinking badge instead points out companies pending review on the map
-  // with an animated arrow, toggling on/off.
+  // blinking badge toggles the review arrows on the map AND now also
+  // cross-checks the clients database against the mailing list, opening a
+  // results modal listing any company present in both.
   const handleToggleReviewArrows = () => {
     setReviewArrowIds((prev) =>
       prev ? null : new Set(companies.filter((c) => c.needsReview).map((c) => c.id))
     );
+    setCompanyMailingMatches(findCompanyMailingMatches(companies, mailingContacts));
   };
 
   const filteredCompanies = useMemo(() => {
@@ -499,6 +504,13 @@ function App() {
           onImport={importMailingContacts}
           onDeleteContact={deleteMailingContact}
           onRescanDuplicates={rescanMailingDuplicates}
+        />
+      )}
+
+      {companyMailingMatches && (
+        <CompanyMailingMatchesModal
+          matches={companyMailingMatches}
+          onClose={() => setCompanyMailingMatches(null)}
         />
       )}
 

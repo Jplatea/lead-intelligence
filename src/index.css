@@ -176,6 +176,19 @@ body {
   animation: alarm-blink 1s ease-in-out infinite;
 }
 
+/* "Empresas detectadas" icon button: a fluorescent green version of the
+   same blink pattern above (same rep-color family as the card's own
+   mint/#a8dfcf background, just far more saturated) — used for its icon
+   button regardless of the coral alarm-blink used elsewhere, since this
+   one doubles as the trigger for the clients/mailing cross-check. */
+@keyframes detect-blink {
+  0%, 100% { background-color: rgba(0, 0, 0, 0.15); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+  50% { background-color: rgba(57, 255, 20, 0.75); box-shadow: 0 0 0 5px rgba(57, 255, 20, 0.3); }
+}
+.detect-blink {
+  animation: detect-blink 1s ease-in-out infinite;
+}
+
 /* Login page: animated nebula-like blobs cycling through the app's own
    palette (teal/purple/orange/coral) on a dark background — a deliberate
    one-off futuristic treatment for the gate screen only. */
