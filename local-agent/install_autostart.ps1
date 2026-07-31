@@ -1,11 +1,18 @@
 # Adds a shortcut to ILeadsOutlookAgent.exe in the Windows Startup folder,
-# so the agent launches automatically every time you log in.
+# so the agent launches automatically every time you log in. Works whether
+# this script sits next to the .exe directly (the usual case when someone
+# just received the .exe by email) or in the local-agent/ source folder
+# with the .exe still inside dist\ (the build machine's layout).
 
-$exePath = Join-Path $PSScriptRoot "dist\ILeadsOutlookAgent.exe"
+$candidates = @(
+    (Join-Path $PSScriptRoot "ILeadsOutlookAgent.exe"),
+    (Join-Path $PSScriptRoot "dist\ILeadsOutlookAgent.exe")
+)
+$exePath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 
-if (-not (Test-Path $exePath)) {
-    Write-Host "No se encuentra $exePath"
-    Write-Host "Ejecuta primero build_exe.bat para generarlo."
+if (-not $exePath) {
+    Write-Host "No se encuentra ILeadsOutlookAgent.exe junto a este script."
+    Write-Host "Coloca install_autostart.ps1 en la misma carpeta que el .exe, o genera el .exe primero con build_exe.bat."
     exit 1
 }
 
