@@ -237,8 +237,7 @@ function App() {
     const ids = new Set(
       companies.filter((c) => repIds.includes(c.assignedRep) && regionOf(c.province) === zone).map((c) => c.id)
     );
-    setHighlight({ ids, color: "#ff10f0" });
-    setVisitModalOpen(false);
+    setHighlight({ ids, color: "#b026ff" });
   };
 
   const handleGenerateVisitPdf = (repIds: RepId[], zone: string) => {

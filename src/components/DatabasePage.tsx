@@ -339,9 +339,9 @@ export function DatabasePage({
           {dataset === "clients" ? (
             <motion.div
               key="clients"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className="flex-1 min-h-0 flex flex-col gap-4"
             >
@@ -490,9 +490,9 @@ export function DatabasePage({
           ) : (
             <motion.div
               key="newsletter"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className="flex-1 min-h-0 flex flex-col gap-4"
             >

@@ -93,7 +93,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
   );
 
   return (
-    <div className="glass float-card rounded-3xl p-6 animate-fade-in-up">
+    <div className="glass float-card rounded-3xl p-6 pb-10 animate-fade-in-up">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <p
