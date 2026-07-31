@@ -83,20 +83,56 @@ function groupIntoRows(blocks: MailingBlock[]): MailingBlock[][] {
   return rows;
 }
 
-function renderBlockContent(block: MailingBlock): string {
-  if (!block.content.trim()) return "";
+// A short final line (≤3 words, on its own line after other content) reads
+// as a "Ver más"-style call to action — style it as a link instead of
+// flat paragraph text, since a wall of identically-styled text is exactly
+// what made the first version of this export look unfinished.
+function renderTextContent(block: MailingBlock): string {
+  const stack = textFontStack(block.fontFamily);
+  const align = block.textAlign ?? "left";
+  const lines = block.content.split("\n");
+  while (lines.length > 1 && lines[lines.length - 1].trim() === "") lines.pop();
+  const lastLine = lines[lines.length - 1]?.trim() ?? "";
+  const hasCta = lines.length > 1 && lastLine.length > 0 && lastLine.split(/\s+/).length <= 3;
+  const bodyLines = hasCta ? lines.slice(0, -1) : lines;
+  const bodyText = bodyLines.join("\n").trim();
 
+  const bodyHtml = bodyText
+    ? `<p style="margin:0;font-family:${stack};font-size:15px;line-height:1.7;color:#211f1d;text-align:${align};">${textToHtml(bodyText)}</p>`
+    : "";
+  const ctaHtml = hasCta
+    ? `<p style="margin:${bodyHtml ? "10px" : "0"} 0 0;text-align:${align};"><a href="#" style="font-family:${stack};color:#2a9678;font-weight:700;font-size:13px;text-decoration:none;">${escapeHtml(lastLine)} &rarr;</a></p>`
+    : "";
+  return `${bodyHtml}${ctaHtml}`;
+}
+
+// An empty image slot still renders as a placeholder box (not nothing) so
+// a row's two-column layout — image beside its description — stays intact
+// and legible before the real photo is uploaded, instead of collapsing
+// into an unexplained gap.
+function renderImagePlaceholder(): string {
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px dashed rgba(33,31,29,0.25);border-radius:12px;background-color:#f3efe9;">
+      <tr>
+        <td align="center" style="padding:52px 12px;">
+          <p style="margin:0;font-family:${FONT_STACK};font-size:12px;color:#a39c92;">Imagen pendiente</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function renderBlockContent(block: MailingBlock): string {
   switch (block.type) {
-    case "text": {
-      const stack = textFontStack(block.fontFamily);
-      const align = block.textAlign ?? "left";
-      return `<p style="margin:0;font-family:${stack};font-size:15px;line-height:1.7;color:#211f1d;text-align:${align};">${textToHtml(block.content)}</p>`;
-    }
+    case "text":
+      return block.content.trim() ? renderTextContent(block) : "";
 
     case "image":
-      return `<img src="${escapeHtml(block.content)}" alt="" width="100%" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid rgba(33,31,29,0.1);" />`;
+      return block.content.trim()
+        ? `<img src="${escapeHtml(block.content)}" alt="" width="100%" style="display:block;width:100%;height:auto;border-radius:12px;border:1px solid rgba(33,31,29,0.1);" />`
+        : renderImagePlaceholder();
 
     case "video": {
+      if (!block.content.trim()) return "";
       if (!isRemoteUrl(block.content)) {
         return `<p style="margin:0;font-family:${FONT_STACK};font-size:12px;color:#8a8378;">(Un v&iacute;deo subido como archivo no se incluye aqu&iacute; — los clientes de correo no lo reproducen. Sube el v&iacute;deo a un servicio como YouTube o Vimeo y pega esa URL para que aparezca como bot&oacute;n "Ver v&iacute;deo".)</p>`;
       }
@@ -120,17 +156,27 @@ function renderRow(row: MailingBlock[]): string {
     return `<tr><td style="padding:8px 36px;">${contents[0]}</td></tr>`;
   }
 
+  // Multi-block rows (an image beside its description, a two-column promo
+  // banner) are wrapped as one card — a bordered, rounded, shadowed panel —
+  // rather than leaving the columns floating with no visual container.
   const totalWidth = row.reduce((sum, b) => sum + b.width, 0);
   const cells = row
     .map((b, i) => {
       if (!contents[i]) return "";
       const pct = Math.max(15, Math.round((b.width / totalWidth) * 100));
-      return `<td width="${pct}%" valign="top" style="padding:8px 8px;">${contents[i]}</td>`;
+      return `<td width="${pct}%" valign="middle" style="padding:14px;">${contents[i]}</td>`;
     })
     .filter(Boolean)
     .join("");
 
-  return `<tr><td style="padding:0 28px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table></td></tr>`;
+  return `
+    <tr>
+      <td style="padding:10px 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid rgba(33,31,29,0.08);border-radius:16px;box-shadow:0 6px 16px rgba(33,31,29,0.06);">
+          <tr>${cells}</tr>
+        </table>
+      </td>
+    </tr>`;
 }
 
 export interface EmailMeta {
