@@ -3,14 +3,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { Mail } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
-import { NewsletterContactCard } from "./NewsletterContactCard";
 
 interface Props {
   companies: Company[];
   mailingContacts: MailingContact[];
   onSelectCompany: (id: string) => void;
-  onDeleteMailingContact: (id: string) => void;
-  onUpdateMailingContact: (id: string, patch: Partial<MailingContact>) => void;
+  onSelectContact: (id: string) => void;
 }
 
 type Dataset = "clients" | "newsletter";
@@ -64,16 +62,8 @@ function cellText(c: Company, key: ColumnKey): string {
 // export, or per-row editing/deleting — just the data laid out plainly on
 // the rep's color, per explicit request to simplify it down to information
 // only.
-export function DatabasePage({
-  companies,
-  mailingContacts,
-  onSelectCompany,
-  onDeleteMailingContact,
-  onUpdateMailingContact,
-}: Props) {
+export function DatabasePage({ companies, mailingContacts, onSelectCompany, onSelectContact }: Props) {
   const [dataset, setDataset] = useState<Dataset>("clients");
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const selectedContact = mailingContacts.find((c) => c.id === selectedContactId) ?? null;
 
   const rowColor = (c: Company) => REPS[c.assignedRep]?.color ?? UNASSIGNED_COLOR;
   // Fully opaque, just lightened toward white — kept solid on purpose (not
@@ -227,7 +217,7 @@ export function DatabasePage({
                     {mailingContacts.map((c) => (
                       <tr
                         key={c.id}
-                        onClick={() => setSelectedContactId(c.id)}
+                        onClick={() => onSelectContact(c.id)}
                         className="cursor-pointer hover:brightness-95 transition-[filter]"
                       >
                         <td className="pl-3 pr-1 py-1.5 rounded-l-xl" style={{ background: "rgba(167,155,203,0.14)" }}>
@@ -254,15 +244,6 @@ export function DatabasePage({
           )}
         </AnimatePresence>
       </div>
-
-      {selectedContact && (
-        <NewsletterContactCard
-          contact={selectedContact}
-          onClose={() => setSelectedContactId(null)}
-          onDelete={onDeleteMailingContact}
-          onUpdate={onUpdateMailingContact}
-        />
-      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { CompanyCard } from "./components/CompanyCard";
 import { StatsRow } from "./components/StatsRow";
 import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
+import { NewsletterContactCard } from "./components/NewsletterContactCard";
 import { MailingPage } from "./components/MailingPage";
 import { ImportModal } from "./components/ImportModal";
 import { MailingImportModal } from "./components/MailingImportModal";
@@ -89,6 +90,7 @@ function App() {
   });
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
@@ -289,6 +291,7 @@ function App() {
   }, [companies, filters, query]);
 
   const selectedCompany = companies.find((c) => c.id === selectedId) ?? null;
+  const selectedContact = mailingContacts.find((c) => c.id === selectedContactId) ?? null;
 
   if (!session) {
     return (
@@ -405,8 +408,7 @@ function App() {
               companies={companies}
               mailingContacts={mailingContacts}
               onSelectCompany={setSelectedId}
-              onDeleteMailingContact={deleteMailingContact}
-              onUpdateMailingContact={updateMailingContact}
+              onSelectContact={setSelectedContactId}
             />
           </motion.main>
         )}
@@ -476,6 +478,15 @@ function App() {
             />
           </div>
         </div>
+      )}
+
+      {selectedContact && (
+        <NewsletterContactCard
+          contact={selectedContact}
+          onClose={() => setSelectedContactId(null)}
+          onDelete={deleteMailingContact}
+          onUpdate={updateMailingContact}
+        />
       )}
     </div>
   );
