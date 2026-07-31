@@ -19,7 +19,12 @@ body {
     radial-gradient(ellipse 60% 45% at 100% 100%, rgba(184, 197, 240, 0.12), transparent),
     #e6dcd2;
   color: #211f1d;
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* Apple's San Francisco has no web-embeddable license — the standard way
+     to get it is asking for the OS's own system font by keyword, which
+     resolves to San Francisco on macOS/iOS/Safari. Non-Apple platforms
+     fall back to their own native system sans (Segoe UI on Windows, Roboto
+     on Android) rather than nothing. */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-sans-serif, system-ui, "Segoe UI", Roboto, "Inter", sans-serif;
 }
 
 ::-webkit-scrollbar {
