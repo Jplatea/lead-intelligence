@@ -17,14 +17,21 @@ anything.
 Requirements (run once):
     pip install pywin32
 
-Usage:
+Usage (running the Python script directly):
     1. Make sure Outlook (the desktop app, not the web version) is open
        and signed in.
     2. Run:  python outlook_agent.py
     3. Leave this window open. Leave it running in the background while
-       you use the "Establecer comunicación" -> "Conectar agente local"
-       option on the ILEADS website.
+       you use the "Establecer comunicación" -> "Agente local" option on
+       the ILEADS website.
     4. Press Ctrl+C to stop it.
+
+Usage (as a standalone .exe, no Python needed to run it afterwards):
+    1. On a Windows PC with Python installed, double-click build_exe.bat
+       in this same folder. It installs pyinstaller and produces
+       dist\ILeadsOutlookAgent.exe.
+    2. Double-click that .exe (or run install_autostart.bat once to make
+       it launch automatically every time you log in to Windows).
 
 This only works on Windows, with classic desktop Outlook installed, while
 this script is running on this same PC. It does not work from other
