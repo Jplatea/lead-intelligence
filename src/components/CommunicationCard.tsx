@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Mail, RefreshCw, AlertCircle } from "lucide-react";
 import type { Company } from "../types";
-import { fetchRecentEmails as fetchGmail, isGmailConfigured, preloadGmail, requestGmailAccessToken } from "../lib/gmail";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 
 interface Props {
@@ -20,32 +19,27 @@ interface EmailMessage {
 }
 
 type Status = "idle" | "loading" | "error" | "ready";
-type Provider = "gmail" | "outlook";
 
 export function CommunicationCard({ company, onClose }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
 
-  // Load Google/Microsoft's auth SDKs as soon as this card appears, so the
-  // click handlers below can call requestAccessToken()/loginPopup() with as
-  // little delay as possible — popup blockers only reliably allow the OAuth
-  // window when it opens right after the user's gesture.
+  // Load Microsoft's auth SDK as soon as this card appears, so the click
+  // handler below can call loginPopup() with as little delay as possible —
+  // popup blockers only reliably allow the OAuth window when it opens right
+  // after the user's gesture.
   useEffect(() => {
-    preloadGmail();
     preloadOutlook();
   }, []);
 
-  const connect = async (provider: Provider) => {
+  const connect = async () => {
     setStatus("loading");
     setError("");
     try {
       const email = company.contact.email;
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
-      const msgs =
-        provider === "gmail"
-          ? await fetchGmail(await requestGmailAccessToken(), email, 10)
-          : await fetchOutlook(await requestOutlookAccessToken(), email, 10);
+      const msgs = await fetchOutlook(await requestOutlookAccessToken(), email, 10);
       setMessages(msgs);
       setStatus("ready");
     } catch (e) {
@@ -75,28 +69,13 @@ export function CommunicationCard({ company, onClose }: Props) {
               Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
               envía ni modifica nada.
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => connect("gmail")}
-                disabled={!isGmailConfigured()}
-                className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Conectar Gmail
-              </button>
-              <button
-                onClick={() => connect("outlook")}
-                disabled={!isOutlookConfigured()}
-                className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Conectar Outlook
-              </button>
-            </div>
-            {!isGmailConfigured() && (
-              <p className="text-[11px] text-[#b9503a] max-w-[280px] flex items-center gap-1.5">
-                <AlertCircle size={12} className="shrink-0" />
-                Falta configurar el acceso a Gmail (VITE_GOOGLE_CLIENT_ID).
-              </p>
-            )}
+            <button
+              onClick={connect}
+              disabled={!isOutlookConfigured()}
+              className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Conectar Outlook
+            </button>
             {!isOutlookConfigured() && (
               <p className="text-[11px] text-[#b9503a] max-w-[280px] flex items-center gap-1.5">
                 <AlertCircle size={12} className="shrink-0" />
