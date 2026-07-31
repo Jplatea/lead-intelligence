@@ -29,7 +29,7 @@ Usage (running the Python script directly):
 Usage (as a standalone .exe, no Python needed to run it afterwards):
     1. On a Windows PC with Python installed, double-click build_exe.bat
        in this same folder. It installs pyinstaller and produces
-       dist\ILeadsOutlookAgent.exe.
+       dist/ILeadsOutlookAgent.exe.
     2. Double-click that .exe (or run install_autostart.bat once to make
        it launch automatically every time you log in to Windows).
 
@@ -132,24 +132,40 @@ def find_recent_emails(target_email, limit=10, max_age_days=365):
             folder = ns.GetDefaultFolder(folder_id)
         except Exception:
             continue
+        sort_field = "[ReceivedTime]" if folder_id == OL_FOLDER_INBOX else "[SentOn]"
         items = folder.Items
-        items.Sort("[ReceivedTime]", True)  # newest first; Sent Mail falls back to SentOn internally
+        items.Sort(sort_field, True)  # newest first
+
+        # Plain `for item in items` uses the collection's own enumerator,
+        # which does NOT honor Sort() - items can come back in an
+        # unrelated order, so the "stop once we hit an old one" cutoff
+        # below would trigger on the wrong item and bail out too early,
+        # skipping real matches further down. GetFirst()/GetNext() do
+        # respect Sort() (verified directly against a real mailbox), so
+        # use that instead of the for-loop.
         count = 0
-        for item in items:
-            # Cap how many we scan per folder so a huge mailbox doesn't hang.
+        item = items.GetFirst()
+        while item is not None and count < 500:
             count += 1
-            if count > 500:
-                break
             try:
-                if item.Class != 43:  # olMail
-                    continue
-                when = getattr(item, "ReceivedTime", None) or getattr(item, "SentOn", None)
-                if when and when < cutoff:
-                    break
-                if mail_matches(item, target_email):
-                    matches.append(to_result(item))
+                if item.Class == 43:  # olMail
+                    when = getattr(item, "ReceivedTime", None) or getattr(item, "SentOn", None)
+                    # pywin32 returns a timezone-aware datetime here; cutoff
+                    # (below) is naive. Comparing aware vs naive datetimes
+                    # raises TypeError, which the broad except below was
+                    # silently swallowing on every single item - so this
+                    # cutoff check was quietly breaking out of the loop
+                    # before ever reaching mail_matches(), for every mail,
+                    # every time. Strip tzinfo so the comparison is valid.
+                    if when is not None and getattr(when, "tzinfo", None) is not None:
+                        when = when.replace(tzinfo=None)
+                    if when and when < cutoff:
+                        break
+                    if mail_matches(item, target_email):
+                        matches.append(to_result(item))
             except Exception:
-                continue
+                pass
+            item = items.GetNext()
 
     matches.sort(key=lambda m: m["date"], reverse=True)
     return matches[:limit]

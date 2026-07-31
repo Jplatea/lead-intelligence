@@ -42,6 +42,33 @@ export function parseContactsXLSX(buffer: ArrayBuffer): ContactRow[] {
   return mapByPosition(rows);
 }
 
+// Scans the whole mailing list for contacts sharing an email with another
+// one already in it (e.g. imported more than once over time, or added
+// manually with a slight name variation). Groups by normalized email;
+// within each group the first record is kept as "existing" and every
+// other one pairs against it as "incoming" - mirrors findAllDuplicateGroups
+// in importClients.ts for companies, but simpler since a mailing contact
+// has no fields worth manually merging: the duplicates are just removed.
+export function findAllMailingDuplicateGroups(
+  contacts: MailingContact[]
+): { existing: MailingContact; incoming: MailingContact }[] {
+  const groups = new Map<string, MailingContact[]>();
+  for (const c of contacts) {
+    const key = c.email.trim().toLowerCase();
+    if (!key) continue;
+    const arr = groups.get(key);
+    if (arr) arr.push(c);
+    else groups.set(key, [c]);
+  }
+  const conflicts: { existing: MailingContact; incoming: MailingContact }[] = [];
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const [first, ...rest] = group;
+    for (const dup of rest) conflicts.push({ existing: first, incoming: dup });
+  }
+  return conflicts;
+}
+
 export interface ContactImportResult {
   contacts: MailingContact[];
   skipped: number;

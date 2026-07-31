@@ -23,6 +23,7 @@ import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
 import { REPS } from "./data/config";
 import { checkUrlAndScan } from "./lib/robotsCheck";
+import { findAllMailingDuplicateGroups } from "./lib/importMailingContacts";
 import { clearSession, loadSession, saveSession } from "./lib/auth";
 import { generateVisitPdf } from "./lib/visitPdf";
 import { regionOf } from "./lib/regions";
@@ -135,6 +136,19 @@ function App() {
 
   const deleteMailingContact = (id: string) => {
     setMailingContacts((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  // Removes any mailing contact sharing an email with an earlier one in the
+  // list, then writes the result to localStorage immediately - not just
+  // relying on the usual autosave effect, since that only fires on a state
+  // change and this should confirm a save even when zero duplicates exist.
+  const rescanMailingDuplicates = (): number => {
+    const dupes = findAllMailingDuplicateGroups(mailingContacts);
+    const idsToRemove = new Set(dupes.map((d) => d.incoming.id));
+    const deduped = idsToRemove.size > 0 ? mailingContacts.filter((c) => !idsToRemove.has(c.id)) : mailingContacts;
+    if (idsToRemove.size > 0) setMailingContacts(deduped);
+    localStorage.setItem(MAILING_CONTACTS_STORAGE_KEY, JSON.stringify(deduped));
+    return dupes.length;
   };
 
   const updateMailingContact = (id: string, patch: Partial<MailingContact>) => {
@@ -484,6 +498,7 @@ function App() {
           onClose={() => setMailingImportModalOpen(false)}
           onImport={importMailingContacts}
           onDeleteContact={deleteMailingContact}
+          onRescanDuplicates={rescanMailingDuplicates}
         />
       )}
 

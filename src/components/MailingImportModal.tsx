@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Loader2, Mail, Trash2, Upload, X } from "lucide-react";
+import { Loader2, Mail, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { parseContactsCSV, parseContactsXLSX, rowsToMailingContacts } from "../lib/importMailingContacts";
 import type { MailingContact } from "../types";
 
@@ -8,14 +8,32 @@ interface Props {
   onClose: () => void;
   onImport: (contacts: MailingContact[]) => void;
   onDeleteContact: (id: string) => void;
+  onRescanDuplicates: () => number;
 }
 
-export function MailingImportModal({ contacts, onClose, onImport, onDeleteContact }: Props) {
+export function MailingImportModal({ contacts, onClose, onImport, onDeleteContact, onRescanDuplicates }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Removes any contact sharing an email with an earlier one in the list
+  // (auto-resolved - a mailing contact only has 3 fields, nothing worth a
+  // manual merge decision), then always writes the result to storage right
+  // away regardless of whether anything was actually removed.
+  const rescan = () => {
+    setScanning(true);
+    setError(null);
+    const removed = onRescanDuplicates();
+    setScanning(false);
+    setResult(
+      removed > 0
+        ? `${removed} contacto${removed === 1 ? "" : "s"} duplicado${removed === 1 ? "" : "s"} eliminado${removed === 1 ? "" : "s"}. Guardado.`
+        : "No se han encontrado contactos duplicados. Guardado."
+    );
+  };
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -100,6 +118,17 @@ export function MailingImportModal({ contacts, onClose, onImport, onDeleteContac
               independiente y nunca se mezcla con la base de datos de clientes.
             </p>
           </div>
+
+          <div className="h-px bg-gradient-to-r from-transparent via-black/10 to-transparent" />
+
+          <button
+            onClick={rescan}
+            disabled={scanning}
+            className="w-full flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-xl bg-black/[0.03] border border-black/10 text-neutral-600 hover:bg-black/[0.06] disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={scanning ? "animate-spin" : ""} />
+            {scanning ? "Reescaneando contactos..." : "Reescanear contactos duplicados"}
+          </button>
 
           {contacts.length > 0 && (
             <>

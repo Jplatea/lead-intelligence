@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Download, Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 import {
@@ -147,6 +147,55 @@ function ExportMenu({ onCSV, onXLSX }: { onCSV: () => void; onXLSX: () => void }
   );
 }
 
+// Any column header is clickable to sort by it: first click ascending,
+// second click descending, third click clears back to the natural order.
+type SortDir = "asc" | "desc";
+interface SortState<K extends string> {
+  key: K;
+  dir: SortDir;
+}
+
+function toggleSort<K extends string>(
+  prev: SortState<K> | null,
+  key: K
+): SortState<K> | null {
+  if (!prev || prev.key !== key) return { key, dir: "asc" };
+  if (prev.dir === "asc") return { key, dir: "desc" };
+  return null;
+}
+
+function SortableTh<K extends string>({
+  label,
+  columnKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string;
+  columnKey: K;
+  sort: SortState<K> | null;
+  onSort: (key: K) => void;
+  className?: string;
+}) {
+  const active = sort?.key === columnKey;
+  return (
+    <th
+      onClick={() => onSort(columnKey)}
+      className={`cursor-pointer select-none hover:text-neutral-700 transition-colors ${className ?? ""}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active &&
+          (sort.dir === "asc" ? (
+            <ChevronUp size={11} className="shrink-0" />
+          ) : (
+            <ChevronDown size={11} className="shrink-0" />
+          ))}
+      </span>
+    </th>
+  );
+}
+
 type ColumnKey = "type" | "city" | "province" | "country" | "email" | "phone" | "assignedRep" | "status" | "alarm";
 
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
@@ -191,6 +240,18 @@ function cellText(c: Company, key: ColumnKey): string {
   }
 }
 
+type ClientSortKey = "name" | ColumnKey;
+function clientSortValue(c: Company, key: ClientSortKey): string {
+  return key === "name" ? c.name : cellText(c, key);
+}
+
+type NewsletterSortKey = "contactName" | NewsletterColumnKey;
+function nlSortValue(c: MailingContact, key: NewsletterSortKey): string {
+  if (key === "contactName") return c.contactName;
+  if (key === "email") return c.email;
+  return c.companyName;
+}
+
 // This page is a read-only report: no editing/deleting rows — just the data
 // laid out plainly on the rep's color. Search and column visibility are
 // display-only controls (nothing here mutates a company/contact record).
@@ -198,6 +259,7 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
   const [dataset, setDataset] = useState<Dataset>("clients");
 
   const [clientQuery, setClientQuery] = useState("");
+  const [clientSort, setClientSort] = useState<SortState<ClientSortKey> | null>(null);
   const [visibleCols, setVisibleCols] = useState<Set<ColumnKey>>(new Set(ALL_COLUMNS.map((c) => c.key)));
   const toggleCol = (key: ColumnKey) =>
     setVisibleCols((prev) => {
@@ -209,6 +271,7 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
   const shownColumns = ALL_COLUMNS.filter((col) => visibleCols.has(col.key));
 
   const [nlQuery, setNlQuery] = useState("");
+  const [nlSort, setNlSort] = useState<SortState<NewsletterSortKey> | null>(null);
   const [nlVisibleCols, setNlVisibleCols] = useState<Set<NewsletterColumnKey>>(
     new Set(NEWSLETTER_COLUMNS.map((c) => c.key))
   );
@@ -228,20 +291,36 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
 
   const filteredCompanies = useMemo(() => {
     const q = clientQuery.trim().toLowerCase();
-    if (!q) return companies;
-    return companies.filter((c) => {
-      const haystack = [c.name, ...ALL_COLUMNS.map((col) => cellText(c, col.key))].join(" ").toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [companies, clientQuery]);
+    let list = q
+      ? companies.filter((c) => {
+          const haystack = [c.name, ...ALL_COLUMNS.map((col) => cellText(c, col.key))].join(" ").toLowerCase();
+          return haystack.includes(q);
+        })
+      : companies;
+    if (clientSort) {
+      const { key, dir } = clientSort;
+      list = [...list].sort((a, b) => {
+        const cmp = clientSortValue(a, key).localeCompare(clientSortValue(b, key), "es", { numeric: true });
+        return dir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [companies, clientQuery, clientSort]);
 
   const filteredContacts = useMemo(() => {
     const q = nlQuery.trim().toLowerCase();
-    if (!q) return mailingContacts;
-    return mailingContacts.filter((c) =>
-      [c.contactName, c.email, c.companyName].join(" ").toLowerCase().includes(q)
-    );
-  }, [mailingContacts, nlQuery]);
+    let list = q
+      ? mailingContacts.filter((c) => [c.contactName, c.email, c.companyName].join(" ").toLowerCase().includes(q))
+      : mailingContacts;
+    if (nlSort) {
+      const { key, dir } = nlSort;
+      list = [...list].sort((a, b) => {
+        const cmp = nlSortValue(a, key).localeCompare(nlSortValue(b, key), "es", { numeric: true });
+        return dir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [mailingContacts, nlQuery, nlSort]);
 
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
@@ -299,16 +378,22 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
                       <th className="w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
-                      <th className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
-                        Nombre
-                      </th>
+                      <SortableTh
+                        label="Nombre"
+                        columnKey="name"
+                        sort={clientSort}
+                        onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
+                        className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                      />
                       {shownColumns.map((col) => (
-                        <th
+                        <SortableTh
                           key={col.key}
+                          label={col.label}
+                          columnKey={col.key}
+                          sort={clientSort}
+                          onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
                           className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
-                        >
-                          {col.label}
-                        </th>
+                        />
                       ))}
                     </tr>
                   </thead>
@@ -378,16 +463,22 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 <table className="text-[13px]" style={{ borderCollapse: "separate", borderSpacing: "0 4px", width: "100%" }}>
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="font-medium text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
-                        Nombre contacto
-                      </th>
+                      <SortableTh
+                        label="Nombre contacto"
+                        columnKey="contactName"
+                        sort={nlSort}
+                        onSort={(key) => setNlSort((prev) => toggleSort(prev, key))}
+                        className="font-medium text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                      />
                       {shownNlColumns.map((col) => (
-                        <th
+                        <SortableTh
                           key={col.key}
+                          label={col.label}
+                          columnKey={col.key}
+                          sort={nlSort}
+                          onSort={(key) => setNlSort((prev) => toggleSort(prev, key))}
                           className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
-                        >
-                          {col.label}
-                        </th>
+                        />
                       ))}
                     </tr>
                   </thead>
