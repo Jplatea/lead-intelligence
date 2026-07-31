@@ -125,7 +125,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <p
-            className={`text-[10px] tracking-widest mb-1 ${
+            className={`gd-yellow text-[11px] tracking-widest mb-1 ${
               company.importedType === "manual" ? "text-[#3f6fc0]" : "text-[#2a9678]"
             }`}
           >
@@ -231,7 +231,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                 if (!company.contact.email) e.preventDefault();
               }}
               aria-disabled={!company.contact.email}
-              className={`flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`gd-chip flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                 company.contact.email
                   ? "bg-[#2a9678]/10 border border-[#2a9678]/40 text-[#2a9678] hover:bg-[#2a9678]/20"
                   : "bg-black/[0.015] border border-dashed border-neutral-300 text-neutral-400 cursor-not-allowed"
@@ -325,7 +325,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <div>
-          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Comercial</p>
+          <p className="gd-label gd-section text-[11px] tracking-widest text-neutral-400 mb-1.5">Comercial</p>
           <div className="flex items-center justify-center gap-2">
             {Object.values(REPS).map((r) => {
               const isActive = r.id === company.assignedRep;
@@ -347,24 +347,24 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
 
         <div>
-          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Tipo</p>
+          <p className="gd-label gd-section text-[11px] tracking-widest text-neutral-400 mb-1.5">Tipo</p>
           <CustomSelect
             value={company.type}
             options={TYPE_OPTIONS.map((t) => ({ value: t, label: t }))}
             onChange={(v) => onUpdate({ type: v })}
             triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
-            triggerClassName="text-[10px] text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none text-center cursor-pointer"
+            triggerClassName="gd-field-value text-xs text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none text-center cursor-pointer"
           />
         </div>
 
         <div>
-          <p className="gd-label text-[9px] tracking-wide text-neutral-400 mb-1.5">Alarma</p>
+          <p className="gd-label gd-section text-[11px] tracking-widest text-neutral-400 mb-1.5">Alarma</p>
           <CustomSelect
             value={company.alarm}
             options={Object.entries(ALARM_CONFIG).map(([key, cfg]) => ({ value: key, label: cfg.label }))}
             onChange={(v) => onUpdate({ alarm: v as Company["alarm"] })}
             triggerStyle={{ background: "#f9f3ec", boxShadow: crispEdge(false) }}
-            triggerClassName="flex items-center justify-center gap-1 text-[10px] text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none cursor-pointer"
+            triggerClassName="flex items-center justify-center gap-1 gd-field-value text-xs text-neutral-700 px-1.5 py-1.5 w-full rounded-lg outline-none cursor-pointer"
           />
           <div className="flex items-center justify-center gap-1 mt-1.5">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${alarm.dot}`} />
@@ -384,7 +384,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
               return (
                 <div key={i} className="pl-2.5 border-l-2 text-xs" style={{ borderColor: commentRepInfo.color }}>
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-medium" style={{ color: commentRepInfo.textColor }}>
+                    <span className="gd-yellow font-medium text-[11px]" style={{ color: commentRepInfo.textColor }}>
                       {commentRepInfo.name}
                     </span>
                     <span className="text-neutral-400">· {c.date}</span>

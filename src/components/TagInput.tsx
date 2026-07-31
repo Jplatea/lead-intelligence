@@ -81,7 +81,7 @@ export function TagInput({ value, options, onChange, placeholder }: Props) {
         {value.map((tag) => (
           <span
             key={tag}
-            className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#a8dfcf]/30 text-[#1f5e4d] shrink-0"
+            className="gd-chip flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#a8dfcf]/30 text-[#2a9678] shrink-0"
           >
             {tag}
             <button
