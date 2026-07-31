@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Mail, RefreshCw, AlertCircle } from "lucide-react";
 import type { Company } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
+import { fetchRecentEmailsViaAgent } from "../lib/localAgent";
 
 interface Props {
   company: Company;
@@ -88,6 +89,22 @@ export function CommunicationCard({ company, onClose }: Props) {
     setStatus("ready");
   };
 
+  const connectLocalAgent = async () => {
+    setStatus("loading");
+    setError("");
+    setIsDemo(false);
+    try {
+      const email = company.contact.email;
+      if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
+      const msgs = await fetchRecentEmailsViaAgent(email, 10);
+      setMessages(msgs);
+      setStatus("ready");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo conectar con el agente local.");
+      setStatus("error");
+    }
+  };
+
   return (
     <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-50 flex flex-col gap-5 pointer-events-none">
       <div className="pointer-events-auto glass float-card rounded-3xl p-6 pb-8 animate-fade-in-up flex flex-col gap-4">
@@ -109,19 +126,32 @@ export function CommunicationCard({ company, onClose }: Props) {
               Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
               envía ni modifica nada.
             </p>
-            <button
-              onClick={connect}
-              disabled={!isOutlookConfigured()}
-              className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Conectar Outlook
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={connect}
+                disabled={!isOutlookConfigured()}
+                className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Conectar Outlook
+              </button>
+              <button
+                onClick={connectLocalAgent}
+                title="Requiere tener el script outlook_agent.py ejecutándose en este ordenador"
+                className="text-xs font-medium px-4 py-2 rounded-lg bg-black/[0.04] border border-black/10 text-neutral-700 hover:bg-black/[0.07] transition-colors"
+              >
+                Agente local
+              </button>
+            </div>
             {!isOutlookConfigured() && (
               <p className="text-[11px] text-[#b9503a] max-w-[280px] flex items-center gap-1.5">
                 <AlertCircle size={12} className="shrink-0" />
                 Falta configurar el acceso a Outlook (VITE_MICROSOFT_CLIENT_ID).
               </p>
             )}
+            <p className="text-[11px] text-neutral-400 max-w-[280px]">
+              "Agente local" lee tu Outlook de escritorio directamente en este PC — requiere ejecutar antes
+              outlook_agent.py (ver instrucciones en local-agent/).
+            </p>
             <button
               onClick={showDemo}
               className="text-[11px] text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
