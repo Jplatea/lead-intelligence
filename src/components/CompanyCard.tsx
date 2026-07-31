@@ -1,15 +1,7 @@
 import { useMemo, useState } from "react";
-import { X, Mail, Phone, Sparkles, Check, Send, ChevronDown, MapPin, Loader2 } from "lucide-react";
+import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2 } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
-import {
-  REPS,
-  STATUS_CONFIG,
-  ALARM_CONFIG,
-  TYPE_OPTIONS,
-  PROVINCE_OPTIONS_ES,
-  PROVINCE_OPTIONS_PT,
-  PASTEL_TEXT,
-} from "../data/config";
+import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { geocodeAddress } from "../lib/geocode";
 import { CustomSelect } from "./CustomSelect";
 import { TagInput } from "./TagInput";
@@ -305,26 +297,6 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           />
         </div>
       </div>
-
-      {company.aiSummary && (
-        <>
-          <Divider />
-          <div className="rounded-2xl bg-[#a79bcb]/[0.10] border border-[#a79bcb]/30 p-3">
-            <div
-              className="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium uppercase tracking-widest"
-              style={{ color: PASTEL_TEXT.purple }}
-            >
-              <Sparkles size={12} /> Resumen IA
-            </div>
-            <p className="text-xs text-neutral-700 leading-relaxed">{company.aiSummary}</p>
-            {company.aiRecommendation && (
-              <p className="text-xs mt-2 leading-relaxed" style={{ color: PASTEL_TEXT.purple }}>
-                {company.aiRecommendation}
-              </p>
-            )}
-          </div>
-        </>
-      )}
 
       <Divider />
 
