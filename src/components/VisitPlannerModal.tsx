@@ -74,7 +74,7 @@ export function VisitPlannerModal({ companies, onClose, onConfirm, onGeneratePdf
                     onClick={() => toggleRep(r.id)}
                     title={r.name}
                     style={{ background: r.color, boxShadow: repCircleShadow(active) }}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-black/75 transition-transform ${
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-black/75 transition-transform ${
                       active ? "scale-110" : "opacity-70 hover:opacity-100"
                     }`}
                   >

@@ -53,19 +53,19 @@ const WEB_TYPE_FIELDS: TypeField[] = [
   {
     id: "web-title",
     label: "Nombre de empresa (título de tarjeta)",
-    code: ".type-h1 — 18px, bold (reducido de 36-48px original)",
+    code: ".type-h1 — 18px, peso 500 (reducido de 36-48px original)",
     fontFamily: WEB_FONT_STACK,
     fontSize: 18,
-    fontWeight: 700,
+    fontWeight: 500,
     color: "#171614",
   },
   {
     id: "web-section",
     label: "Título de sección",
-    code: "text-sm font-semibold text-neutral-900 (14px)",
+    code: "text-sm font-medium text-neutral-900 (14px)",
     fontFamily: WEB_FONT_STACK,
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 500,
     color: "#171614",
   },
   {
@@ -111,10 +111,10 @@ const NEWSLETTER_TYPE_FIELDS: TypeField[] = [
   {
     id: "nl-heading",
     label: "Título de sección (heading)",
-    code: "23px · peso 700 · color #bea05a · line-height 1.3",
+    code: "23px · peso 500 · color #bea05a · line-height 1.3",
     fontFamily: NEWSLETTER_FONT_STACK,
     fontSize: 23,
-    fontWeight: 700,
+    fontWeight: 500,
     color: "#bea05a",
     lineHeight: 1.3,
   },
@@ -170,7 +170,10 @@ const PASTEL_COLOR_FIELDS: ColorField[] = Object.entries(PASTEL).map(([key, hex]
   hex,
 }));
 
-const FONT_WEIGHTS = [400, 500, 600, 700, 800];
+// Capped at 500 (medium) — explicit site-wide rule: nothing on this web
+// should render bolder than that, so the sandbox itself can't offer a
+// value that would misrepresent the real constraint.
+const FONT_WEIGHTS = [400, 500];
 
 // Maps each Web typography field to the marker class it corresponds to on
 // the real CompanyCard (see src/components/CompanyCard.tsx: gd-title/
@@ -211,7 +214,7 @@ function buildPreviewCss(fields: TypeField[]): string {
 function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-white/70 border border-black/10 p-5">
-      <h3 className="text-xs font-semibold tracking-widest text-neutral-400">{title}</h3>
+      <h3 className="text-xs font-medium tracking-widest text-neutral-400">{title}</h3>
       {subtitle && <p className="text-[11px] text-neutral-400 mt-0.5 mb-4">{subtitle}</p>}
       <div className={subtitle ? "" : "mt-4"}>{children}</div>
     </div>

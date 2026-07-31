@@ -494,7 +494,7 @@ export function MailingPage({ contacts }: Props) {
             textAlign: section.textAlign ?? "left",
             color: section.textColor || (isHeading ? "#bea05a" : "#211f1d"),
             backgroundColor: section.bgColor ?? "transparent",
-            fontWeight: isHeading ? 700 : 400,
+            fontWeight: isHeading ? 500 : 400,
             fontSize: isHeading ? "17px" : "14px",
             padding: section.bgColor ? "14px 16px" : "4px 2px",
           }}
@@ -564,7 +564,7 @@ export function MailingPage({ contacts }: Props) {
           href={section.content}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#2a9678] text-white text-sm font-semibold"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#2a9678] text-white text-sm font-medium"
         >
           ▶ Ver vídeo
         </a>
@@ -598,7 +598,7 @@ export function MailingPage({ contacts }: Props) {
   const renderButtonField = (section: Section) => (
     <div className="w-full flex flex-col items-center gap-2 py-1">
       <span
-        className="inline-block text-center text-sm font-semibold rounded-md px-6 py-3 text-white max-w-full truncate"
+        className="inline-block text-center text-sm font-medium rounded-md px-6 py-3 text-white max-w-full truncate"
         style={{ background: section.color ?? "#bea05a" }}
       >
         {section.content || "Botón"}

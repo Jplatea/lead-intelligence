@@ -101,7 +101,7 @@ function renderTextHtml(section: MailingSection): string {
   const align = section.textAlign ?? "left";
   const isHeading = section.textStyle === "heading";
   const color = section.textColor || (isHeading ? "#bea05a" : "#211f1d");
-  const html = `<p style="margin:0;font-family:${stack};font-size:${isHeading ? "23px" : "15px"};font-weight:${isHeading ? "700" : "400"};line-height:${isHeading ? "1.3" : "1.7"};color:${color};text-align:${align};">${textToHtml(section.content)}</p>`;
+  const html = `<p style="margin:0;font-family:${stack};font-size:${isHeading ? "23px" : "15px"};font-weight:${isHeading ? "500" : "400"};line-height:${isHeading ? "1.3" : "1.7"};color:${color};text-align:${align};">${textToHtml(section.content)}</p>`;
   // An optional section background — wraps the text in its own colored
   // panel so it reads as a distinct band (gold promo strip, dark header)
   // instead of every section sitting on plain white.
@@ -140,7 +140,7 @@ function renderVideoHtml(section: MailingSection): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid rgba(33,31,29,0.1);border-radius:12px;background-color:#faf6f0;">
       <tr>
         <td align="center" style="padding:26px 12px;">
-          <a href="${escapeHtml(section.content)}" style="display:inline-block;padding:14px 32px;border-radius:999px;background-color:#2a9678;color:#ffffff;text-decoration:none;font-family:${FONT_STACK};font-weight:600;font-size:14px;">&#9654; Ver v&iacute;deo</a>
+          <a href="${escapeHtml(section.content)}" style="display:inline-block;padding:14px 32px;border-radius:999px;background-color:#2a9678;color:#ffffff;text-decoration:none;font-family:${FONT_STACK};font-weight:500;font-size:14px;">&#9654; Ver v&iacute;deo</a>
         </td>
       </tr>
     </table>`;
@@ -157,7 +157,7 @@ function renderButtonHtml(section: MailingSection): string {
     <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
       <tr>
         <td style="border-radius:6px;background-color:${escapeHtml(bg)};text-align:center;">
-          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 30px;font-family:${FONT_STACK};font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(section.content)}</a>
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 30px;font-family:${FONT_STACK};font-size:14px;font-weight:500;color:#ffffff;text-decoration:none;">${escapeHtml(section.content)}</a>
         </td>
       </tr>
     </table>`;
@@ -269,7 +269,7 @@ export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailM
                       style="display:block;width:26px;height:32px;"
                     />
                   </td>
-                  <td style="font-family:${FONT_STACK};font-size:20px;font-weight:700;letter-spacing:0.06em;color:#161514;white-space:nowrap;">
+                  <td style="font-family:${FONT_STACK};font-size:20px;font-weight:500;letter-spacing:0.06em;color:#161514;white-space:nowrap;">
                     PRESTIGE<span style="font-weight:400;opacity:0.65;">&nbsp;DISTRIBUTION</span>
                   </td>
                 </tr>
@@ -279,7 +279,7 @@ export function buildMarketingEmailHtml(sections: MailingSection[], meta: EmailM
           <tr>
             <td style="padding:32px 36px 24px;background:linear-gradient(135deg,#a8dfcf,#a79bcb);">
               <p style="margin:0 0 6px;font-family:${FONT_STACK};font-size:11px;letter-spacing:0.14em;color:#211f1d;opacity:0.65;">${eyebrow}</p>
-              <h1 style="margin:0;font-family:${FONT_STACK};font-weight:700;font-size:24px;line-height:1.3;color:#211f1d;">${heading}</h1>
+              <h1 style="margin:0;font-family:${FONT_STACK};font-weight:500;font-size:24px;line-height:1.3;color:#211f1d;">${heading}</h1>
             </td>
           </tr>
           <tr>

@@ -48,10 +48,10 @@ export function LoginPage({ onLogin }: Props) {
       >
         <div className="flex items-center gap-2 mb-6">
           <NeuralCell size={34} animated />
-          <span className="text-sm font-semibold tracking-wide text-white">ILEADS</span>
+          <span className="text-sm font-medium tracking-wide text-white">ILEADS</span>
         </div>
 
-        <h1 className="text-xl font-semibold text-white mb-1">Bienvenido</h1>
+        <h1 className="text-xl font-medium text-white mb-1">Bienvenido</h1>
         <p className="text-xs text-white/50 mb-6">Selecciona tu usuario e introduce tu contraseña.</p>
 
         <label className="text-[11px] tracking-wide text-white/50 mb-2 block">Usuario</label>
@@ -63,7 +63,7 @@ export function LoginPage({ onLogin }: Props) {
             <ChevronLeft size={16} />
           </button>
           <div
-            className="flex-1 text-center py-3 rounded-xl text-xl font-semibold tracking-wide text-white"
+            className="flex-1 text-center py-3 rounded-xl text-xl font-medium tracking-wide text-white"
             style={{ background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.1)" }}
           >
             {current.label}

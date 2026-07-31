@@ -625,7 +625,7 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
                     textAnchor="middle"
                     dominantBaseline="central"
                     fill="#f9f3ec"
-                    style={{ fontSize: r * 0.62, fontWeight: 700, fontFamily: "inherit" }}
+                    style={{ fontSize: r * 0.62, fontWeight: 500, fontFamily: "inherit" }}
                   >
                     {count}
                   </text>
@@ -727,14 +727,14 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
             <p className="text-[10px] tracking-wide" style={{ color: ALARM_CONFIG[hover.company.alarm].textHex }}>
               {hover.company.type}
             </p>
-            <p className="text-sm font-semibold text-neutral-900 leading-tight">{hover.company.name}</p>
+            <p className="text-sm font-medium text-neutral-900 leading-tight">{hover.company.name}</p>
             <p className="text-xs text-neutral-400 mb-2">{hover.company.city}</p>
             <div className="flex items-center justify-between">
               <span className={`text-[10px] px-2 py-0.5 rounded-full ${STATUS_CONFIG[hover.company.status].className}`}>
                 {STATUS_CONFIG[hover.company.status].label}
               </span>
               <span
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-black/70 shrink-0"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-medium text-black/70 shrink-0"
                 style={{ background: REPS[hover.company.assignedRep].color }}
               >
                 {REPS[hover.company.assignedRep].name[0]}

@@ -243,14 +243,14 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 >
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="w-8 border-b border-black/10" aria-hidden="true"></th>
-                      <th className="font-semibold text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
+                      <th className="w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
+                      <th className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
                         Nombre
                       </th>
                       {shownColumns.map((col) => (
                         <th
                           key={col.key}
-                          className="font-semibold text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                          className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                         >
                           {col.label}
                         </th>
@@ -319,13 +319,13 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                 <table className="text-[13px]" style={{ borderCollapse: "separate", borderSpacing: "0 4px", width: "100%" }}>
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="font-semibold text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
+                      <th className="font-medium text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left">
                         Nombre contacto
                       </th>
                       {shownNlColumns.map((col) => (
                         <th
                           key={col.key}
-                          className="font-semibold text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                          className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                         >
                           {col.label}
                         </th>

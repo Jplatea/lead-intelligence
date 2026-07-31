@@ -149,7 +149,7 @@ export function ResultsList({
                   )}
                   <span className="text-sm text-neutral-800 truncate flex-1 min-w-0">{c.name}</span>
                   {c.needsReview && (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 bg-[#b9503a]/15 text-[#b9503a]">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 bg-[#b9503a]/15 text-[#b9503a]">
                       Revisar
                     </span>
                   )}
@@ -159,7 +159,7 @@ export function ResultsList({
                   <span className="flex items-center gap-1.5 shrink-0 w-24 justify-end">
                     <span className="text-xs text-neutral-500 truncate">{rep.name}</span>
                     <span
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold text-black/70 shrink-0"
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-black/70 shrink-0"
                       style={{ background: rep.color }}
                     >
                       {rep.name[0]}

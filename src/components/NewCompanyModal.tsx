@@ -19,7 +19,7 @@ const FLUOR = "#d4ff00";
 function Req() {
   return (
     <span
-      className="ml-1.5 text-[9px] font-bold tracking-wide px-1.5 py-0.5 rounded"
+      className="ml-1.5 text-[9px] font-medium tracking-wide px-1.5 py-0.5 rounded"
       style={{ background: FLUOR, color: "#1a1a1a" }}
     >
       Obligatorio

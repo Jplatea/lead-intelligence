@@ -105,7 +105,7 @@ export function StatsRow({
               <tile.icon size={15} className={`text-black/70 ${tile.spinning ? "animate-spin" : ""}`} strokeWidth={2.25} />
             </button>
           </div>
-          <p className="text-3xl font-bold text-black/80 tracking-tight">{tile.value}</p>
+          <p className="text-3xl font-medium text-black/80 tracking-tight">{tile.value}</p>
           <p className="text-xs text-black/50 mt-1">{tile.hint}</p>
         </div>
       ))}

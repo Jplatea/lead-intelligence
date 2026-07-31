@@ -153,7 +153,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           )}
           {company.needsReview && (
             <div className="mt-1.5">
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#b9503a]/15 text-[#b9503a]">
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#b9503a]/15 text-[#b9503a]">
                 Revisar — faltan datos obligatorios
               </span>
             </div>
@@ -164,7 +164,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
             <button
               onClick={() => setStatusOpen((v) => !v)}
               style={{ borderColor: status.hex, color: status.hex }}
-              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border-2 hover:bg-black/[0.02] transition-colors"
+              className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-white border-2 hover:bg-black/[0.02] transition-colors"
             >
               {status.label}
               <ChevronDown size={11} className={`transition-transform ${statusOpen ? "rotate-180" : ""}`} />
@@ -335,7 +335,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                   title={r.name}
                   onClick={() => onUpdate({ assignedRep: r.id })}
                   style={{ background: r.color, boxShadow: crispEdge(isActive) }}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-black/75 shrink-0 transition-transform ${
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium text-black/75 shrink-0 transition-transform ${
                     isActive ? "scale-110" : "opacity-70 hover:opacity-100 hover:scale-105"
                   }`}
                 >

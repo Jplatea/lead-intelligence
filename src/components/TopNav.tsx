@@ -32,7 +32,7 @@ export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
     <header className="sticky top-0 z-30 glass border-x-0 border-t-0 px-6 py-3 flex items-center gap-8">
       <div className="flex items-center gap-2">
         <NeuralCell size={34} animated />
-        <span className="text-sm font-semibold tracking-wide text-neutral-900">ILEADS</span>
+        <span className="text-sm font-medium tracking-wide text-neutral-900">ILEADS</span>
       </div>
       <nav className="flex items-center gap-1">
         {tabs.map((tab) => (
@@ -56,7 +56,7 @@ export function TopNav({ loggedInRep, onLogout, view, onViewChange }: Props) {
           className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-black/5"
         >
           <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-black/70"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium text-black/70"
             style={{ background: rep.color }}
           >
             {rep.name[0]}

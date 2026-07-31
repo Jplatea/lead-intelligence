@@ -27,21 +27,21 @@ body {
 }
 
 /* Three-level typographic hierarchy, per explicit spec:
-   H1 36-48px/bold for a view's central title, H2 20-28px/semibold for
-   section headers, body 16px/normal for actual reading copy (not dense
-   UI chrome like table cells/badges/field labels, which stay at their
-   existing compact sizes on purpose — this is a dashboard, not a
-   marketing page, and most of its "text" is data, not prose). */
+   H1 36-48px, H2 20-28px, body 16px/normal for actual reading copy (not
+   dense UI chrome like table cells/badges/field labels, which stay at
+   their existing compact sizes on purpose — this is a dashboard, not a
+   marketing page, and most of its "text" is data, not prose). No weight
+   anywhere on this site exceeds 500 (medium), per explicit rule. */
 .type-h1 {
   /* Reduced to less than half the original 36-48px per explicit feedback —
      36-48px reads fine on a marketing hero, not on a 420px-wide card. */
   font-size: 1.125rem; /* 18px */
-  font-weight: 700;
+  font-weight: 500; /* capped site-wide max weight — see explicit rule below */
   line-height: 1.2;
 }
 .type-h2 {
   font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem); /* 20px – 28px */
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.25;
 }
 .type-body {

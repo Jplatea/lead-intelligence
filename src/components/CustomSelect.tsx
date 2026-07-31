@@ -95,7 +95,7 @@ export function CustomSelect<T extends string>({ value, options, onChange, trigg
             {groups.map((g, gi) => (
               <div key={gi}>
                 {g.group && (
-                  <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-semibold tracking-wide text-neutral-400">
+                  <p className="px-2 pt-1.5 pb-0.5 text-[11px] font-medium tracking-wide text-neutral-400">
                     {g.group}
                   </p>
                 )}
