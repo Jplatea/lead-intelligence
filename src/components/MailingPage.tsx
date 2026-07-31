@@ -6,8 +6,11 @@ import {
   Check,
   Copy,
   Download,
+  Heading2,
   Image as ImageIcon,
   Mail,
+  Minus,
+  MousePointerClick,
   Plus,
   RotateCcw,
   Send,
@@ -49,16 +52,22 @@ function findSnap(candidates: number[], targets: number[], threshold: number): {
 }
 
 function newBlock(type: BlockType, index: number): Block {
-  return {
+  const base = {
     id: `${type}-${Date.now()}-${index}`,
     type,
     x: 24 + index * 18,
     y: 24 + index * 18,
-    width: 180,
-    height: 180,
-    content: "",
-    ...(type === "text" ? { fontFamily: "system", textAlign: "left" as const } : {}),
   };
+  switch (type) {
+    case "text":
+      return { ...base, width: 180, height: 180, content: "", fontFamily: "system", textAlign: "left", textStyle: "body" };
+    case "button":
+      return { ...base, width: 220, height: 90, content: "Ver más", url: "", color: "#bea05a" };
+    case "divider":
+      return { ...base, width: 560, height: 60, content: "", color: "#1a1a1a" };
+    default:
+      return { ...base, width: 180, height: 180, content: "" };
+  }
 }
 
 // The starting layout the canvas loads with. This mirrors the real Prestige
@@ -71,43 +80,72 @@ function newBlock(type: BlockType, index: number): Block {
 function buildDefaultTemplate(): Block[] {
   const centered = { fontFamily: "system" as const, textAlign: "center" as const };
   const left = { fontFamily: "system" as const, textAlign: "left" as const };
+  const headingCentered = { ...centered, textStyle: "heading" as const };
+  const headingLeft = { ...left, textStyle: "heading" as const };
+  const gold = "#bea05a";
+  const button = (id: string, x: number, y: number, width: number, content: string, url: string): Block => ({
+    id,
+    type: "button",
+    x,
+    y,
+    width,
+    height: 60,
+    content,
+    url,
+    color: gold,
+  });
+  const divider = (id: string, y: number): Block => ({
+    id,
+    type: "divider",
+    x: 20,
+    y,
+    width: 560,
+    height: 30,
+    content: "",
+    color: "#1a1a1a",
+  });
+
   return [
+    { id: "tpl-hero-title", type: "text", x: 0, y: 0, width: 600, height: 60, content: "Su equipo audiovisual para la nueva temporada", ...headingCentered },
     {
-      id: "tpl-hero-title",
+      id: "tpl-hero-subtitle",
       type: "text",
       x: 0,
-      y: 0,
+      y: 70,
       width: 600,
-      height: 100,
-      content:
-        "Su equipo audiovisual para la nueva temporada\n\nNos complace añadir Artcoustic a nuestra oferta. ¿Conoce nuestras marcas TruAudio y Screen Innovations?",
+      height: 60,
+      content: "Nos complace añadir Artcoustic a nuestra oferta. ¿Conoce nuestras marcas TruAudio y Screen Innovations?",
       ...centered,
     },
     {
       id: "tpl-hero-img",
       type: "image",
       x: 0,
-      y: 120,
+      y: 150,
       width: 600,
       height: 280,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/96122623-d53a-5fe2-4367-f7fb92f64574.jpg",
     },
+    divider("tpl-div-1", 450),
+
+    { id: "tpl-artcoustic-heading", type: "text", x: 0, y: 500, width: 600, height: 50, content: "1| Artcoustic, nueva marca de Prestige", ...headingLeft },
     {
-      id: "tpl-artcoustic-text",
+      id: "tpl-artcoustic-body",
       type: "text",
       x: 0,
-      y: 420,
+      y: 560,
       width: 600,
-      height: 240,
+      height: 200,
       content:
-        "1| Artcoustic, nueva marca de Prestige\n\nEstamos muy contentos de iniciar una nueva colaboración con la marca de audio Artcoustic. El fabricante danés cuenta con una amplia gama de productos, principalmente para montaje en pared, con tecnología acústica avanzada.\n\nArtcoustic combina el audio de alta fidelidad y la integración arquitectónica con altavoces finos, gamas específicas para cada uso y modelos personalizables. Confíe en la gama Spitfire para obtener potentes altavoces de cine o en la serie SL para sistemas multiroom. Artcoustic también hace énfasis en la integración estética con colores personalizados.\n\nDescubre Artcoustic en su página web.",
+        "Estamos muy contentos de iniciar una nueva colaboración con la marca de audio Artcoustic. El fabricante danés cuenta con una amplia gama de productos, principalmente para montaje en pared, con tecnología acústica avanzada.\n\nArtcoustic combina el audio de alta fidelidad y la integración arquitectónica con altavoces finos, gamas específicas para cada uso y modelos personalizables. Confíe en la gama Spitfire para obtener potentes altavoces de cine o en la serie SL para sistemas multiroom. Artcoustic también hace énfasis en la integración estética con colores personalizados.",
       ...left,
     },
+    button("tpl-artcoustic-cta", 150, 770, 300, "Descubre Artcoustic en su página web", "https://www.artcoustic.com/"),
     {
       id: "tpl-artcoustic-img",
       type: "image",
       x: 0,
-      y: 680,
+      y: 850,
       width: 280,
       height: 200,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/78917137-b437-a8a4-a9f9-24ab0a976969.jpg",
@@ -116,28 +154,32 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-artcoustic-products",
       type: "text",
       x: 300,
-      y: 680,
+      y: 850,
       width: 300,
       height: 200,
       content: "Los productos Artcoustic\n\n» Ver altavoces multiroom\n» Ver altavoces de cinema\n» Ver barras de sonido",
       ...left,
     },
+    divider("tpl-div-2", 1070),
+
+    { id: "tpl-truaudio-heading", type: "text", x: 0, y: 1120, width: 600, height: 50, content: "2| TruAudio", ...headingLeft },
     {
-      id: "tpl-truaudio-text",
+      id: "tpl-truaudio-body",
       type: "text",
       x: 0,
-      y: 900,
+      y: 1180,
       width: 600,
-      height: 260,
+      height: 200,
       content:
-        "2| TruAudio\n\nEspecializada en altavoces empotrables multiroom, TruAudio ofrece a los instaladores productos diseñados para combinar rendimiento sonoro, fiabilidad y discreción estética. Gracias a una amplia gama pensada para satisfacer las necesidades tanto residenciales como comerciales, TruAudio facilita la creación de experiencias sonoras inmersivas y duraderas. Innovadora y orientada a los profesionales, la marca ofrece soluciones técnicas adaptadas a todos los entornos, con una amplia selección de altavoces empotrables, pero también una gama muy completa para exteriores, altavoces suspendidos o barras de sonido personalizadas.\n\nDescubre TruAudio en su página web.",
+        "Especializada en altavoces empotrables multiroom, TruAudio ofrece a los instaladores productos diseñados para combinar rendimiento sonoro, fiabilidad y discreción estética. Gracias a una amplia gama pensada para satisfacer las necesidades tanto residenciales como comerciales, TruAudio facilita la creación de experiencias sonoras inmersivas y duraderas. Innovadora y orientada a los profesionales, la marca ofrece soluciones técnicas adaptadas a todos los entornos, con una amplia selección de altavoces empotrables, pero también una gama muy completa para exteriores, altavoces suspendidos o barras de sonido personalizadas.",
       ...left,
     },
+    button("tpl-truaudio-cta", 150, 1390, 300, "Descubre TruAudio en su página web", "https://www.truaudio.com/"),
     {
       id: "tpl-phantom-text",
       type: "text",
       x: 0,
-      y: 1180,
+      y: 1470,
       width: 300,
       height: 240,
       content:
@@ -148,27 +190,40 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-phantom-img",
       type: "image",
       x: 310,
-      y: 1180,
+      y: 1470,
       width: 280,
       height: 240,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/d57795ae-252a-3568-1dbc-5252f02e30af.jpg",
     },
+    divider("tpl-div-3", 1730),
+
     {
-      id: "tpl-screen-text",
+      id: "tpl-screen-heading",
       type: "text",
       x: 0,
-      y: 1440,
+      y: 1780,
       width: 600,
-      height: 240,
-      content:
-        "Screen Innovations: pantallas de proyección de alta gama en el punto de mira\n\nEspecializada en pantallas de proyección y persianas motorizadas, Screen Innovations combina tecnología, diseño y rendimiento. Sus pantallas (como Black Diamond® y Maestro 2™) ofrecen una calidad de imagen excepcional, incluso con luz ambiental. Las elegantes persianas conectadas se integran a la perfección tanto en espacios interiores como exteriores. Aproveche este equipo de calidad profesional para sus instalaciones de alta gama.\n\nDescubra Screen Innovations en su sitio web.",
-      ...left,
+      height: 60,
+      content: "Screen Innovations: pantallas de proyección de alta gama en el punto de mira",
+      ...headingCentered,
     },
+    {
+      id: "tpl-screen-body",
+      type: "text",
+      x: 0,
+      y: 1850,
+      width: 600,
+      height: 180,
+      content:
+        "Especializada en pantallas de proyección y persianas motorizadas, Screen Innovations combina tecnología, diseño y rendimiento. Sus pantallas (como Black Diamond® y Maestro 2™) ofrecen una calidad de imagen excepcional, incluso con luz ambiental. Las elegantes persianas conectadas se integran a la perfección tanto en espacios interiores como exteriores. Aproveche este equipo de calidad profesional para sus instalaciones de alta gama.",
+      ...centered,
+    },
+    button("tpl-screen-cta", 150, 2040, 300, "Descubra Screen Innovations en su web", "https://www.screeninnovations.com/screen/fixed/"),
     {
       id: "tpl-screens-img",
       type: "image",
       x: 0,
-      y: 1700,
+      y: 2120,
       width: 280,
       height: 200,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/5298add2-eb83-8051-116f-6d0f9826a2af.jpg",
@@ -177,7 +232,7 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-screens-text",
       type: "text",
       x: 300,
-      y: 1700,
+      y: 2120,
       width: 300,
       height: 200,
       content:
@@ -188,7 +243,7 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-blinds-text",
       type: "text",
       x: 0,
-      y: 1920,
+      y: 2340,
       width: 300,
       height: 240,
       content:
@@ -199,27 +254,37 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-blinds-img",
       type: "image",
       x: 310,
-      y: 1920,
+      y: 2340,
       width: 280,
       height: 240,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/b7061841-c302-f51b-e2dc-93bc9d427abc.jpg",
     },
+    divider("tpl-div-4", 2600),
+
+    { id: "tpl-youtube-heading", type: "text", x: 0, y: 2650, width: 600, height: 50, content: "Nuestros tutoriales en YouTube", ...headingCentered },
     {
-      id: "tpl-youtube-text",
+      id: "tpl-youtube-body",
       type: "text",
       x: 0,
-      y: 2180,
+      y: 2710,
       width: 600,
-      height: 140,
-      content:
-        "Nuestros tutoriales en YouTube\n\n¿Necesita consejos para sus instalaciones? Nuestros vídeos responden a las preguntas más frecuentes.\n\nBúsquelos por temas en nuestra página: Canal Le Groupe Prestige en YouTube",
+      height: 90,
+      content: "¿Necesita consejos para sus instalaciones? Nuestros vídeos responden a las preguntas más frecuentes.\n\nBúsquelos por temas en nuestra página:",
       ...centered,
     },
+    button(
+      "tpl-youtube-cta",
+      120,
+      2810,
+      360,
+      "Canal Le Groupe Prestige en YouTube",
+      "https://www.youtube.com/@legroupeprestige/videos"
+    ),
     {
       id: "tpl-youtube-video",
       type: "video",
       x: 0,
-      y: 2340,
+      y: 2890,
       width: 600,
       height: 140,
       content: "https://www.youtube.com/watch?v=zc6UXZ-XUxU",
@@ -228,28 +293,32 @@ function buildDefaultTemplate(): Block[] {
       id: "tpl-youtube-caption",
       type: "text",
       x: 0,
-      y: 2500,
+      y: 3050,
       width: 600,
-      height: 60,
+      height: 50,
       content: "Aquí está la más reciente, de la semana pasada.",
       ...centered,
     },
+    divider("tpl-div-5", 3120),
+
+    { id: "tpl-control4-heading", type: "text", x: 0, y: 3170, width: 600, height: 50, content: "Formación Control4", ...headingCentered },
     {
-      id: "tpl-control4-text",
+      id: "tpl-control4-body",
       type: "text",
       x: 0,
-      y: 2580,
+      y: 3230,
       width: 600,
-      height: 200,
+      height: 120,
       content:
-        "Formación Control4\n\nLas formaciones de Control4 le permiten convertirse en integrador certificado de la marca, requisito necesario para instalar sus productos. Se imparten en nuestras instalaciones de Murcia para poner en práctica todo lo que aprende.\n\nSi está interesado, póngase en contacto con Víctor. +34 6 86 05 72 05",
+        "Las formaciones de Control4 le permiten convertirse en integrador certificado de la marca, requisito necesario para instalar sus productos. Se imparten en nuestras instalaciones de Murcia para poner en práctica todo lo que aprende.\n\nSi está interesado, póngase en contacto con Víctor.",
       ...centered,
     },
+    button("tpl-control4-cta", 150, 3360, 300, "+34 6 86 05 72 05", "tel:+34686057205"),
     {
       id: "tpl-control4-img",
       type: "image",
       x: 0,
-      y: 2800,
+      y: 3440,
       width: 600,
       height: 260,
       content: "https://mcusercontent.com/2e33aab684ca6356e4ea79b50/images/8e92a952-68d2-1917-1b31-83fbe47f9985.png",
@@ -324,6 +393,24 @@ const ADD_BUTTONS: BlockStyle[] = [
     bg: "bg-[#f0c39a]/35",
     fill: "bg-[#f0c39a]/15",
     text: "text-[#a3672c]",
+  },
+  {
+    type: "button",
+    label: "Botón",
+    icon: MousePointerClick,
+    border: "border-[#bea05a]",
+    bg: "bg-[#bea05a]/25",
+    fill: "bg-[#bea05a]/10",
+    text: "text-[#8a7238]",
+  },
+  {
+    type: "divider",
+    label: "Separador",
+    icon: Minus,
+    border: "border-neutral-400",
+    bg: "bg-neutral-400/20",
+    fill: "bg-neutral-400/10",
+    text: "text-neutral-600",
   },
 ];
 
@@ -650,6 +737,55 @@ export function MailingPage({ contacts }: Props) {
                         ))}
                       </div>
                     </div>
+                    <div
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="flex items-center gap-2 px-1.5 py-1 border-b border-black/10 bg-black/[0.02] shrink-0"
+                    >
+                      <button
+                        type="button"
+                        title="Alternar título / texto normal"
+                        onClick={() =>
+                          updateBlock(block.id, {
+                            textStyle: (block.textStyle ?? "body") === "heading" ? "body" : "heading",
+                          })
+                        }
+                        className={`p-1 rounded ${
+                          (block.textStyle ?? "body") === "heading"
+                            ? "bg-[#a79bcb]/30 text-[#6a56a0]"
+                            : "text-neutral-400 hover:text-neutral-600"
+                        }`}
+                      >
+                        <Heading2 size={12} />
+                      </button>
+                      <label className="flex items-center gap-1" title="Color del texto">
+                        <span className="text-[9px] text-neutral-400">A</span>
+                        <input
+                          type="color"
+                          value={block.textColor ?? "#211f1d"}
+                          onChange={(e) => updateBlock(block.id, { textColor: e.target.value })}
+                          className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
+                        />
+                      </label>
+                      <label className="flex items-center gap-1" title="Color de fondo de la sección">
+                        <span className="text-[9px] text-neutral-400">Fondo</span>
+                        <input
+                          type="color"
+                          value={block.bgColor ?? "#ffffff"}
+                          onChange={(e) => updateBlock(block.id, { bgColor: e.target.value })}
+                          className="w-4 h-4 rounded cursor-pointer border border-black/10 p-0"
+                        />
+                      </label>
+                      {block.bgColor && (
+                        <button
+                          type="button"
+                          title="Quitar color de fondo"
+                          onClick={() => updateBlock(block.id, { bgColor: undefined })}
+                          className="text-neutral-400 hover:text-neutral-600"
+                        >
+                          <X size={10} />
+                        </button>
+                      )}
+                    </div>
                     <textarea
                       value={block.content}
                       onChange={(e) => updateBlock(block.id, { content: e.target.value })}
@@ -657,8 +793,12 @@ export function MailingPage({ contacts }: Props) {
                       style={{
                         fontFamily: TEXT_FONT_OPTIONS.find((f) => f.value === (block.fontFamily ?? "system"))?.stack,
                         textAlign: block.textAlign ?? "left",
+                        color: block.textColor ?? undefined,
+                        backgroundColor: block.bgColor ?? "transparent",
+                        fontWeight: (block.textStyle ?? "body") === "heading" ? 700 : 400,
+                        fontSize: (block.textStyle ?? "body") === "heading" ? "1.05rem" : undefined,
                       }}
-                      className="flex-1 min-h-0 w-full resize-none bg-transparent outline-none p-2 text-sm text-neutral-800 placeholder:text-neutral-400"
+                      className="flex-1 min-h-0 w-full resize-none outline-none p-2 text-sm text-neutral-800 placeholder:text-neutral-400"
                     />
                   </div>
                 )}
@@ -728,6 +868,51 @@ export function MailingPage({ contacts }: Props) {
                       </div>
                     </div>
                   ))}
+
+                {block.type === "button" && (
+                  <div className="w-full h-full flex flex-col gap-1.5 p-2">
+                    <input
+                      value={block.content}
+                      onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                      placeholder="Texto del botón"
+                      className="w-full bg-white/60 border border-black/10 rounded-md px-1.5 py-1 text-[11px] text-black outline-none focus:border-[#bea05a]"
+                    />
+                    <input
+                      value={block.url ?? ""}
+                      onChange={(e) => updateBlock(block.id, { url: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full bg-white/60 border border-black/10 rounded-md px-1.5 py-1 text-[10px] text-black placeholder:text-black/50 outline-none focus:border-[#bea05a]"
+                    />
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      <input
+                        type="color"
+                        title="Color del botón"
+                        value={block.color ?? "#bea05a"}
+                        onChange={(e) => updateBlock(block.id, { color: e.target.value })}
+                        className="w-5 h-5 shrink-0 rounded cursor-pointer border border-black/10 p-0"
+                      />
+                      <span
+                        className="flex-1 text-center text-[10px] font-semibold rounded-md py-1 text-white truncate"
+                        style={{ background: block.color ?? "#bea05a" }}
+                      >
+                        {block.content || "Botón"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {block.type === "divider" && (
+                  <div className="w-full h-full flex items-center justify-center gap-2 p-2">
+                    <input
+                      type="color"
+                      title="Color del separador"
+                      value={block.color ?? "#1a1a1a"}
+                      onChange={(e) => updateBlock(block.id, { color: e.target.value })}
+                      className="w-5 h-5 shrink-0 rounded cursor-pointer border border-black/10 p-0"
+                    />
+                    <div className="flex-1 h-0.5 rounded-full" style={{ background: block.color ?? "#1a1a1a" }} />
+                  </div>
+                )}
               </div>
 
               <div

@@ -1,5 +1,6 @@
-export type BlockType = "image" | "video" | "text";
+export type BlockType = "image" | "video" | "text" | "button" | "divider";
 export type TextAlign = "left" | "center" | "right";
+export type TextStyle = "heading" | "body";
 
 export interface MailingBlock {
   id: string;
@@ -11,6 +12,20 @@ export interface MailingBlock {
   content: string;
   fontFamily?: string;
   textAlign?: TextAlign;
+  // Text blocks only: "heading" renders larger/bold in the brand accent
+  // color, so a section title reads as a title instead of just another
+  // paragraph — the gap the first version of this tool had against a real
+  // template like Mailchimp's, where headings are visually distinct.
+  textStyle?: TextStyle;
+  textColor?: string;
+  // An optional section background — lets a block sit on its own colored
+  // panel (like the gold promo band or dark header in the reference
+  // template) instead of every block being plain white.
+  bgColor?: string;
+  // Button blocks only.
+  url?: string;
+  // Button/divider blocks: the accent color (button fill / divider rule).
+  color?: string;
 }
 
 // A clean, professional sans-serif that reads clearly different from plain
@@ -90,20 +105,44 @@ function groupIntoRows(blocks: MailingBlock[]): MailingBlock[][] {
 function renderTextContent(block: MailingBlock): string {
   const stack = textFontStack(block.fontFamily);
   const align = block.textAlign ?? "left";
+  const isHeading = block.textStyle === "heading";
+  const color = block.textColor || (isHeading ? "#bea05a" : "#211f1d");
   const lines = block.content.split("\n");
   while (lines.length > 1 && lines[lines.length - 1].trim() === "") lines.pop();
   const lastLine = lines[lines.length - 1]?.trim() ?? "";
-  const hasCta = lines.length > 1 && lastLine.length > 0 && lastLine.split(/\s+/).length <= 3;
+  const hasCta = !isHeading && lines.length > 1 && lastLine.length > 0 && lastLine.split(/\s+/).length <= 3;
   const bodyLines = hasCta ? lines.slice(0, -1) : lines;
   const bodyText = bodyLines.join("\n").trim();
 
   const bodyHtml = bodyText
-    ? `<p style="margin:0;font-family:${stack};font-size:15px;line-height:1.7;color:#211f1d;text-align:${align};">${textToHtml(bodyText)}</p>`
+    ? `<p style="margin:0;font-family:${stack};font-size:${isHeading ? "23px" : "15px"};font-weight:${isHeading ? "700" : "400"};line-height:${isHeading ? "1.3" : "1.7"};color:${color};text-align:${align};">${textToHtml(bodyText)}</p>`
     : "";
   const ctaHtml = hasCta
     ? `<p style="margin:${bodyHtml ? "10px" : "0"} 0 0;text-align:${align};"><a href="#" style="font-family:${stack};color:#2a9678;font-weight:700;font-size:13px;text-decoration:none;">${escapeHtml(lastLine)} &rarr;</a></p>`
     : "";
   return `${bodyHtml}${ctaHtml}`;
+}
+
+// A button block renders as a bulletproof table-based CTA (the pattern
+// email clients actually render buttons with, since plain <button>/<a
+// style="background"> collapses inconsistently in Outlook).
+function renderButtonContent(block: MailingBlock): string {
+  if (!block.content.trim()) return "";
+  const bg = block.color || "#bea05a";
+  const href = (block.url ?? "").trim() || "#";
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
+      <tr>
+        <td style="border-radius:6px;background-color:${escapeHtml(bg)};text-align:center;">
+          <a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 30px;font-family:${FONT_STACK};font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(block.content)}</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function renderDividerContent(block: MailingBlock): string {
+  const color = block.color || "#1a1a1a";
+  return `<div style="border-top:2px solid ${escapeHtml(color)};line-height:0;font-size:0;">&nbsp;</div>`;
 }
 
 // An empty image slot still renders as a placeholder box (not nothing) so
@@ -123,8 +162,18 @@ function renderImagePlaceholder(): string {
 
 function renderBlockContent(block: MailingBlock): string {
   switch (block.type) {
-    case "text":
-      return block.content.trim() ? renderTextContent(block) : "";
+    case "text": {
+      if (!block.content.trim()) return "";
+      const html = renderTextContent(block);
+      // An optional section background — wraps the text in its own colored
+      // panel so it reads as a distinct band (gold promo strip, dark
+      // header) instead of every block sitting on plain white.
+      return block.bgColor
+        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${escapeHtml(
+            block.bgColor
+          )};border-radius:12px;"><tr><td style="padding:20px 24px;">${html}</td></tr></table>`
+        : html;
+    }
 
     case "image":
       return block.content.trim()
@@ -145,6 +194,12 @@ function renderBlockContent(block: MailingBlock): string {
           </tr>
         </table>`;
     }
+
+    case "button":
+      return renderButtonContent(block);
+
+    case "divider":
+      return renderDividerContent(block);
   }
 }
 
