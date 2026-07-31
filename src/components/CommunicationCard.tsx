@@ -20,10 +20,43 @@ interface EmailMessage {
 
 type Status = "idle" | "loading" | "error" | "ready";
 
+// Placeholder content only — used by "Probar con datos de ejemplo" below so
+// the feature can be reviewed end-to-end while waiting for a tenant admin
+// to grant the real Outlook consent. Never mixed with real messages, and
+// always shown behind the isDemo banner so it can't be mistaken for a real
+// inbox.
+function buildDemoMessages(companyName: string): EmailMessage[] {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  return [
+    {
+      id: "demo-1",
+      subject: `Consulta sobre instalación — ${companyName}`,
+      from: "contacto@ejemplo.com",
+      date: daysAgo(2),
+      snippet: "Buenos días, quería preguntar por el presupuesto de la instalación que hablamos la semana pasada...",
+    },
+    {
+      id: "demo-2",
+      subject: "Re: Presupuesto sistema audiovisual",
+      from: "contacto@ejemplo.com",
+      date: daysAgo(6),
+      snippet: "Gracias por el presupuesto, lo hemos revisado internamente y nos gustaría ajustar algunos puntos...",
+    },
+    {
+      id: "demo-3",
+      subject: "Disponibilidad para la instalación",
+      from: "contacto@ejemplo.com",
+      date: daysAgo(11),
+      snippet: "¿Tendríais disponibilidad la semana que viene para hacer la instalación en nuestras oficinas?",
+    },
+  ];
+}
+
 export function CommunicationCard({ company, onClose }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
+  const [isDemo, setIsDemo] = useState(false);
 
   // Load Microsoft's auth SDK as soon as this card appears, so the click
   // handler below can call loginPopup() with as little delay as possible —
@@ -36,6 +69,7 @@ export function CommunicationCard({ company, onClose }: Props) {
   const connect = async () => {
     setStatus("loading");
     setError("");
+    setIsDemo(false);
     try {
       const email = company.contact.email;
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
@@ -46,6 +80,12 @@ export function CommunicationCard({ company, onClose }: Props) {
       setError(e instanceof Error ? e.message : "No se pudo conectar con el correo.");
       setStatus("error");
     }
+  };
+
+  const showDemo = () => {
+    setIsDemo(true);
+    setMessages(buildDemoMessages(company.name));
+    setStatus("ready");
   };
 
   return (
@@ -82,6 +122,12 @@ export function CommunicationCard({ company, onClose }: Props) {
                 Falta configurar el acceso a Outlook (VITE_MICROSOFT_CLIENT_ID).
               </p>
             )}
+            <button
+              onClick={showDemo}
+              className="text-[11px] text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
+            >
+              Probar con datos de ejemplo
+            </button>
           </div>
         )}
 
@@ -107,6 +153,12 @@ export function CommunicationCard({ company, onClose }: Props) {
 
         {status === "ready" && (
           <div className="flex flex-col gap-2">
+            {isDemo && (
+              <p className="text-[11px] text-[#a3672c] bg-[#f0c39a]/25 border border-[#f0c39a]/60 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                <AlertCircle size={12} className="shrink-0" />
+                Datos de ejemplo — no son correos reales.
+              </p>
+            )}
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center py-6">No se encontraron correos con este contacto.</p>
             ) : (
