@@ -137,6 +137,23 @@ function buildDefaultTemplate(): Block[] {
   ];
 }
 
+const TEMPLATE_STORAGE_KEY = "lead-intelligence:mailing-template";
+
+// The canvas is meant to be a base template that keeps getting refined over
+// time, not something that resets every visit — so it persists to
+// localStorage the same way companies/mailingContacts do, and only falls
+// back to the built-in starter layout the very first time there's nothing
+// saved yet.
+function loadTemplate(): Block[] {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // fall through to the default template
+  }
+  return buildDefaultTemplate();
+}
+
 function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -195,12 +212,16 @@ function blockStyle(type: BlockType): BlockStyle {
 }
 
 export function MailingPage({ contacts }: Props) {
-  const [blocks, setBlocks] = useState<Block[]>(buildDefaultTemplate);
+  const [blocks, setBlocks] = useState<Block[]>(loadTemplate);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [guides, setGuides] = useState<{ vertical: number[]; horizontal: number[] }>({ vertical: [], horizontal: [] });
   const blocksRef = useRef<Block[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(blocks));
+  }, [blocks]);
   useEffect(() => {
     blocksRef.current = blocks;
   }, [blocks]);
