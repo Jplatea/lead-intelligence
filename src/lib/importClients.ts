@@ -6,6 +6,7 @@ import { geocodeAddress } from "./geocode";
 
 export interface ImportRow {
   name: string;
+  contactName?: string;
   city?: string;
   province?: string;
   country?: string;
@@ -18,7 +19,8 @@ export interface ImportRow {
 }
 
 const FIELD_ALIASES: Record<keyof ImportRow, string[]> = {
-  name: ["name", "nombre", "empresa", "company"],
+  name: ["name", "nombre", "empresa", "company", "nombre empresa", "nombre_empresa"],
+  contactName: ["contactname", "contacto", "nombre contacto", "nombre_contacto", "contact name"],
   city: ["city", "ciudad", "localidad"],
   province: ["province", "provincia", "region", "región"],
   country: ["country", "pais", "país"],
@@ -56,6 +58,7 @@ function mapRow(raw: Record<string, unknown>): ImportRow | null {
 
   return {
     name,
+    contactName: pick("contactName"),
     city: pick("city"),
     province: pick("province"),
     country: pick("country"),
@@ -186,6 +189,7 @@ export async function rowsToCompanies(
       lat,
       lng,
       contact: {
+        contactName: row.contactName,
         email: row.email,
         phone: row.phone,
       },
@@ -239,6 +243,7 @@ export function findAllDuplicateGroups(companies: Company[]): { existing: Compan
 // specialties) — the existing record's own edits are never clobbered.
 export function mergeCompanyData(existing: Company, incoming: Company): Partial<Company> {
   const contact = {
+    contactName: existing.contact.contactName || incoming.contact.contactName,
     email: existing.contact.email || incoming.contact.email,
     phone: existing.contact.phone || incoming.contact.phone,
   };

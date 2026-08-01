@@ -248,8 +248,8 @@ export function ImportModal({
             {result && <p className="text-xs text-[#2a9678] mt-2">{result}</p>}
 
             <p className="text-[10px] text-neutral-400 mt-2 leading-relaxed">
-              CSV/Excel: columnas nombre, ciudad, provincia, país, lat, lng (o solo ciudad/provincia para ubicar
-              automáticamente). KML/KMZ: usa el nombre y las coordenadas de cada punto.
+              CSV/Excel: columnas nombre empresa, nombre contacto, mail, ciudad, provincia, país, lat, lng (o solo
+              ciudad/provincia para ubicar automáticamente). KML/KMZ: usa el nombre y las coordenadas de cada punto.
             </p>
           </div>
 
