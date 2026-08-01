@@ -174,22 +174,18 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <button
             onClick={() => setChannel("email")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "email"
-                ? "bg-[#0364B8] text-white"
-                : "bg-[#0364B8]/10 text-[#0364B8] hover:bg-[#0364B8]/20"
+              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
             }`}
           >
-            <OutlookIcon size={12} /> Outlook
+            <OutlookIcon size={14} /> Outlook
           </button>
           <button
             onClick={() => setChannel("whatsapp")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "whatsapp"
-                ? "bg-[#25D366] text-white"
-                : "bg-[#25D366]/10 text-[#1a9350] hover:bg-[#25D366]/20"
+              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
             }`}
           >
-            <WhatsAppIcon size={12} /> WhatsApp
+            <WhatsAppIcon size={14} /> WhatsApp
           </button>
         </div>
 
@@ -199,7 +195,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <>
         {status === "idle" && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <OutlookIcon size={28} className="text-neutral-300" />
+            <OutlookIcon size={28} />
             <p className="text-xs text-neutral-500 max-w-[280px]">
               Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
               envía ni modifica nada.

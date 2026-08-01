@@ -72,7 +72,7 @@ export function WhatsAppPanel({ company, repId }: Props) {
   if (!connected) {
     return (
       <div className="flex flex-col items-center gap-2 py-10 text-center">
-        <WhatsAppIcon size={24} className="text-neutral-300" />
+        <WhatsAppIcon size={28} />
         <p className="text-xs text-neutral-500 max-w-[240px]">
           {REPS[repId].name} todavía no ha conectado su WhatsApp.
         </p>
