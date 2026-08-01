@@ -174,7 +174,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <button
             onClick={() => setChannel("email")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
             }`}
           >
             <OutlookIcon size={14} /> Outlook
@@ -182,7 +182,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <button
             onClick={() => setChannel("whatsapp")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
             }`}
           >
             <WhatsAppIcon size={14} /> WhatsApp
