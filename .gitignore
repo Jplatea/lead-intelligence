@@ -38,3 +38,4 @@ local-agent/dist/
 local-agent/__pycache__/
 local-agent/*.spec
 local-agent/agent_log.txt
+local-agent/agent_debug_log.txt

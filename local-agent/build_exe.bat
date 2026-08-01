@@ -18,7 +18,7 @@ if errorlevel 1 (
 
 echo.
 echo Generando ILeadsOutlookAgent.exe...
-python -m PyInstaller --onefile --name ILeadsOutlookAgent outlook_agent.py
+python -m PyInstaller --onefile --name ILeadsOutlookAgent --hidden-import win32timezone outlook_agent.py
 if errorlevel 1 (
     echo.
     echo Fallo al generar el ejecutable.

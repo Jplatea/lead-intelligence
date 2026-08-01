@@ -39,6 +39,7 @@ computers or phones.
 """
 
 import json
+import os
 import sys
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -52,6 +53,16 @@ except ImportError:
 
 HOST = "127.0.0.1"
 PORT = 5787
+
+_LOG_PATH = os.path.join(os.path.dirname(sys.executable if getattr(sys, "frozen", False) else __file__), "agent_debug_log.txt")
+
+
+def _debug_log(message):
+    try:
+        with open(_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().isoformat()} {message}\n")
+    except Exception:
+        pass
 
 # Only these origins are allowed to call this agent from the browser -
 # keeps random other websites from being able to query your inbox just
@@ -90,14 +101,15 @@ def _address_of(mail_item, recipient=None):
         return ""
 
 
-def mail_matches(mail_item, target_email):
+def mail_matches(mail_item, target_email, check_sender=True, check_recipients=True):
     target = target_email.lower()
     try:
-        if _address_of(mail_item) == target:
+        if check_sender and _address_of(mail_item) == target:
             return True
-        for recipient in mail_item.Recipients:
-            if _address_of(mail_item, recipient) == target:
-                return True
+        if check_recipients:
+            for recipient in mail_item.Recipients:
+                if _address_of(mail_item, recipient) == target:
+                    return True
     except Exception:
         pass
     return False
@@ -122,17 +134,26 @@ def to_result(mail_item):
     }
 
 
-def find_recent_emails(target_email, limit=10, max_age_days=365):
-    ns = get_outlook_namespace()
+def find_recent_emails(target_email, limit=10, max_age_days=365, max_scan=150):
+    _t0 = datetime.now()
+    _debug_log(f"find_recent_emails start target={target_email!r}")
+    try:
+        ns = get_outlook_namespace()
+    except Exception as e:
+        _debug_log(f"get_outlook_namespace failed: {e!r}")
+        raise
     cutoff = datetime.now() - timedelta(days=max_age_days)
     matches = []
+    _exception_count = 0
 
     for folder_id in (OL_FOLDER_INBOX, OL_FOLDER_SENT_MAIL):
         try:
             folder = ns.GetDefaultFolder(folder_id)
-        except Exception:
+        except Exception as e:
+            _debug_log(f"GetDefaultFolder({folder_id}) failed: {e!r}")
             continue
-        sort_field = "[ReceivedTime]" if folder_id == OL_FOLDER_INBOX else "[SentOn]"
+        is_sent_folder = folder_id == OL_FOLDER_SENT_MAIL
+        sort_field = "[SentOn]" if is_sent_folder else "[ReceivedTime]"
         items = folder.Items
         items.Sort(sort_field, True)  # newest first
 
@@ -145,7 +166,14 @@ def find_recent_emails(target_email, limit=10, max_age_days=365):
         # use that instead of the for-loop.
         count = 0
         item = items.GetFirst()
-        while item is not None and count < 500:
+        # Capped well below the folder's real size on purpose - this tool is
+        # for "recent emails with this contact", not a full-history search,
+        # and each extra item costs a real COM round-trip (walking the full
+        # 500 previously allowed took 1-2+ minutes against a busy mailbox,
+        # long enough that the browser gave up on the request before it
+        # finished). Scanning only the most recent max_scan keeps this
+        # fast enough to actually be usable.
+        while item is not None and count < max_scan:
             count += 1
             try:
                 if item.Class == 43:  # olMail
@@ -161,13 +189,34 @@ def find_recent_emails(target_email, limit=10, max_age_days=365):
                         when = when.replace(tzinfo=None)
                     if when and when < cutoff:
                         break
-                    if mail_matches(item, target_email):
+                    # Inbox mail: only the sender can be this contact (they
+                    # sent it to us). Sent Mail: the sender is always us, so
+                    # only the recipients can be this contact. Checking the
+                    # side that can never match was the main cost - for a
+                    # non-matching item it walked every recipient and
+                    # resolved each one's address (an Exchange/GAL lookup for
+                    # Exchange-type entries), for nothing. Restricting to the
+                    # one side that's actually possible roughly halves the
+                    # per-item COM cost across hundreds of items.
+                    if mail_matches(
+                        item,
+                        target_email,
+                        check_sender=not is_sent_folder,
+                        check_recipients=is_sent_folder,
+                    ):
                         matches.append(to_result(item))
-            except Exception:
-                pass
+            except Exception as e:
+                _exception_count += 1
+                if _exception_count <= 3:
+                    _debug_log(f"item exception in folder {folder_id}: {e!r}")
             item = items.GetNext()
+        _debug_log(f"folder {folder_id} scanned {count} items")
 
     matches.sort(key=lambda m: m["date"], reverse=True)
+    _debug_log(
+        f"find_recent_emails done matches={len(matches)} exceptions={_exception_count} "
+        f"elapsed={(datetime.now() - _t0).total_seconds():.1f}s"
+    )
     return matches[:limit]
 
 
