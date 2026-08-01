@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, Mail, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
 import { WhatsAppIcon } from "./WhatsAppIcon";
+import { OutlookIcon } from "./OutlookIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 import { fetchRecentEmailsViaAgent, replyToEmailViaAgent } from "../lib/localAgent";
@@ -173,10 +174,12 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <button
             onClick={() => setChannel("email")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+              channel === "email"
+                ? "bg-[#0364B8] text-white"
+                : "bg-[#0364B8]/10 text-[#0364B8] hover:bg-[#0364B8]/20"
             }`}
           >
-            <Mail size={12} /> Email
+            <OutlookIcon size={12} /> Outlook
           </button>
           <button
             onClick={() => setChannel("whatsapp")}
@@ -196,7 +199,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <>
         {status === "idle" && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <Mail size={28} className="text-neutral-300" />
+            <OutlookIcon size={28} className="text-neutral-300" />
             <p className="text-xs text-neutral-500 max-w-[280px]">
               Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
               envía ni modifica nada.
