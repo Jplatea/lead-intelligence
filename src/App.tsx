@@ -290,6 +290,22 @@ function App() {
     setCompanyMailingMatches(findCompanyMailingMatches(companies, mailingContacts));
   };
 
+  // Applies one side's email onto the other for a matched company/contact
+  // pair (direction "left" copies the mailing contact's email onto the
+  // client record, "right" copies the client's email onto the mailing
+  // contact), then drops that pair from the pending matches list since it's
+  // now resolved - the underlying autosave effects persist both stores.
+  const handleSyncMatch = (match: CompanyMailingMatch, direction: "left" | "right") => {
+    if (direction === "left") {
+      updateCompany(match.company.id, { contact: { ...match.company.contact, email: match.contact.email } });
+    } else {
+      updateMailingContact(match.contact.id, { email: match.company.contact.email });
+    }
+    setCompanyMailingMatches((prev) =>
+      prev ? prev.filter((m) => !(m.company.id === match.company.id && m.contact.id === match.contact.id)) : prev
+    );
+  };
+
   const filteredCompanies = useMemo(() => {
     const q = query.trim().toLowerCase();
     const terms = q.length ? q.split(/\s+/) : [];
@@ -430,6 +446,7 @@ function App() {
               {companyMailingMatches && (
                 <CompanyMailingMatchesModal
                   matches={companyMailingMatches}
+                  onSync={handleSyncMatch}
                   onClose={() => setCompanyMailingMatches(null)}
                 />
               )}
