@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MessageCircle, Send, Loader2, AlertCircle } from "lucide-react";
+import { Send, Loader2, AlertCircle } from "lucide-react";
 import type { Company, RepId } from "../types";
 import { REPS } from "../data/config";
 import {
@@ -8,6 +8,7 @@ import {
   fetchWhatsAppMessages,
   sendWhatsAppMessage,
 } from "../lib/whatsapp";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 import type { WhatsAppMessage } from "../types";
 
 interface Props {
@@ -71,7 +72,7 @@ export function WhatsAppPanel({ company, repId }: Props) {
   if (!connected) {
     return (
       <div className="flex flex-col items-center gap-2 py-10 text-center">
-        <MessageCircle size={24} className="text-neutral-300" />
+        <WhatsAppIcon size={24} className="text-neutral-300" />
         <p className="text-xs text-neutral-500 max-w-[240px]">
           {REPS[repId].name} todavía no ha conectado su WhatsApp.
         </p>

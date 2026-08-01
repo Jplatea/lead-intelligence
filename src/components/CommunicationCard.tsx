@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { X, Mail, MessageCircle, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
+import { X, Mail, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 import { fetchRecentEmailsViaAgent, replyToEmailViaAgent } from "../lib/localAgent";
@@ -180,10 +181,12 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           <button
             onClick={() => setChannel("whatsapp")}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+              channel === "whatsapp"
+                ? "bg-[#25D366] text-white"
+                : "bg-[#25D366]/10 text-[#1a9350] hover:bg-[#25D366]/20"
             }`}
           >
-            <MessageCircle size={12} /> WhatsApp
+            <WhatsAppIcon size={12} /> WhatsApp
           </button>
         </div>
 
