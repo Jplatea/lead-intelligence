@@ -3,6 +3,8 @@ import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2, User, Trash2
 import type { Company, RepId, CompanyStatus } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT, COUNTRY_OPTIONS } from "../data/config";
 import { geocodeAddress } from "../lib/geocode";
+import { findSimilarCompanies } from "../lib/findSimilarCompanies";
+import { IBERIA_CENTER } from "../lib/mapStyle";
 import { CustomSelect } from "./CustomSelect";
 import { TagInput } from "./TagInput";
 
@@ -80,10 +82,20 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Always clickable - if something required is missing, say so instead of
-  // just disabling the button with no explanation.
+  // just disabling the button with no explanation. A draft's lat/lng start
+  // out at Iberia's own placeholder center (buildBlankCompany in App.tsx),
+  // so still sitting exactly there means the address was never verified -
+  // Google Maps needs a real geocoded point (from address/city/provincia/
+  // codigo postal via verifyAddress below) before this becomes a real pin.
   const handleSaveClick = () => {
     if (!company.name.trim()) {
       setSaveError("Falta el nombre de la empresa.");
+      return;
+    }
+    if (company.lat === IBERIA_CENTER.lat && company.lng === IBERIA_CENTER.lng) {
+      setSaveError(
+        "Verifica la dirección con el botón junto a Dirección para geolocalizar la empresa antes de guardar."
+      );
       return;
     }
     setSaveError(null);
@@ -144,6 +156,14 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
     [allCompanies]
   );
 
+  // Live "does this already exist" check while typing the name - flags
+  // exact repeats and close typos against the rest of the database, but
+  // never blocks creation: still just a heads-up, not a hard guard.
+  const similarCompanies = useMemo(
+    () => (editingName ? findSimilarCompanies(company.name, allCompanies, company.id) : []),
+    [editingName, company.name, allCompanies, company.id]
+  );
+
   return (
     <div className="glass float-card rounded-3xl p-6 pb-10 animate-fade-in-up">
       <div className="flex items-start justify-between">
@@ -174,6 +194,12 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
             >
               {company.name ? toSentenceCase(company.name) : "Nombre de la empresa"}
             </button>
+          )}
+          {similarCompanies.length > 0 && (
+            <p className="text-[11px] text-[#a3672c] mt-1 leading-snug">
+              Ya hay {similarCompanies.length === 1 ? "una empresa parecida" : "empresas parecidas"} en la base de
+              datos: {similarCompanies.map((c) => c.name).join(", ")}
+            </p>
           )}
           {company.needsReview && (
             <div className="mt-1.5">
