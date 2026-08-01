@@ -418,7 +418,7 @@ function App() {
               </div>
             </div>
 
-            <div className="h-[560px]">
+            <div className="relative h-[560px]">
               <IberiaMap
                 companies={filteredCompanies}
                 selectedId={selectedId}
@@ -427,6 +427,12 @@ function App() {
                 highlight={highlight}
                 reviewIds={reviewArrowIds ?? undefined}
               />
+              {companyMailingMatches && (
+                <CompanyMailingMatchesModal
+                  matches={companyMailingMatches}
+                  onClose={() => setCompanyMailingMatches(null)}
+                />
+              )}
             </div>
           </motion.main>
         )}
@@ -504,13 +510,6 @@ function App() {
           onImport={importMailingContacts}
           onDeleteContact={deleteMailingContact}
           onRescanDuplicates={rescanMailingDuplicates}
-        />
-      )}
-
-      {companyMailingMatches && (
-        <CompanyMailingMatchesModal
-          matches={companyMailingMatches}
-          onClose={() => setCompanyMailingMatches(null)}
         />
       )}
 
