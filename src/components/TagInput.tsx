@@ -20,6 +20,7 @@ export function TagInput({ value, options, onChange, placeholder }: Props) {
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const measure = () => {
     const rect = wrapRef.current?.getBoundingClientRect();
@@ -33,9 +34,14 @@ export function TagInput({ value, options, onChange, placeholder }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    // Same portal-aware check as CustomSelect: the dropdown is a portal, so
+    // its buttons live outside wrapRef in the real DOM and always looked
+    // like an "outside" click here without also checking menuRef - closing
+    // (and unmounting) the menu on mousedown before the option button's own
+    // click had a chance to register, losing the click entirely.
     const close = (e: Event) => {
       const target = e.target as Node;
-      if (wrapRef.current?.contains(target)) return;
+      if (wrapRef.current?.contains(target) || menuRef.current?.contains(target)) return;
       setOpen(false);
     };
     document.addEventListener("mousedown", close);

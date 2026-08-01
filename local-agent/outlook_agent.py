@@ -124,7 +124,10 @@ def to_result(mail_item):
         date_iso = received.strftime("%Y-%m-%dT%H:%M:%S")
     except Exception:
         date_iso = ""
-    body = (mail_item.Body or "").strip().replace("\r\n", " ")[:200]
+    # Full body (capped well above what any UI snippet needs, just as a
+    # sanity limit against a freak giant thread) so "leer mas" in the web
+    # app has real content to expand into, not just the same short preview.
+    body = (mail_item.Body or "").strip().replace("\r\n", "\n")[:5000]
     return {
         "id": mail_item.EntryID,
         "subject": mail_item.Subject or "(sin asunto)",
@@ -220,6 +223,18 @@ def find_recent_emails(target_email, limit=10, max_age_days=365, max_scan=150):
     return matches[:limit]
 
 
+# Opens Outlook's own reply compose window, pre-filled and quoted, for the
+# user to review/edit/send themselves - stays read-only from this script's
+# side (it never calls .Send()), the same way it never sends/deletes/
+# modifies anything else. GetItemFromID needs the exact EntryID this agent
+# handed back in find_recent_emails's "id" field.
+def open_reply_window(entry_id):
+    ns = get_outlook_namespace()
+    item = ns.GetItemFromID(entry_id)
+    reply = item.Reply()
+    reply.Display()
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send_cors_headers(self):
         origin = self.headers.get("Origin", "")
@@ -244,37 +259,64 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write("ILEADS local Outlook agent esta funcionando.".encode("utf-8"))
             return
 
-        if parsed.path != "/emails":
-            self.send_response(404)
-            self._send_cors_headers()
-            self.end_headers()
+        if parsed.path == "/emails":
+            query = parse_qs(parsed.query)
+            email = (query.get("email") or [""])[0].strip()
+            limit = int((query.get("limit") or ["10"])[0])
+
+            if not email:
+                self.send_response(400)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Falta el parametro email"}).encode("utf-8"))
+                return
+
+            try:
+                results = find_recent_emails(email, limit=limit)
+                self.send_response(200)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps(results, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
-        query = parse_qs(parsed.query)
-        email = (query.get("email") or [""])[0].strip()
-        limit = int((query.get("limit") or ["10"])[0])
+        if parsed.path == "/reply":
+            query = parse_qs(parsed.query)
+            entry_id = (query.get("id") or [""])[0].strip()
 
-        if not email:
-            self.send_response(400)
-            self._send_cors_headers()
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Falta el parametro email"}).encode("utf-8"))
+            if not entry_id:
+                self.send_response(400)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Falta el parametro id"}).encode("utf-8"))
+                return
+
+            try:
+                open_reply_window(entry_id)
+                self.send_response(200)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"ok": True}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
-        try:
-            results = find_recent_emails(email, limit=limit)
-            self.send_response(200)
-            self._send_cors_headers()
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps(results, ensure_ascii=False).encode("utf-8"))
-        except Exception as e:
-            self.send_response(500)
-            self._send_cors_headers()
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+        self.send_response(404)
+        self._send_cors_headers()
+        self.end_headers()
 
     def log_message(self, format, *args):
         # Quieter console output - only show real request lines, no noise.

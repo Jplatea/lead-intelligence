@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { TopNav, type AppView } from "./components/TopNav";
 import { LoginPage } from "./components/LoginPage";
 import { DatabasePage } from "./components/DatabasePage";
@@ -29,6 +29,18 @@ import { clearSession, loadSession, saveSession } from "./lib/auth";
 import { generateVisitPdf } from "./lib/visitPdf";
 import { regionOf } from "./lib/regions";
 import { IBERIA_CENTER } from "./lib/mapStyle";
+import { isSupabaseConfigured } from "./lib/supabase";
+import {
+  fetchCompanies,
+  fetchMailingContacts,
+  insertCompanies,
+  updateCompanyRow,
+  deleteCompanyRow,
+  insertMailingContacts,
+  updateMailingContactRow,
+  deleteMailingContactRow,
+  deleteMailingContactRows,
+} from "./lib/db";
 import type { Company, MailingContact, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
@@ -86,8 +98,12 @@ function App() {
   const [view, setView] = useState<AppView>("dashboard");
   const [visited, setVisited] = useState<Set<AppView>>(() => new Set(["dashboard"]));
   const [transformOrigin, setTransformOrigin] = useState("50% 50%");
-  const [companies, setCompanies] = useState<Company[]>(loadCompanies);
-  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(loadMailingContacts);
+  const [companies, setCompanies] = useState<Company[]>(isSupabaseConfigured() ? [] : loadCompanies);
+  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(
+    isSupabaseConfigured() ? [] : loadMailingContacts
+  );
+  const [dataLoading, setDataLoading] = useState(isSupabaseConfigured());
+  const [dataLoadError, setDataLoadError] = useState<string | null>(null);
   const [mailingImportModalOpen, setMailingImportModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     types: new Set(),
@@ -114,6 +130,60 @@ function App() {
     localStorage.setItem(SOURCES_STORAGE_KEY, JSON.stringify(custom));
   }, [sources]);
 
+  // Supabase is the real database now - local storage is kept only as a
+  // secondary write-through cache (still useful if Supabase has a hiccup),
+  // never the primary source once Supabase is configured. On first load, if
+  // Supabase comes back completely empty, this migrates whatever's still
+  // sitting in this browser's local storage up to it (reading the raw key
+  // directly, not loadCompanies()'s own mock-data fallback, so the bundled
+  // demo data never gets uploaded as if it were real).
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [remoteCompanies, remoteContacts] = await Promise.all([fetchCompanies(), fetchMailingContacts()]);
+        if (cancelled) return;
+        if (remoteCompanies.length === 0 && remoteContacts.length === 0) {
+          let localCompanies: Company[] = [];
+          let localContacts: MailingContact[] = [];
+          try {
+            const raw = localStorage.getItem(COMPANIES_STORAGE_KEY);
+            localCompanies = raw ? JSON.parse(raw) : [];
+          } catch {
+            localCompanies = [];
+          }
+          try {
+            const raw = localStorage.getItem(MAILING_CONTACTS_STORAGE_KEY);
+            localContacts = raw ? JSON.parse(raw) : [];
+          } catch {
+            localContacts = [];
+          }
+          if (localCompanies.length > 0) await insertCompanies(localCompanies);
+          if (localContacts.length > 0) await insertMailingContacts(localContacts);
+          setCompanies(localCompanies.length > 0 ? localCompanies : COMPANIES);
+          setMailingContacts(localContacts);
+        } else {
+          setCompanies(remoteCompanies);
+          setMailingContacts(remoteContacts);
+        }
+      } catch (e) {
+        console.error("Supabase load failed, falling back to local storage", e);
+        if (cancelled) return;
+        setDataLoadError(
+          e instanceof Error ? e.message : "No se pudo conectar con la base de datos. Usando datos locales."
+        );
+        setCompanies(loadCompanies());
+        setMailingContacts(loadMailingContacts());
+      } finally {
+        if (!cancelled) setDataLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(COMPANIES_STORAGE_KEY, JSON.stringify(companies));
   }, [companies]);
@@ -127,17 +197,25 @@ function App() {
   // recompute it themselves (e.g. merging import duplicates) can still pass
   // an explicit needsReview in the patch, which takes precedence.
   const updateCompany = (id: string, patch: Partial<Company>) => {
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...patch, needsReview: patch.needsReview ?? false } : c))
-    );
+    const fullPatch = { ...patch, needsReview: patch.needsReview ?? false };
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...fullPatch } : c)));
+    if (isSupabaseConfigured()) {
+      updateCompanyRow(id, fullPatch).catch((e) => console.error("Supabase updateCompanyRow failed", e));
+    }
   };
 
   const importMailingContacts = (imported: MailingContact[]) => {
     setMailingContacts((prev) => [...prev, ...imported]);
+    if (isSupabaseConfigured()) {
+      insertMailingContacts(imported).catch((e) => console.error("Supabase insertMailingContacts failed", e));
+    }
   };
 
   const deleteMailingContact = (id: string) => {
     setMailingContacts((prev) => prev.filter((c) => c.id !== id));
+    if (isSupabaseConfigured()) {
+      deleteMailingContactRow(id).catch((e) => console.error("Supabase deleteMailingContactRow failed", e));
+    }
   };
 
   // Removes any mailing contact sharing an email with an earlier one in the
@@ -150,26 +228,38 @@ function App() {
     const deduped = idsToRemove.size > 0 ? mailingContacts.filter((c) => !idsToRemove.has(c.id)) : mailingContacts;
     if (idsToRemove.size > 0) setMailingContacts(deduped);
     localStorage.setItem(MAILING_CONTACTS_STORAGE_KEY, JSON.stringify(deduped));
+    if (isSupabaseConfigured() && idsToRemove.size > 0) {
+      deleteMailingContactRows([...idsToRemove]).catch((e) => console.error("Supabase dedup delete failed", e));
+    }
     return dupes.length;
   };
 
   const updateMailingContact = (id: string, patch: Partial<MailingContact>) => {
     setMailingContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    if (isSupabaseConfigured()) {
+      updateMailingContactRow(id, patch).catch((e) => console.error("Supabase updateMailingContactRow failed", e));
+    }
   };
 
   const deleteCompany = (id: string) => {
     setCompanies((prev) => prev.filter((c) => c.id !== id));
     setSelectedId((prev) => (prev === id ? null : prev));
+    if (isSupabaseConfigured()) {
+      deleteCompanyRow(id).catch((e) => console.error("Supabase deleteCompanyRow failed", e));
+    }
   };
 
   const addComment = (id: string, repId: RepId, text: string) => {
-    setCompanies((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? { ...c, comments: [...c.comments, { repId, text, date: todayLabel() }] }
-          : c
-      )
-    );
+    const comment = { repId, text, date: todayLabel() };
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, comments: [...c.comments, comment] } : c)));
+    if (isSupabaseConfigured()) {
+      const existing = companies.find((c) => c.id === id);
+      if (existing) {
+        updateCompanyRow(id, { comments: [...existing.comments, comment] }).catch((e) =>
+          console.error("Supabase addComment failed", e)
+        );
+      }
+    }
   };
 
   const toggleFilter = (group: keyof Filters, value: string) => {
@@ -184,6 +274,9 @@ function App() {
   const createCompany = (company: Company) => {
     setCompanies((prev) => [...prev, company]);
     setSelectedId(company.id);
+    if (isSupabaseConfigured()) {
+      insertCompanies([company]).catch((e) => console.error("Supabase insertCompanies failed", e));
+    }
   };
 
   // "Añadir cliente manualmente" opens the same CompanyCard used for editing
@@ -233,6 +326,9 @@ function App() {
 
   const importCompanies = (imported: Company[]) => {
     setCompanies((prev) => [...prev, ...imported]);
+    if (isSupabaseConfigured()) {
+      insertCompanies(imported).catch((e) => console.error("Supabase insertCompanies failed", e));
+    }
   };
 
   const clearFilters = () =>
@@ -388,6 +484,15 @@ function App() {
     );
   }
 
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#f9f3ec]">
+        <Loader2 size={24} className="animate-spin text-neutral-400" />
+        <p className="text-xs text-neutral-500">Cargando datos...</p>
+      </div>
+    );
+  }
+
   const logout = () => {
     clearSession();
     setSession(null);
@@ -439,6 +544,11 @@ function App() {
     <div className="min-h-screen flex flex-col">
       <CloudBackground active={view === "database" || view === "mailing"} />
       <TopNav loggedInRep={session} onLogout={logout} view={view} onViewChange={handleViewChange} />
+      {dataLoadError && (
+        <div className="bg-[#eda18f]/20 border-b border-[#eda18f]/40 text-[#b9503a] text-xs text-center py-1.5 px-4">
+          No se pudo conectar con la base de datos ({dataLoadError}) — mostrando datos guardados en este navegador.
+        </div>
+      )}
 
       <div className="relative flex-1 min-h-0">
         {visited.has("dashboard") && (

@@ -142,7 +142,7 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
   const knownProvince = PROVINCE_OPTIONS_ES.includes(company.province) || PROVINCE_OPTIONS_PT.includes(company.province);
   const provinceOptions = [
-    ...(knownProvince ? [] : [{ value: company.province, label: company.province || "Sin especificar" }]),
+    ...(knownProvince ? [] : [{ value: company.province, label: company.province || "Provincia" }]),
     ...PROVINCE_OPTIONS_ES.map((p) => ({ value: p, label: p, group: "España" })),
     ...PROVINCE_OPTIONS_PT.map((p) => ({ value: p, label: p, group: "Portugal" })),
   ];
