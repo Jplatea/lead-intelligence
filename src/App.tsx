@@ -715,7 +715,7 @@ function App() {
       )}
 
       {communicationCompany && (
-        <CommunicationCard company={communicationCompany} onClose={() => setCommunicationId(null)} />
+        <CommunicationCard company={communicationCompany} repId={session} onClose={() => setCommunicationId(null)} />
       )}
 
       {actionBubble && (

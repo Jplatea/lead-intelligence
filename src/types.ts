@@ -62,3 +62,13 @@ export interface MailingContact {
   email: string;
   companyName: string;
 }
+
+export interface WhatsAppMessage {
+  id: string;
+  repId: RepId;
+  waId: string;
+  contactName?: string;
+  direction: "inbound" | "outbound";
+  body: string;
+  createdAt: string;
+}

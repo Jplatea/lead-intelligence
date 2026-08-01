@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { X, Mail, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
-import type { Company } from "../types";
+import { X, Mail, MessageCircle, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
+import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 import { fetchRecentEmailsViaAgent, replyToEmailViaAgent } from "../lib/localAgent";
 import { REPS } from "../data/config";
 import { AuroraBackground } from "./AuroraBackground";
+import { WhatsAppPanel } from "./WhatsAppPanel";
 
 interface Props {
   company: Company;
+  repId: RepId;
   onClose: () => void;
 }
 
@@ -60,7 +62,8 @@ function buildDemoMessages(companyName: string): EmailMessage[] {
   ];
 }
 
-export function CommunicationCard({ company, onClose }: Props) {
+export function CommunicationCard({ company, repId, onClose }: Props) {
+  const [channel, setChannel] = useState<"email" | "whatsapp">("email");
   const [status, setStatus] = useState<Status>("idle");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
@@ -165,6 +168,29 @@ export function CommunicationCard({ company, onClose }: Props) {
           </button>
         </div>
 
+        <div className="flex items-center gap-1.5 -mt-1">
+          <button
+            onClick={() => setChannel("email")}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+            }`}
+          >
+            <Mail size={12} /> Email
+          </button>
+          <button
+            onClick={() => setChannel("whatsapp")}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.04] text-neutral-600 hover:bg-black/[0.07]"
+            }`}
+          >
+            <MessageCircle size={12} /> WhatsApp
+          </button>
+        </div>
+
+        {channel === "whatsapp" ? (
+          <WhatsAppPanel company={company} repId={repId} />
+        ) : (
+          <>
         {status === "idle" && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <Mail size={28} className="text-neutral-300" />
@@ -286,6 +312,8 @@ export function CommunicationCard({ company, onClose }: Props) {
               })
             )}
           </div>
+        )}
+          </>
         )}
         </div>
       </div>
