@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Download, Mail, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Building2, Search, SlidersHorizontal, AlertCircle } from "lucide-react";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 import {
@@ -196,25 +196,29 @@ function SortableTh<K extends string>({
   );
 }
 
-type ColumnKey = "type" | "city" | "province" | "country" | "email" | "phone" | "assignedRep" | "status" | "alarm";
+type ColumnKey = "email" | "type" | "city" | "province" | "country" | "phone" | "assignedRep" | "status" | "alarm";
 
+// "email" leads the toggleable columns on purpose: combined with the two
+// fixed columns before it (Nombre Empresa, Nombre Contacto), that puts
+// Email in column 3 — matching the Newsletter table's own column order so
+// the two datasets line up for side-by-side comparison.
 const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
+  { key: "email", label: "Mail" },
   { key: "type", label: "Tipo" },
   { key: "city", label: "Ciudad" },
   { key: "province", label: "Provincia" },
   { key: "country", label: "País" },
-  { key: "email", label: "Email" },
   { key: "phone", label: "Teléfono" },
   { key: "assignedRep", label: "Comercial" },
   { key: "status", label: "Estado" },
   { key: "alarm", label: "Alarma" },
 ];
 
-type NewsletterColumnKey = "email" | "companyName";
+type NewsletterColumnKey = "contactName" | "email";
 
 const NEWSLETTER_COLUMNS: { key: NewsletterColumnKey; label: string }[] = [
-  { key: "email", label: "Email" },
-  { key: "companyName", label: "Empresa" },
+  { key: "contactName", label: "Nombre Contacto" },
+  { key: "email", label: "Mail" },
 ];
 
 function cellText(c: Company, key: ColumnKey): string {
@@ -240,16 +244,18 @@ function cellText(c: Company, key: ColumnKey): string {
   }
 }
 
-type ClientSortKey = "name" | ColumnKey;
+type ClientSortKey = "name" | "contactName" | ColumnKey;
 function clientSortValue(c: Company, key: ClientSortKey): string {
-  return key === "name" ? c.name : cellText(c, key);
+  if (key === "name") return c.name;
+  if (key === "contactName") return c.contact.contactName ?? "";
+  return cellText(c, key);
 }
 
-type NewsletterSortKey = "contactName" | NewsletterColumnKey;
+type NewsletterSortKey = "companyName" | NewsletterColumnKey;
 function nlSortValue(c: MailingContact, key: NewsletterSortKey): string {
-  if (key === "contactName") return c.contactName;
+  if (key === "companyName") return c.companyName;
   if (key === "email") return c.email;
-  return c.companyName;
+  return c.contactName;
 }
 
 // This page is a read-only report: no editing/deleting rows — just the data
@@ -293,7 +299,9 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
     const q = clientQuery.trim().toLowerCase();
     let list = q
       ? companies.filter((c) => {
-          const haystack = [c.name, ...ALL_COLUMNS.map((col) => cellText(c, col.key))].join(" ").toLowerCase();
+          const haystack = [c.name, c.contact.contactName ?? "", ...ALL_COLUMNS.map((col) => cellText(c, col.key))]
+            .join(" ")
+            .toLowerCase();
           return haystack.includes(q);
         })
       : companies;
@@ -379,8 +387,15 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                     <tr>
                       <th className="w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
                       <SortableTh
-                        label="Nombre"
+                        label="Nombre Empresa"
                         columnKey="name"
+                        sort={clientSort}
+                        onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
+                        className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                      />
+                      <SortableTh
+                        label="Nombre Contacto"
+                        columnKey="contactName"
                         sort={clientSort}
                         onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
                         className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
@@ -424,6 +439,9 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                               <span className="font-medium text-black truncate block">{c.name}</span>
                             </CellTip>
                           </td>
+                          <td className="px-2 py-1 text-black/80 whitespace-nowrap" style={{ background: bg }}>
+                            <CellTip value={c.contact.contactName || "—"}>{c.contact.contactName || "—"}</CellTip>
+                          </td>
                           {shownColumns.map((col, i) => (
                             <td
                               key={col.key}
@@ -464,8 +482,8 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
                       <SortableTh
-                        label="Nombre contacto"
-                        columnKey="contactName"
+                        label="Nombre Empresa"
+                        columnKey="companyName"
                         sort={nlSort}
                         onSort={(key) => setNlSort((prev) => toggleSort(prev, key))}
                         className="font-medium text-neutral-500 tracking-wide text-[13px] px-3 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
@@ -501,14 +519,14 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                           style={{ background: "rgba(167,155,203,0.14)" }}
                         >
                           <div className="flex items-center gap-1.5">
-                            <Mail size={12} className="text-[#6a56a0] shrink-0" />
-                            <CellTip value={c.contactName || "—"}>
-                              <span className="text-black/80">{c.contactName || "—"}</span>
+                            <Building2 size={12} className="text-[#6a56a0] shrink-0" />
+                            <CellTip value={c.companyName || "—"}>
+                              <span className="text-black/80">{c.companyName || "—"}</span>
                             </CellTip>
                           </div>
                         </td>
                         {shownNlColumns.map((col, i) => {
-                          const value = col.key === "email" ? c.email || "—" : c.companyName || "—";
+                          const value = col.key === "email" ? c.email || "—" : c.contactName || "—";
                           return (
                             <td
                               key={col.key}

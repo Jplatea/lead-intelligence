@@ -35,6 +35,7 @@ export interface Company {
   lat: number;
   lng: number;
   contact: {
+    contactName?: string;
     email?: string;
     phone?: string;
   };

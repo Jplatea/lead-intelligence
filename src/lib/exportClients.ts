@@ -3,9 +3,15 @@ import * as XLSX from "xlsx";
 import type { Company, MailingContact } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 
+// Column order/naming matches exportMailingContacts's toMailingRecord below
+// on purpose (Nombre Empresa, Nombre Contacto, Mail first) - lets the two
+// exports be compared side by side (find_recent_emails/matchMailing-style
+// cross-checks) without hunting for differently-named equivalent columns.
 function toRecord(c: Company) {
   return {
-    nombre: c.name,
+    nombre_empresa: c.name,
+    nombre_contacto: c.contact.contactName ?? "",
+    mail: c.contact.email ?? "",
     tipo: c.type,
     ciudad: c.city,
     provincia: c.province,
@@ -13,7 +19,6 @@ function toRecord(c: Company) {
     codigo_postal: c.postalCode,
     lat: c.lat,
     lng: c.lng,
-    email: c.contact.email ?? "",
     telefono: c.contact.phone ?? "",
     marcas: c.brands.join("; "),
     especialidades: c.specialties.join("; "),
@@ -49,14 +54,16 @@ export function exportCompaniesXLSX(companies: Company[]) {
 
 // Column order matters here (unlike toRecord's above): the mailing import
 // (importMailingContacts.ts) reads this file back positionally — column 1
-// = contact name, 2 = email, 3 = company — regardless of header text, so
-// `id` has to stay out of those first three slots or a re-imported backup
-// silently misreads every row.
+// = company name, 2 = contact name, 3 = email — regardless of header text,
+// matching toRecord's Nombre Empresa/Nombre Contacto/Mail order above so
+// the two exports compare column-for-column. `id` has to stay out of
+// those first three slots or a re-imported backup silently misreads every
+// row.
 function toMailingRecord(c: MailingContact) {
   return {
+    nombre_empresa: c.companyName,
     nombre_contacto: c.contactName,
-    email: c.email,
-    empresa: c.companyName,
+    mail: c.email,
     id: c.id,
   };
 }

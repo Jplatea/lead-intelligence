@@ -10,11 +10,12 @@ interface ContactRow {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Always positional: column 1 = contact name, column 2 = email, column 3 =
-// company name — the fixed format this list is meant to import, regardless
-// of whatever header text (if any) the file uses. A row is only skipped as
-// a header row when NONE of its cells look like an email; if the first row
-// already contains one, every row is treated as data.
+// Always positional: column 1 = company name, column 2 = contact name,
+// column 3 = email — matching the Clientes export's own Nombre Empresa /
+// Nombre Contacto / Mail order so the two datasets line up for comparison
+// — regardless of whatever header text (if any) the file uses. A row is
+// only skipped as a header row when NONE of its cells look like an email;
+// if the first row already contains one, every row is treated as data.
 function mapByPosition(rows: unknown[][]): ContactRow[] {
   if (rows.length === 0) return [];
   const firstRowHasEmail = rows[0].some((cell) => EMAIL_RE.test(String(cell ?? "").trim()));
@@ -22,9 +23,9 @@ function mapByPosition(rows: unknown[][]): ContactRow[] {
 
   return dataRows
     .map((row) => ({
-      contactName: String(row[0] ?? "").trim(),
-      email: String(row[1] ?? "").trim(),
-      companyName: String(row[2] ?? "").trim(),
+      companyName: String(row[0] ?? "").trim(),
+      contactName: String(row[1] ?? "").trim(),
+      email: String(row[2] ?? "").trim(),
     }))
     .filter((r) => EMAIL_RE.test(r.email));
 }

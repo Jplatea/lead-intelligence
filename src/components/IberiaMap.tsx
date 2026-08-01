@@ -7,6 +7,7 @@ import type { Company } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 import { buildConnectors } from "../data/connectors";
 import { MAP_STYLE, IBERIA_CENTER, IBERIA_DEFAULT_ZOOM, IBERIA_BOUNDS } from "../lib/mapStyle";
+import { Tooltip } from "./Tooltip";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
@@ -404,15 +405,16 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
     <div ref={containerRef} className="relative w-full h-full min-h-[420px] rounded-3xl glass overflow-hidden">
       <div className="absolute top-4 left-5 z-10 text-xs text-neutral-500">Península Ibérica</div>
       <div className="absolute top-4 right-5 z-10">
-        <button
-          onClick={() => setPlacing((v) => !v)}
-          title="Añadir cliente manualmente"
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_6px_16px_rgba(33,31,29,0.3)] hover:shadow-[0_8px_20px_rgba(33,31,29,0.4)] hover:scale-105 ${
-            placing ? "bg-neutral-900 text-white" : "bg-surface text-neutral-700"
-          }`}
-        >
-          {placing ? <X size={15} /> : <Plus size={15} />}
-        </button>
+        <Tooltip label="Añadir cliente manualmente">
+          <button
+            onClick={() => setPlacing((v) => !v)}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_6px_16px_rgba(33,31,29,0.3)] hover:shadow-[0_8px_20px_rgba(33,31,29,0.4)] hover:scale-105 ${
+              placing ? "bg-neutral-900 text-white" : "bg-surface text-neutral-700"
+            }`}
+          >
+            {placing ? <X size={15} /> : <Plus size={15} />}
+          </button>
+        </Tooltip>
       </div>
 
       {placing && (

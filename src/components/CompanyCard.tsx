@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2 } from "lucide-react";
+import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2, User } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
 import { geocodeAddress } from "../lib/geocode";
@@ -80,9 +80,14 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
 
   // Explicit action only (button/Enter), never as-you-type, per Nominatim's
   // usage policy — confirms the address is real and moves the map point to
-  // it, the same verification flow NewCompanyModal uses when creating one.
+  // it. Combines every location field that's filled in (not just the bare
+  // street address) into one query, since a street address alone is often
+  // ambiguous without its city/province/country/postal code to disambiguate.
   const verifyAddress = async () => {
-    const query = company.address?.trim();
+    const query = [company.address, company.postalCode, company.city, company.province, company.country]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(", ");
     if (!query) return;
     setGeocoding(true);
     setAddressMsg(null);
@@ -208,6 +213,15 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           <h3 className="gd-section text-[11px] tracking-widest text-neutral-400 mb-2">Contacto</h3>
           <div className="space-y-2">
             <div className="relative">
+              <User size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
+              <input
+                value={company.contact.contactName ?? ""}
+                onChange={(e) => patchContact({ contactName: e.target.value })}
+                placeholder="Sin nombre de contacto"
+                className={fieldClassIcon(!company.contact.contactName)}
+              />
+            </div>
+            <div className="relative">
               <Mail size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#2a9678] pointer-events-none" />
               <input
                 value={company.contact.email ?? ""}
@@ -265,7 +279,10 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
                 />
                 <button
                   onClick={verifyAddress}
-                  disabled={geocoding || !company.address?.trim()}
+                  disabled={
+                    geocoding ||
+                    !(company.address?.trim() || company.city?.trim() || company.postalCode?.trim())
+                  }
                   title="Verificar dirección en el mapa"
                   className="shrink-0 w-8 h-8 rounded-lg bg-black/[0.03] border border-black/10 text-neutral-600 hover:bg-black/[0.06] disabled:opacity-40 flex items-center justify-center"
                 >

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Mail, Building2, Triangle, Circle } from "lucide-react";
 import type { CompanyMailingMatch } from "../lib/matchMailing";
+import { AuroraBackground } from "./AuroraBackground";
 
 interface Props {
   matches: CompanyMailingMatch[];
@@ -72,59 +73,25 @@ function ControlButton({ onClick, disabled, active, color, glow, title, children
 // mix-blend-mode "multiply" like CloudBackground's own instances use -
 // the base .login-cloud class defaults to "screen", which is nearly
 // invisible against this light cream background).
-// With zero matches it's a brief "Sin coincidencias" toast that dismisses
-// itself after two seconds instead of needing a manual close.
+// With zero matches there's nothing worth showing - closes immediately and
+// silently instead of surfacing any empty-state message.
 export function CompanyMailingMatchesModal({ matches, onClose, onSync }: Props) {
   const hasMatches = matches.length > 0;
   const [pending, setPending] = useState<Record<string, Direction>>({});
 
   useEffect(() => {
     if (hasMatches) return;
-    const timer = setTimeout(onClose, 2000);
-    return () => clearTimeout(timer);
+    onClose();
   }, [hasMatches, onClose]);
 
   if (!hasMatches) {
-    return (
-      <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-        <div className="glass rounded-2xl px-5 py-3 animate-fade-in-up">
-          <p className="text-sm text-neutral-700">Sin coincidencias</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center p-5 pointer-events-none">
       <div className="relative pointer-events-auto rounded-3xl w-full max-w-2xl max-h-full overflow-hidden animate-fade-in-up border border-white/60 shadow-[0_30px_60px_-20px_rgba(33,31,29,0.35)]">
-        <div className="absolute inset-0 bg-[#f9f3ec] overflow-hidden">
-          <div
-            className="login-cloud"
-            style={{
-              background: "#a8dfcf",
-              width: 380,
-              height: 380,
-              top: "-10%",
-              left: "-12%",
-              opacity: 0.85,
-              mixBlendMode: "multiply",
-              animation: "cloud-drift-a 22s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="login-cloud"
-            style={{
-              background: "#a79bcb",
-              width: 380,
-              height: 380,
-              top: "-10%",
-              right: "-12%",
-              opacity: 0.85,
-              mixBlendMode: "multiply",
-              animation: "cloud-drift-b 27s ease-in-out infinite reverse",
-            }}
-          />
-        </div>
+        <AuroraBackground colors={["#a8dfcf", "#a79bcb"]} />
 
         <div className="relative z-10 p-5 max-h-[80vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">

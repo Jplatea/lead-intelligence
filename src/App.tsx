@@ -10,7 +10,6 @@ import { IberiaMap } from "./components/IberiaMap";
 import type { ResultsHighlight } from "./components/ResultsList";
 import { CompanyCard } from "./components/CompanyCard";
 import { StatsRow } from "./components/StatsRow";
-import { NewCompanyModal } from "./components/NewCompanyModal";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { NewsletterContactCard } from "./components/NewsletterContactCard";
 import { CommunicationCard } from "./components/CommunicationCard";
@@ -21,7 +20,7 @@ import { ImportModal } from "./components/ImportModal";
 import { MailingImportModal } from "./components/MailingImportModal";
 import { COMPANIES } from "./data/mockCompanies";
 import { DEFAULT_SOURCES, type LeadSource } from "./data/sources";
-import { REPS } from "./data/config";
+import { REPS, TYPE_OPTIONS } from "./data/config";
 import { checkUrlAndScan } from "./lib/robotsCheck";
 import { findAllMailingDuplicateGroups } from "./lib/importMailingContacts";
 import { findCompanyMailingMatches, type CompanyMailingMatch } from "./lib/matchMailing";
@@ -99,7 +98,6 @@ function App() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [communicationId, setCommunicationId] = useState<string | null>(null);
   const [actionBubble, setActionBubble] = useState<{ company: Company; x: number; y: number } | null>(null);
-  const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [reviewArrowIds, setReviewArrowIds] = useState<Set<string> | null>(null);
@@ -184,9 +182,33 @@ function App() {
 
   const createCompany = (company: Company) => {
     setCompanies((prev) => [...prev, company]);
-    setPendingPosition(null);
     setSelectedId(company.id);
   };
+
+  // A manually-placed pin creates a real (blank) Company record right away
+  // and opens the same CompanyCard used for editing any existing one -
+  // rather than a separate one-shot creation form - so filling it in is
+  // just the normal edit flow, address search included.
+  const buildBlankCompany = (lat: number, lng: number): Company => ({
+    id: `manual-${Date.now()}`,
+    name: "",
+    type: TYPE_OPTIONS[0],
+    city: "",
+    province: "",
+    country: "España",
+    postalCode: "",
+    lat,
+    lng,
+    contact: {},
+    brands: [],
+    specialties: [],
+    assignedRep: "jose",
+    status: "nuevo",
+    alarm: "nunca_contactado",
+    importedType: "manual",
+    comments: [],
+    needsReview: false,
+  });
 
   const importCompanies = (imported: Company[]) => {
     setCompanies((prev) => [...prev, ...imported]);
@@ -439,7 +461,7 @@ function App() {
                 companies={filteredCompanies}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
-                onPlaceNew={(lat, lng) => setPendingPosition({ lat, lng })}
+                onPlaceNew={(lat, lng) => createCompany(buildBlankCompany(lat, lng))}
                 highlight={highlight}
                 reviewIds={reviewArrowIds ?? undefined}
               />
@@ -486,15 +508,6 @@ function App() {
           </motion.main>
         )}
       </div>
-
-      {pendingPosition && (
-        <NewCompanyModal
-          lat={pendingPosition.lat}
-          lng={pendingPosition.lng}
-          onCancel={() => setPendingPosition(null)}
-          onCreate={createCompany}
-        />
-      )}
 
       {visitModalOpen && (
         <VisitPlannerModal

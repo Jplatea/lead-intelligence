@@ -114,7 +114,7 @@ export function MailingImportModal({ contacts, onClose, onImport, onDeleteContac
             {result && <p className="text-xs text-[#2a9678] mt-2">{result}</p>}
 
             <p className="text-[10px] text-neutral-400 mt-2 leading-relaxed">
-              Columnas: nombre contacto, email, nombre empresa. Solo se importan filas con email — esta lista es
+              Columnas: nombre empresa, nombre contacto, email. Solo se importan filas con email — esta lista es
               independiente y nunca se mezcla con la base de datos de clientes.
             </p>
           </div>
