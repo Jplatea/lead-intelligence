@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2, User } from "lucide-react";
+import { X, Mail, Phone, Check, Send, ChevronDown, MapPin, Loader2, User, Trash2, Save } from "lucide-react";
 import type { Company, RepId, CompanyStatus } from "../types";
-import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT } from "../data/config";
+import { REPS, STATUS_CONFIG, ALARM_CONFIG, TYPE_OPTIONS, PROVINCE_OPTIONS_ES, PROVINCE_OPTIONS_PT, COUNTRY_OPTIONS } from "../data/config";
 import { geocodeAddress } from "../lib/geocode";
 import { CustomSelect } from "./CustomSelect";
 import { TagInput } from "./TagInput";
@@ -12,6 +12,13 @@ interface Props {
   onClose: () => void;
   onUpdate: (patch: Partial<Company>) => void;
   onAddComment: (repId: RepId, text: string) => void;
+  // Draft mode: a manually "added" client not yet in the real database -
+  // nothing is created until onSave is called, and onClose just discards
+  // it. Normal mode (editing an existing record) passes onDelete instead,
+  // since every edit there already autosaves on its own.
+  isDraft?: boolean;
+  onSave?: () => void;
+  onDelete?: () => void;
 }
 
 function Divider() {
@@ -60,7 +67,7 @@ function toSentenceCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddComment }: Props) {
+export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddComment, isDraft, onSave, onDelete }: Props) {
   const status = STATUS_CONFIG[company.status];
   const alarm = ALARM_CONFIG[company.alarm];
 
@@ -70,6 +77,18 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
   const [geocoding, setGeocoding] = useState(false);
   const [addressMsg, setAddressMsg] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Always clickable - if something required is missing, say so instead of
+  // just disabling the button with no explanation.
+  const handleSaveClick = () => {
+    if (!company.name.trim()) {
+      setSaveError("Falta el nombre de la empresa.");
+      return;
+    }
+    setSaveError(null);
+    onSave?.();
+  };
 
   const submitComment = () => {
     const trimmed = commentText.trim();
@@ -298,11 +317,11 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
               triggerClassName={`${fieldClass(!company.province)} text-left cursor-pointer`}
             />
             <div className="flex gap-2">
-              <input
+              <CustomSelect
                 value={company.country}
-                onChange={(e) => onUpdate({ country: e.target.value })}
-                placeholder="País"
-                className={`${fieldClass(!company.country)} flex-1 min-w-0`}
+                options={COUNTRY_OPTIONS.map((c) => ({ value: c, label: c }))}
+                onChange={(v) => onUpdate({ country: v })}
+                triggerClassName={`${fieldClass(!company.country)} flex-1 min-w-0 text-left cursor-pointer`}
               />
               <input
                 value={company.postalCode}
@@ -389,6 +408,27 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
         </div>
       </div>
 
+      {isDraft ? (
+        <>
+          <Divider />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 text-xs px-3 py-2 rounded-xl bg-[#eda18f]/15 border border-[#eda18f]/40 text-[#b9503a] hover:bg-[#eda18f]/25"
+            >
+              Descartar
+            </button>
+            <button
+              onClick={handleSaveClick}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-[#a8dfcf] border border-[#a8dfcf] text-black/80 font-medium hover:bg-[#93d3bd]"
+            >
+              <Save size={13} /> Guardar cliente
+            </button>
+          </div>
+          {saveError && <p className="text-[11px] text-[#b9503a] mt-2 text-center">{saveError}</p>}
+        </>
+      ) : (
+        <>
       <Divider />
 
       <div>
@@ -440,6 +480,17 @@ export function CompanyCard({ company, allCompanies, onClose, onUpdate, onAddCom
           </button>
         </div>
       </div>
+
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-black/[0.03] border border-black/10 text-[#b9503a] hover:bg-[#b9503a]/10"
+        >
+          <Trash2 size={13} /> Eliminar cliente
+        </button>
+      )}
+        </>
+      )}
     </div>
   );
 }

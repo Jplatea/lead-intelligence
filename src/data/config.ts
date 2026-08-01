@@ -116,6 +116,8 @@ export const SPECIALTY_OPTIONS = [
 
 export const TYPE_OPTIONS = ["Integrador", "Arquitecto", "Decorador"];
 
+export const COUNTRY_OPTIONS = ["España", "Portugal"];
+
 export const PROVINCE_OPTIONS_ES = [
   "Álava",
   "Albacete",

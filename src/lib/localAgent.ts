@@ -28,3 +28,22 @@ export async function fetchRecentEmailsViaAgent(contactEmail: string, limit = 10
   }
   return res.json();
 }
+
+// Asks the agent to open Outlook's own reply window for a given message
+// (by the EntryID fetchRecentEmailsViaAgent returned as "id") - it stays
+// read-only on the agent's side (never calls .Send()), the reply is
+// composed and sent by the rep themselves in their real Outlook.
+export async function replyToEmailViaAgent(entryId: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${AGENT_URL}/reply?id=${encodeURIComponent(entryId)}`);
+  } catch {
+    throw new Error(
+      "No se pudo conectar con el agente local. ¿Está el script outlook_agent.py ejecutándose en este ordenador?"
+    );
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || `El agente local respondió con un error (${res.status}).`);
+  }
+}

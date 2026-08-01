@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
-import type { MapMouseEvent } from "@vis.gl/react-google-maps";
-import { Minus, Plus, RotateCcw, X } from "lucide-react";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import type { Company } from "../types";
 import { REPS, STATUS_CONFIG, ALARM_CONFIG } from "../data/config";
 import { buildConnectors } from "../data/connectors";
@@ -15,7 +14,7 @@ interface Props {
   companies: Company[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onPlaceNew: (lat: number, lng: number) => void;
+  onAddNew: () => void;
   highlight: { ids: Set<string>; color: string } | null;
   reviewIds?: Set<string>;
 }
@@ -188,12 +187,11 @@ function pathBetween(a: { x: number; y: number }, b: { x: number; y: number }) {
   return `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`;
 }
 
-export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlight, reviewIds }: Props) {
+export function IberiaMap({ companies, selectedId, onSelect, onAddNew, highlight, reviewIds }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const connectorRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [hover, setHover] = useState<HoverState | null>(null);
-  const [placing, setPlacing] = useState(false);
   const [connectorItems, setConnectorItems] = useState<{ key: string; x: number; y: number }[]>([]);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const [positions, setPositions] = useState<Positions>({});
@@ -338,12 +336,6 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
       ? { nodeX: nodeAnchor.x, nodeY: nodeAnchor.y, items: connectorItems }
       : null;
 
-  const handleMapClick = (e: MapMouseEvent) => {
-    if (!placing || !e.detail.latLng) return;
-    setPlacing(false);
-    onPlaceNew(e.detail.latLng.lat, e.detail.latLng.lng);
-  };
-
   // Read the in-flight animation's destination when one is running, so
   // repeated clicks stack correctly instead of each restarting from a
   // barely-progressed interrupted animation (see animateCamera above).
@@ -405,28 +397,19 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
     <div ref={containerRef} className="relative w-full h-full min-h-[420px] rounded-3xl glass overflow-hidden">
       <div className="absolute top-4 left-5 z-10 text-xs text-neutral-500">Península Ibérica</div>
       <div className="absolute top-4 right-5 z-10">
-        <Tooltip label="Añadir cliente manualmente">
+        <Tooltip label="Añadir cliente manualmente" placement="bottom" align="left">
           <button
-            onClick={() => setPlacing((v) => !v)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_6px_16px_rgba(33,31,29,0.3)] hover:shadow-[0_8px_20px_rgba(33,31,29,0.4)] hover:scale-105 ${
-              placing ? "bg-neutral-900 text-white" : "bg-surface text-neutral-700"
-            }`}
+            onClick={onAddNew}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-[0_6px_16px_rgba(33,31,29,0.3)] hover:shadow-[0_8px_20px_rgba(33,31,29,0.4)] hover:scale-105 bg-surface text-neutral-700"
           >
-            {placing ? <X size={15} /> : <Plus size={15} />}
+            <Plus size={15} />
           </button>
         </Tooltip>
       </div>
 
-      {placing && (
-        <div className="absolute top-12 right-5 z-10 glass rounded-xl px-3 py-1.5 text-[11px] text-neutral-600 animate-fade-in-up">
-          Haz clic en el mapa para situar el nuevo cliente
-        </div>
-      )}
-
       <APIProvider apiKey={API_KEY}>
         <Map
           className="w-full h-full"
-          style={{ cursor: placing ? "crosshair" : undefined }}
           defaultCenter={IBERIA_CENTER}
           defaultZoom={IBERIA_DEFAULT_ZOOM}
           minZoom={5}
@@ -436,7 +419,6 @@ export function IberiaMap({ companies, selectedId, onSelect, onPlaceNew, highlig
           disableDefaultUI
           clickableIcons={false}
           gestureHandling="greedy"
-          onClick={handleMapClick}
         >
           <PositionSync points={points} onPositions={setPositions} onMapReady={setMapInstance} />
         </Map>

@@ -116,16 +116,27 @@ interface GraphMessage {
   from?: { emailAddress?: { name?: string; address?: string } };
   receivedDateTime?: string;
   bodyPreview?: string;
+  body?: { content?: string };
 }
 
 // Approximate equivalent of Gmail's "from OR to" search — Graph's $search
 // scans subject/sender/recipients/body for the query string, which is close
 // enough for "recent emails involving this contact" without needing a more
 // elaborate $filter with lambda operators over toRecipients.
+//
+// Requests the full body (not just Graph's own ~255-char bodyPreview) as
+// plain text via the Prefer header, so "leer más" in the UI has real
+// content to expand into rather than repeating the same short preview.
 export async function fetchRecentEmails(accessToken: string, contactEmail: string, limit = 10): Promise<OutlookMessage[]> {
   const res = await fetch(
-    `https://graph.microsoft.com/v1.0/me/messages?$search="${contactEmail}"&$top=${limit}`,
-    { headers: { Authorization: `Bearer ${accessToken}`, ConsistencyLevel: "eventual" } }
+    `https://graph.microsoft.com/v1.0/me/messages?$search="${contactEmail}"&$top=${limit}&$select=id,subject,from,receivedDateTime,bodyPreview,body`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ConsistencyLevel: "eventual",
+        Prefer: 'outlook.body-content-type="text"',
+      },
+    }
   );
   if (!res.ok) throw new Error(`Microsoft Graph: error ${res.status}`);
   const data: { value?: GraphMessage[] } = await res.json();
@@ -135,6 +146,6 @@ export async function fetchRecentEmails(accessToken: string, contactEmail: strin
     subject: m.subject || "(sin asunto)",
     from: m.from?.emailAddress?.address || m.from?.emailAddress?.name || "",
     date: m.receivedDateTime || "",
-    snippet: m.bodyPreview || "",
+    snippet: (m.body?.content || m.bodyPreview || "").trim().slice(0, 5000),
   }));
 }

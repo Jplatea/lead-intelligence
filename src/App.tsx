@@ -28,6 +28,7 @@ import { CompanyMailingMatchesModal } from "./components/CompanyMailingMatchesMo
 import { clearSession, loadSession, saveSession } from "./lib/auth";
 import { generateVisitPdf } from "./lib/visitPdf";
 import { regionOf } from "./lib/regions";
+import { IBERIA_CENTER } from "./lib/mapStyle";
 import type { Company, MailingContact, RepId } from "./types";
 
 const SOURCES_STORAGE_KEY = "lead-intelligence:custom-sources";
@@ -185,11 +186,13 @@ function App() {
     setSelectedId(company.id);
   };
 
-  // A manually-placed pin creates a real (blank) Company record right away
-  // and opens the same CompanyCard used for editing any existing one -
-  // rather than a separate one-shot creation form - so filling it in is
-  // just the normal edit flow, address search included.
-  const buildBlankCompany = (lat: number, lng: number): Company => ({
+  // "Añadir cliente manualmente" opens the same CompanyCard used for editing
+  // any existing one, pre-filled blank - but as a draft that isn't in
+  // `companies` yet and has no map pin, so nothing is created until
+  // "Guardar" is pressed. Position is a placeholder (Iberia's own center)
+  // that's replaced the moment the rep verifies a real address - it's never
+  // shown as a marker either way, since drafts aren't part of `companies`.
+  const buildBlankCompany = (): Company => ({
     id: `manual-${Date.now()}`,
     name: "",
     type: TYPE_OPTIONS[0],
@@ -197,8 +200,8 @@ function App() {
     province: "",
     country: "España",
     postalCode: "",
-    lat,
-    lng,
+    lat: IBERIA_CENTER.lat,
+    lng: IBERIA_CENTER.lng,
     contact: {},
     brands: [],
     specialties: [],
@@ -209,6 +212,24 @@ function App() {
     comments: [],
     needsReview: false,
   });
+
+  const [draftCompany, setDraftCompany] = useState<Company | null>(null);
+
+  const startNewCompanyDraft = () => {
+    setDraftCompany(buildBlankCompany());
+  };
+
+  const updateDraftCompany = (patch: Partial<Company>) => {
+    setDraftCompany((prev) => (prev ? { ...prev, ...patch, needsReview: patch.needsReview ?? false } : prev));
+  };
+
+  const discardDraftCompany = () => setDraftCompany(null);
+
+  const saveDraftCompany = () => {
+    if (!draftCompany) return;
+    createCompany(draftCompany);
+    setDraftCompany(null);
+  };
 
   const importCompanies = (imported: Company[]) => {
     setCompanies((prev) => [...prev, ...imported]);
@@ -461,7 +482,7 @@ function App() {
                 companies={filteredCompanies}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
-                onPlaceNew={(lat, lng) => createCompany(buildBlankCompany(lat, lng))}
+                onAddNew={startNewCompanyDraft}
                 highlight={highlight}
                 reviewIds={reviewArrowIds ?? undefined}
               />
@@ -543,17 +564,33 @@ function App() {
         />
       )}
 
-      {selectedCompany && (
+      {(draftCompany || selectedCompany) && (
         <div className="fixed top-0 right-0 h-screen w-[480px] max-w-[92vw] p-5 pt-[76px] overflow-y-auto z-50 flex flex-col gap-5 pointer-events-none">
           <div className="pointer-events-auto">
-            <CompanyCard
-              key={selectedCompany.id}
-              company={selectedCompany}
-              allCompanies={companies}
-              onClose={() => setSelectedId(null)}
-              onUpdate={(patch) => updateCompany(selectedCompany.id, patch)}
-              onAddComment={(repId, text) => addComment(selectedCompany.id, repId, text)}
-            />
+            {draftCompany ? (
+              <CompanyCard
+                key="draft"
+                company={draftCompany}
+                allCompanies={companies}
+                onClose={discardDraftCompany}
+                onUpdate={updateDraftCompany}
+                onAddComment={() => {}}
+                isDraft
+                onSave={saveDraftCompany}
+              />
+            ) : (
+              selectedCompany && (
+                <CompanyCard
+                  key={selectedCompany.id}
+                  company={selectedCompany}
+                  allCompanies={companies}
+                  onClose={() => setSelectedId(null)}
+                  onUpdate={(patch) => updateCompany(selectedCompany.id, patch)}
+                  onAddComment={(repId, text) => addComment(selectedCompany.id, repId, text)}
+                  onDelete={() => deleteCompany(selectedCompany.id)}
+                />
+              )
+            )}
           </div>
         </div>
       )}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, Mail, RefreshCw, AlertCircle } from "lucide-react";
+import { X, Mail, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
 import type { Company } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
-import { fetchRecentEmailsViaAgent } from "../lib/localAgent";
+import { fetchRecentEmailsViaAgent, replyToEmailViaAgent } from "../lib/localAgent";
 import { REPS } from "../data/config";
 import { AuroraBackground } from "./AuroraBackground";
 
@@ -22,6 +22,11 @@ interface EmailMessage {
 }
 
 type Status = "idle" | "loading" | "error" | "ready";
+type Source = "outlook" | "agent" | "demo";
+
+// How many characters of a snippet show collapsed before "Leer más" is
+// worth offering — anything shorter already fits without truncating.
+const COLLAPSED_PREVIEW_LENGTH = 180;
 
 // Placeholder content only — used by "Probar con datos de ejemplo" below so
 // the feature can be reviewed end-to-end while waiting for a tenant admin
@@ -60,6 +65,10 @@ export function CommunicationCard({ company, onClose }: Props) {
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
   const [isDemo, setIsDemo] = useState(false);
+  const [source, setSource] = useState<Source | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState("");
 
   // Load Microsoft's auth SDK as soon as this card appears, so the click
   // handler below can call loginPopup() with as little delay as possible —
@@ -78,6 +87,7 @@ export function CommunicationCard({ company, onClose }: Props) {
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
       const msgs = await fetchOutlook(await requestOutlookAccessToken(), email, 10);
       setMessages(msgs);
+      setSource("outlook");
       setStatus("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo conectar con el correo.");
@@ -88,6 +98,7 @@ export function CommunicationCard({ company, onClose }: Props) {
   const showDemo = () => {
     setIsDemo(true);
     setMessages(buildDemoMessages(company.name));
+    setSource("demo");
     setStatus("ready");
   };
 
@@ -100,11 +111,42 @@ export function CommunicationCard({ company, onClose }: Props) {
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
       const msgs = await fetchRecentEmailsViaAgent(email, 10);
       setMessages(msgs);
+      setSource("agent");
       setStatus("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo conectar con el agente local.");
       setStatus("error");
     }
+  };
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Never sends anything itself — just opens a reply window/compose UI for
+  // the rep to write and send themselves. Via the local agent that's
+  // Outlook's own native reply window (real quoting/threading); otherwise
+  // it's a plain mailto: link to the rep's own default mail client.
+  const handleReply = async (m: EmailMessage) => {
+    setReplyError("");
+    if (source === "agent") {
+      setReplyingId(m.id);
+      try {
+        await replyToEmailViaAgent(m.id);
+      } catch (e) {
+        setReplyError(e instanceof Error ? e.message : "No se pudo abrir la respuesta.");
+      } finally {
+        setReplyingId(null);
+      }
+      return;
+    }
+    const subject = /^re:/i.test(m.subject) ? m.subject : `RE: ${m.subject}`;
+    window.open(`mailto:${m.from}?subject=${encodeURIComponent(subject)}`, "_blank");
   };
 
   return (
@@ -193,21 +235,55 @@ export function CommunicationCard({ company, onClose }: Props) {
                 Datos de ejemplo — no son correos reales.
               </p>
             )}
+            {replyError && (
+              <p className="text-[11px] text-[#b9503a] bg-[#eda18f]/15 border border-[#eda18f]/50 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                <AlertCircle size={12} className="shrink-0" />
+                {replyError}
+              </p>
+            )}
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center py-6">No se encontraron correos con este contacto.</p>
             ) : (
-              messages.map((m) => (
-                <div key={m.id} className="rounded-xl border border-black/10 bg-white/60 p-3 flex flex-col gap-0.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-neutral-900 truncate">{m.subject}</p>
-                    <p className="text-[10px] text-neutral-400 shrink-0">
-                      {new Date(m.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+              messages.map((m) => {
+                const expanded = expandedIds.has(m.id);
+                const canExpand = m.snippet.length > COLLAPSED_PREVIEW_LENGTH || m.snippet.includes("\n");
+                return (
+                  <div key={m.id} className="rounded-xl border border-black/10 bg-white/60 p-3 flex flex-col gap-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-neutral-900 truncate">{m.subject}</p>
+                      <p className="text-[10px] text-neutral-400 shrink-0">
+                        {new Date(m.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 truncate">{m.from}</p>
+                    <p className={`text-xs text-neutral-600 ${expanded ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
+                      {m.snippet}
                     </p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      {canExpand && (
+                        <button
+                          onClick={() => toggleExpanded(m.id)}
+                          className="text-[11px] font-medium text-[#2a9678] hover:text-[#1f5e4d] transition-colors"
+                        >
+                          {expanded ? "Leer menos" : "Leer más"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleReply(m)}
+                        disabled={replyingId === m.id}
+                        className="text-[11px] font-medium text-neutral-500 hover:text-neutral-800 transition-colors flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {replyingId === m.id ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <Reply size={11} />
+                        )}
+                        Responder
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-neutral-500 truncate">{m.from}</p>
-                  <p className="text-xs text-neutral-600 line-clamp-2">{m.snippet}</p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
