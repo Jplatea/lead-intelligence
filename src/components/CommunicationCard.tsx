@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { X, RefreshCw, AlertCircle, Reply } from "lucide-react";
-import { OutlookIcon } from "./OutlookIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 import { REPS } from "../data/config";
@@ -23,49 +22,16 @@ interface EmailMessage {
   snippet: string;
 }
 
-type Status = "idle" | "loading" | "error" | "ready";
+type Status = "loading" | "error" | "ready";
 
 // How many characters of a snippet show collapsed before "Leer más" is
 // worth offering — anything shorter already fits without truncating.
 const COLLAPSED_PREVIEW_LENGTH = 180;
 
-// Placeholder content only — used by "Probar con datos de ejemplo" below so
-// the feature can be reviewed end-to-end while waiting for a tenant admin
-// to grant the real Outlook consent. Never mixed with real messages, and
-// always shown behind the isDemo banner so it can't be mistaken for a real
-// inbox.
-function buildDemoMessages(companyName: string): EmailMessage[] {
-  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
-  return [
-    {
-      id: "demo-1",
-      subject: `Consulta sobre instalación — ${companyName}`,
-      from: "contacto@ejemplo.com",
-      date: daysAgo(2),
-      snippet: "Buenos días, quería preguntar por el presupuesto de la instalación que hablamos la semana pasada...",
-    },
-    {
-      id: "demo-2",
-      subject: "Re: Presupuesto sistema audiovisual",
-      from: "contacto@ejemplo.com",
-      date: daysAgo(6),
-      snippet: "Gracias por el presupuesto, lo hemos revisado internamente y nos gustaría ajustar algunos puntos...",
-    },
-    {
-      id: "demo-3",
-      subject: "Disponibilidad para la instalación",
-      from: "contacto@ejemplo.com",
-      date: daysAgo(11),
-      snippet: "¿Tendríais disponibilidad la semana que viene para hacer la instalación en nuestras oficinas?",
-    },
-  ];
-}
-
 export function CommunicationCard({ company, repId, onClose }: Props) {
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status>("loading");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
-  const [isDemo, setIsDemo] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Load Microsoft's auth SDK as soon as this card appears, so the click
@@ -76,11 +42,24 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
     preloadOutlook();
   }, []);
 
+  // Auto-connect the moment a client's card opens (from clicking the Mail
+  // column) instead of making the rep click "Conectar Outlook" separately
+  // every time. Once connected earlier in the session, requestOutlookAccess
+  // Token's own cached/silent token reuse means every later client after
+  // the first is fully silent (no popup) - only the very first connection
+  // of a session needs the interactive picker, and that popup still opens
+  // reliably here since this effect fires synchronously from the same
+  // click that opened the card.
+  useEffect(() => {
+    connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [company.id]);
+
   const connect = async () => {
     setStatus("loading");
     setError("");
-    setIsDemo(false);
     try {
+      if (!isOutlookConfigured()) throw new Error("Falta configurar el acceso a Outlook (VITE_MICROSOFT_CLIENT_ID).");
       const email = company.contact.email;
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
       const repEmail = REP_CREDENTIALS.find((r) => r.repId === repId)?.email;
@@ -91,12 +70,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
       setError(e instanceof Error ? e.message : "No se pudo conectar con el correo.");
       setStatus("error");
     }
-  };
-
-  const showDemo = () => {
-    setIsDemo(true);
-    setMessages(buildDemoMessages(company.name));
-    setStatus("ready");
   };
 
   const toggleExpanded = (id: string) => {
@@ -131,35 +104,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           </button>
         </div>
 
-        {status === "idle" && (
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <OutlookIcon size={28} />
-            <p className="text-xs text-neutral-500 max-w-[280px]">
-              Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
-              envía ni modifica nada.
-            </p>
-            <button
-              onClick={connect}
-              disabled={!isOutlookConfigured()}
-              className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Conectar Outlook
-            </button>
-            {!isOutlookConfigured() && (
-              <p className="text-[11px] text-[#b9503a] max-w-[280px] flex items-center gap-1.5">
-                <AlertCircle size={12} className="shrink-0" />
-                Falta configurar el acceso a Outlook (VITE_MICROSOFT_CLIENT_ID).
-              </p>
-            )}
-            <button
-              onClick={showDemo}
-              className="text-[11px] text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
-            >
-              Probar con datos de ejemplo
-            </button>
-          </div>
-        )}
-
         {status === "loading" && (
           <div className="flex flex-col items-center gap-2 py-10">
             <RefreshCw size={20} className="animate-spin text-neutral-400" />
@@ -172,7 +116,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
             <AlertCircle size={22} className="text-[#b9503a]" />
             <p className="text-xs text-neutral-600 max-w-[280px]">{error}</p>
             <button
-              onClick={() => setStatus("idle")}
+              onClick={connect}
               className="text-xs font-medium px-3 py-1.5 rounded-lg bg-black/[0.04] border border-black/10 hover:bg-black/[0.07] transition-colors"
             >
               Volver a intentar
@@ -182,12 +126,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
 
         {status === "ready" && (
           <div className="flex flex-col gap-2">
-            {isDemo && (
-              <p className="text-[11px] text-[#a3672c] bg-[#f0c39a]/25 border border-[#f0c39a]/60 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
-                <AlertCircle size={12} className="shrink-0" />
-                Datos de ejemplo — no son correos reales.
-              </p>
-            )}
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center py-6">No se encontraron correos con este contacto.</p>
             ) : (
