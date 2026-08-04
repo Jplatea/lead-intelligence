@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { X, RefreshCw, AlertCircle, Reply } from "lucide-react";
-import { WhatsAppIcon } from "./WhatsAppIcon";
 import { OutlookIcon } from "./OutlookIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
@@ -139,7 +138,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
               channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
             }`}
           >
-            <OutlookIcon size={14} /> Outlook
+            Outlook
           </button>
           <button
             onClick={() => setChannel("whatsapp")}
@@ -147,7 +146,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
               channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
             }`}
           >
-            <WhatsAppIcon size={14} /> WhatsApp
+            WhatsApp
           </button>
         </div>
 
