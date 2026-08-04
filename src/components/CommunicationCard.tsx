@@ -227,7 +227,11 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
                       </p>
                     </div>
                     <p className="text-[11px] text-neutral-500 truncate">{m.from}</p>
-                    <p className={`text-xs text-neutral-600 ${expanded ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
+                    <p
+                      className={`text-xs text-neutral-600 ${
+                        expanded ? "whitespace-pre-wrap max-h-[280px] overflow-y-auto pr-1" : "line-clamp-2"
+                      }`}
+                    >
                       {m.snippet}
                     </p>
                     <div className="flex items-center gap-3 mt-1.5">
