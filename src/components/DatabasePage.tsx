@@ -381,20 +381,20 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                 >
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
+                      <th className="bg-surface w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
                       <SortableTh
                         label="Nombre Empresa"
                         columnKey="name"
                         sort={clientSort}
                         onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
-                        className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                        className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                       />
                       <SortableTh
                         label="Nombre Contacto"
                         columnKey="contactName"
                         sort={clientSort}
                         onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
-                        className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                        className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                       />
                       {shownColumns.map((col) => (
                         <SortableTh
@@ -403,7 +403,7 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                           columnKey={col.key}
                           sort={clientSort}
                           onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
-                          className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                          className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                         />
                       ))}
                     </tr>
@@ -443,11 +443,19 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                                   : undefined
                               }
                               className={`px-2 py-1 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
-                                col.key === "email" ? "font-medium text-[#a79bcb] cursor-pointer hover:underline" : "text-black/80"
+                                col.key === "email" ? "cursor-pointer" : "text-black/80"
                               }`}
                               style={{ background: bg }}
                             >
-                              <CellTip value={cellText(c, col.key)}>{cellText(c, col.key)}</CellTip>
+                              <CellTip value={cellText(c, col.key)}>
+                                {col.key === "email" && cellText(c, col.key) !== "—" ? (
+                                  <span className="inline-block bg-neutral-900 text-white text-[11px] font-medium px-2 py-0.5 rounded-full hover:bg-neutral-700 transition-colors">
+                                    {cellText(c, col.key)}
+                                  </span>
+                                ) : (
+                                  cellText(c, col.key)
+                                )}
+                              </CellTip>
                             </td>
                           ))}
                         </tr>
@@ -494,7 +502,7 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                           columnKey={col.key}
                           sort={nlSort}
                           onSort={(key) => setNlSort((prev) => toggleSort(prev, key))}
-                          className="font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                          className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                         />
                       ))}
                     </tr>
