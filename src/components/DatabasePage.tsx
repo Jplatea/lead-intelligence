@@ -381,7 +381,7 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                 >
                   <thead className="sticky top-0 z-10 bg-surface">
                     <tr>
-                      <th className="bg-surface w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
+                      <th className="bg-surface rounded-tl-2xl w-8 font-normal border-b border-black/10" aria-hidden="true"></th>
                       <SortableTh
                         label="Nombre Empresa"
                         columnKey="name"
@@ -396,14 +396,16 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                         onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
                         className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
                       />
-                      {shownColumns.map((col) => (
+                      {shownColumns.map((col, i) => (
                         <SortableTh
                           key={col.key}
                           label={col.label}
                           columnKey={col.key}
                           sort={clientSort}
                           onSort={(key) => setClientSort((prev) => toggleSort(prev, key))}
-                          className="bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left"
+                          className={`bg-surface font-medium text-neutral-500 tracking-wide text-[13px] px-2 py-2.5 border-b border-black/10 whitespace-nowrap text-left ${
+                            i === shownColumns.length - 1 ? "rounded-tr-2xl" : ""
+                          }`}
                         />
                       ))}
                     </tr>
@@ -442,20 +444,12 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                                     }
                                   : undefined
                               }
-                              className={`px-2 py-1 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
-                                col.key === "email" ? "cursor-pointer" : "text-black/80"
+                              className={`px-2 py-1 text-black/80 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
+                                col.key === "email" ? "cursor-pointer" : ""
                               }`}
                               style={{ background: bg }}
                             >
-                              <CellTip value={cellText(c, col.key)}>
-                                {col.key === "email" && cellText(c, col.key) !== "—" ? (
-                                  <span className="inline-block bg-neutral-900 text-white text-[11px] font-medium px-2 py-0.5 rounded-full hover:bg-neutral-700 transition-colors">
-                                    {cellText(c, col.key)}
-                                  </span>
-                                ) : (
-                                  cellText(c, col.key)
-                                )}
-                              </CellTip>
+                              <CellTip value={cellText(c, col.key)}>{cellText(c, col.key)}</CellTip>
                             </td>
                           ))}
                         </tr>
