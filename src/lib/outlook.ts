@@ -21,7 +21,7 @@ interface MsalPublicClientApplication {
   initialize: () => Promise<void>;
   getAllAccounts: () => MsalAccount[];
   acquireTokenSilent: (req: { scopes: string[]; account: MsalAccount }) => Promise<MsalAuthResult>;
-  loginPopup: (req: { scopes: string[] }) => Promise<MsalAuthResult>;
+  loginPopup: (req: { scopes: string[]; prompt?: string }) => Promise<MsalAuthResult>;
 }
 
 declare global {
@@ -82,14 +82,24 @@ export function preloadOutlook(): void {
 
 let cachedToken: { value: string; account: MsalAccount } | null = null;
 
-export async function requestOutlookAccessToken(): Promise<string> {
+// expectedEmail (the logged-in rep's own known email) guards both the
+// short-circuit cache and the silent-reuse path below - without this, a
+// stale MSAL session cached in this browser for a *different* account
+// (e.g. this same PC used previously by another rep, or a colleague's
+// personal Microsoft account already signed into the browser) got reused
+// silently, with no picker ever shown and no way to notice until the wrong
+// inbox came back.
+export async function requestOutlookAccessToken(expectedEmail?: string): Promise<string> {
+  const matches = (username: string) => !expectedEmail || username.toLowerCase() === expectedEmail.toLowerCase();
+
   const client = await getPca();
-  if (cachedToken) return cachedToken.value;
+  if (cachedToken && matches(cachedToken.account.username)) return cachedToken.value;
 
   const accounts = client.getAllAccounts();
-  if (accounts.length > 0) {
+  const known = expectedEmail ? accounts.find((a) => matches(a.username)) : accounts[0];
+  if (known) {
     try {
-      const result = await client.acquireTokenSilent({ scopes: SCOPES, account: accounts[0] });
+      const result = await client.acquireTokenSilent({ scopes: SCOPES, account: known });
       cachedToken = { value: result.accessToken, account: result.account };
       return result.accessToken;
     } catch {
@@ -97,7 +107,11 @@ export async function requestOutlookAccessToken(): Promise<string> {
     }
   }
 
-  const result = await client.loginPopup({ scopes: SCOPES });
+  // "select_account" forces Microsoft's account picker every time, instead
+  // of silently continuing with whatever Microsoft account the browser
+  // already has an active session for (its own cross-site SSO, separate
+  // from this app's own MSAL cache above).
+  const result = await client.loginPopup({ scopes: SCOPES, prompt: "select_account" });
   cachedToken = { value: result.accessToken, account: result.account };
   return result.accessToken;
 }

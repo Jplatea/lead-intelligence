@@ -4,6 +4,7 @@ import { OutlookIcon } from "./OutlookIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
 import { REPS } from "../data/config";
+import { REP_CREDENTIALS } from "../lib/auth";
 import { AuroraBackground } from "./AuroraBackground";
 import { WhatsAppPanel } from "./WhatsAppPanel";
 
@@ -84,7 +85,8 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
     try {
       const email = company.contact.email;
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
-      const msgs = await fetchOutlook(await requestOutlookAccessToken(), email, 10);
+      const repEmail = REP_CREDENTIALS.find((r) => r.repId === repId)?.email;
+      const msgs = await fetchOutlook(await requestOutlookAccessToken(repEmail), email, 10);
       setMessages(msgs);
       setStatus("ready");
     } catch (e) {
