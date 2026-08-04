@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, RefreshCw, AlertCircle, Reply, Loader2 } from "lucide-react";
+import { X, RefreshCw, AlertCircle, Reply } from "lucide-react";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { OutlookIcon } from "./OutlookIcon";
 import type { Company, RepId } from "../types";
 import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook, requestOutlookAccessToken } from "../lib/outlook";
-import { fetchRecentEmailsViaAgent, replyToEmailViaAgent } from "../lib/localAgent";
 import { REPS } from "../data/config";
 import { AuroraBackground } from "./AuroraBackground";
 import { WhatsAppPanel } from "./WhatsAppPanel";
@@ -26,7 +25,6 @@ interface EmailMessage {
 }
 
 type Status = "idle" | "loading" | "error" | "ready";
-type Source = "outlook" | "agent" | "demo";
 
 // How many characters of a snippet show collapsed before "Leer más" is
 // worth offering — anything shorter already fits without truncating.
@@ -70,10 +68,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
   const [isDemo, setIsDemo] = useState(false);
-  const [source, setSource] = useState<Source | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [replyingId, setReplyingId] = useState<string | null>(null);
-  const [replyError, setReplyError] = useState("");
 
   // Load Microsoft's auth SDK as soon as this card appears, so the click
   // handler below can call loginPopup() with as little delay as possible —
@@ -92,7 +87,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
       if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
       const msgs = await fetchOutlook(await requestOutlookAccessToken(), email, 10);
       setMessages(msgs);
-      setSource("outlook");
       setStatus("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo conectar con el correo.");
@@ -103,25 +97,7 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
   const showDemo = () => {
     setIsDemo(true);
     setMessages(buildDemoMessages(company.name));
-    setSource("demo");
     setStatus("ready");
-  };
-
-  const connectLocalAgent = async () => {
-    setStatus("loading");
-    setError("");
-    setIsDemo(false);
-    try {
-      const email = company.contact.email;
-      if (!email) throw new Error("Este cliente no tiene un email de contacto guardado.");
-      const msgs = await fetchRecentEmailsViaAgent(email, 10);
-      setMessages(msgs);
-      setSource("agent");
-      setStatus("ready");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo conectar con el agente local.");
-      setStatus("error");
-    }
   };
 
   const toggleExpanded = (id: string) => {
@@ -133,23 +109,9 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
     });
   };
 
-  // Never sends anything itself — just opens a reply window/compose UI for
-  // the rep to write and send themselves. Via the local agent that's
-  // Outlook's own native reply window (real quoting/threading); otherwise
-  // it's a plain mailto: link to the rep's own default mail client.
-  const handleReply = async (m: EmailMessage) => {
-    setReplyError("");
-    if (source === "agent") {
-      setReplyingId(m.id);
-      try {
-        await replyToEmailViaAgent(m.id);
-      } catch (e) {
-        setReplyError(e instanceof Error ? e.message : "No se pudo abrir la respuesta.");
-      } finally {
-        setReplyingId(null);
-      }
-      return;
-    }
+  // Never sends anything itself — just opens the rep's own default mail
+  // client with a reply pre-addressed, for them to write and send.
+  const handleReply = (m: EmailMessage) => {
     const subject = /^re:/i.test(m.subject) ? m.subject : `RE: ${m.subject}`;
     window.open(`mailto:${m.from}?subject=${encodeURIComponent(subject)}`, "_blank");
   };
@@ -200,32 +162,19 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
               Conecta tu correo para ver los últimos 10 correos con este cliente. Solo se leen los mensajes — no se
               envía ni modifica nada.
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={connect}
-                disabled={!isOutlookConfigured()}
-                className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Conectar Outlook
-              </button>
-              <button
-                onClick={connectLocalAgent}
-                title="Requiere tener el script outlook_agent.py ejecutándose en este ordenador"
-                className="text-xs font-medium px-4 py-2 rounded-lg bg-black/[0.04] border border-black/10 text-neutral-700 hover:bg-black/[0.07] transition-colors"
-              >
-                Agente local
-              </button>
-            </div>
+            <button
+              onClick={connect}
+              disabled={!isOutlookConfigured()}
+              className="text-xs font-medium px-4 py-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Conectar Outlook
+            </button>
             {!isOutlookConfigured() && (
               <p className="text-[11px] text-[#b9503a] max-w-[280px] flex items-center gap-1.5">
                 <AlertCircle size={12} className="shrink-0" />
                 Falta configurar el acceso a Outlook (VITE_MICROSOFT_CLIENT_ID).
               </p>
             )}
-            <p className="text-[11px] text-neutral-400 max-w-[280px]">
-              "Agente local" lee tu Outlook de escritorio directamente en este PC — requiere ejecutar antes
-              outlook_agent.py (ver instrucciones en local-agent/).
-            </p>
             <button
               onClick={showDemo}
               className="text-[11px] text-neutral-400 hover:text-neutral-600 underline underline-offset-2 transition-colors"
@@ -263,12 +212,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
                 Datos de ejemplo — no son correos reales.
               </p>
             )}
-            {replyError && (
-              <p className="text-[11px] text-[#b9503a] bg-[#eda18f]/15 border border-[#eda18f]/50 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
-                <AlertCircle size={12} className="shrink-0" />
-                {replyError}
-              </p>
-            )}
             {messages.length === 0 ? (
               <p className="text-xs text-neutral-400 text-center py-6">No se encontraron correos con este contacto.</p>
             ) : (
@@ -298,14 +241,9 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
                       )}
                       <button
                         onClick={() => handleReply(m)}
-                        disabled={replyingId === m.id}
-                        className="text-[11px] font-medium text-neutral-500 hover:text-neutral-800 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        className="text-[11px] font-medium text-neutral-500 hover:text-neutral-800 transition-colors flex items-center gap-1"
                       >
-                        {replyingId === m.id ? (
-                          <Loader2 size={11} className="animate-spin" />
-                        ) : (
-                          <Reply size={11} />
-                        )}
+                        <Reply size={11} />
                         Responder
                       </button>
                     </div>
