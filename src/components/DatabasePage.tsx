@@ -443,9 +443,9 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                                   : undefined
                               }
                               className={`px-2 py-1 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
-                                col.key === "email" ? "font-medium text-[#7a3323] cursor-pointer hover:underline" : "text-black/80"
+                                col.key === "email" ? "font-medium text-[#eda18f] cursor-pointer hover:underline" : "text-black/80"
                               }`}
-                              style={{ background: col.key === "email" ? "#eda18f" : bg }}
+                              style={{ background: bg }}
                             >
                               <CellTip value={cellText(c, col.key)}>{cellText(c, col.key)}</CellTip>
                             </td>
