@@ -443,7 +443,7 @@ export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCom
                                   : undefined
                               }
                               className={`px-2 py-1 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
-                                col.key === "email" ? "font-medium text-[#eda18f] cursor-pointer hover:underline" : "text-black/80"
+                                col.key === "email" ? "font-medium text-[#a79bcb] cursor-pointer hover:underline" : "text-black/80"
                               }`}
                               style={{ background: bg }}
                             >
