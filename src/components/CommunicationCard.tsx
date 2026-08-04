@@ -6,7 +6,6 @@ import { fetchRecentEmails as fetchOutlook, isOutlookConfigured, preloadOutlook,
 import { REPS } from "../data/config";
 import { REP_CREDENTIALS } from "../lib/auth";
 import { AuroraBackground } from "./AuroraBackground";
-import { WhatsAppPanel } from "./WhatsAppPanel";
 
 interface Props {
   company: Company;
@@ -63,7 +62,6 @@ function buildDemoMessages(companyName: string): EmailMessage[] {
 }
 
 export function CommunicationCard({ company, repId, onClose }: Props) {
-  const [channel, setChannel] = useState<"email" | "whatsapp">("email");
   const [status, setStatus] = useState<Status>("idle");
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
@@ -133,29 +131,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 -mt-1">
-          <button
-            onClick={() => setChannel("email")}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "email" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
-            }`}
-          >
-            Outlook
-          </button>
-          <button
-            onClick={() => setChannel("whatsapp")}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              channel === "whatsapp" ? "bg-neutral-900 text-white" : "bg-black/[0.08] text-neutral-600 hover:bg-black/[0.12]"
-            }`}
-          >
-            WhatsApp
-          </button>
-        </div>
-
-        {channel === "whatsapp" ? (
-          <WhatsAppPanel company={company} repId={repId} />
-        ) : (
-          <>
         {status === "idle" && (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <OutlookIcon size={28} />
@@ -257,8 +232,6 @@ export function CommunicationCard({ company, repId, onClose }: Props) {
               })
             )}
           </div>
-        )}
-          </>
         )}
         </div>
       </div>
