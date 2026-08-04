@@ -13,7 +13,6 @@ import { StatsRow } from "./components/StatsRow";
 import { VisitPlannerModal } from "./components/VisitPlannerModal";
 import { NewsletterContactCard } from "./components/NewsletterContactCard";
 import { CommunicationCard } from "./components/CommunicationCard";
-import { RowActionBubble } from "./components/RowActionBubble";
 import { MailingPage } from "./components/MailingPage";
 import { StyleGuidePage } from "./components/StyleGuidePage";
 import { ImportModal } from "./components/ImportModal";
@@ -114,7 +113,6 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [communicationId, setCommunicationId] = useState<string | null>(null);
-  const [actionBubble, setActionBubble] = useState<{ company: Company; x: number; y: number } | null>(null);
 
   const [highlight, setHighlight] = useState<ResultsHighlight | null>(null);
   const [reviewArrowIds, setReviewArrowIds] = useState<Set<string> | null>(null);
@@ -521,7 +519,6 @@ function App() {
     setSelectedId(null);
     setSelectedContactId(null);
     setCommunicationId(null);
-    setActionBubble(null);
     setVisitModalOpen(false);
   };
 
@@ -615,7 +612,14 @@ function App() {
             <DatabasePage
               companies={companies}
               mailingContacts={mailingContacts}
-              onRowClick={(company, x, y) => setActionBubble({ company, x, y })}
+              onOpenCard={(company) => {
+                setSelectedId(company.id);
+                setCommunicationId(null);
+              }}
+              onOpenCommunication={(company) => {
+                setCommunicationId(company.id);
+                setSelectedId(null);
+              }}
               onSelectContact={setSelectedContactId}
             />
           </motion.main>
@@ -716,24 +720,6 @@ function App() {
 
       {communicationCompany && (
         <CommunicationCard company={communicationCompany} repId={session} onClose={() => setCommunicationId(null)} />
-      )}
-
-      {actionBubble && (
-        <RowActionBubble
-          x={actionBubble.x}
-          y={actionBubble.y}
-          onClose={() => setActionBubble(null)}
-          onViewCard={() => {
-            setSelectedId(actionBubble.company.id);
-            setCommunicationId(null);
-            setActionBubble(null);
-          }}
-          onCommunicate={() => {
-            setCommunicationId(actionBubble.company.id);
-            setSelectedId(null);
-            setActionBubble(null);
-          }}
-        />
       )}
     </div>
   );

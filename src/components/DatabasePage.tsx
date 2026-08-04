@@ -12,14 +12,10 @@ import {
 interface Props {
   companies: Company[];
   mailingContacts: MailingContact[];
-  onRowClick: (company: Company, x: number, y: number) => void;
+  onOpenCard: (company: Company) => void;
+  onOpenCommunication: (company: Company) => void;
   onSelectContact: (id: string) => void;
 }
-
-// Bubble width, kept in sync with RowActionBubble.tsx — used only to clamp
-// the click point away from the viewport edges so the bubble never renders
-// partly off-screen.
-const BUBBLE_W = 224;
 
 type Dataset = "clients" | "newsletter";
 
@@ -261,7 +257,7 @@ function nlSortValue(c: MailingContact, key: NewsletterSortKey): string {
 // This page is a read-only report: no editing/deleting rows — just the data
 // laid out plainly on the rep's color. Search and column visibility are
 // display-only controls (nothing here mutates a company/contact record).
-export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectContact }: Props) {
+export function DatabasePage({ companies, mailingContacts, onOpenCard, onOpenCommunication, onSelectContact }: Props) {
   const [dataset, setDataset] = useState<Dataset>("clients");
 
   const [clientQuery, setClientQuery] = useState("");
@@ -416,14 +412,7 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                     {filteredCompanies.map((c) => {
                       const bg = rowBg(c);
                       return (
-                        <tr
-                          key={c.id}
-                          className="h-7 cursor-pointer"
-                          onClick={(e) => {
-                            const x = Math.min(Math.max(e.clientX, BUBBLE_W / 2 + 8), window.innerWidth - BUBBLE_W / 2 - 8);
-                            onRowClick(c, x, e.clientY);
-                          }}
-                        >
+                        <tr key={c.id} className="h-7 cursor-pointer" onClick={() => onOpenCard(c)}>
                           <td className="pl-3 pr-1 py-1 rounded-l-xl w-8" style={{ background: bg }}>
                             {c.needsReview && (
                               <CellTip value="Necesita revisión">
@@ -445,7 +434,17 @@ export function DatabasePage({ companies, mailingContacts, onRowClick, onSelectC
                           {shownColumns.map((col, i) => (
                             <td
                               key={col.key}
-                              className={`px-2 py-1 text-black/80 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""}`}
+                              onClick={
+                                col.key === "email"
+                                  ? (e) => {
+                                      e.stopPropagation();
+                                      onOpenCommunication(c);
+                                    }
+                                  : undefined
+                              }
+                              className={`px-2 py-1 text-black/80 whitespace-nowrap ${i === shownColumns.length - 1 ? "rounded-r-xl" : ""} ${
+                                col.key === "email" ? "hover:underline decoration-dotted" : ""
+                              }`}
                               style={{ background: bg }}
                             >
                               <CellTip value={cellText(c, col.key)}>{cellText(c, col.key)}</CellTip>
