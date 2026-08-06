@@ -5,6 +5,7 @@ import {
   HelpCircle,
   Link2,
   Loader2,
+  Radar,
   RefreshCw,
   ShieldAlert,
   Trash2,
@@ -75,6 +76,63 @@ export function ImportModal({
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [conflicts, setConflicts] = useState<DuplicateConflict[]>([]);
+  const [scanningKnx, setScanningKnx] = useState(false);
+
+  // Shared by every row source (file upload, KNX's own API) - rows with
+  // lat/lng already set (like KNX's) skip geocoding entirely inside
+  // rowsToCompanies, so this resolves near-instantly for those.
+  const processRows = async (rows: ImportRow[]) => {
+    setImporting(true);
+    setProgress({ done: 0, total: rows.length });
+    const { companies: imported, skipped, geocodeFailed } = await rowsToCompanies(
+      rows,
+      DEFAULT_IMPORT_REP,
+      (done, total) => setProgress({ done, total })
+    );
+    setImporting(false);
+    setProgress(null);
+
+    // Every client read from the file gets checked against the existing
+    // database by name before being added — matches go to a merge popup
+    // instead of creating a duplicate outright.
+    const fresh: Company[] = [];
+    const newConflicts: DuplicateConflict[] = [];
+    for (const inc of imported) {
+      const existing = findDuplicate(inc, companies);
+      if (existing) newConflicts.push({ existing, incoming: inc });
+      else fresh.push(inc);
+    }
+
+    if (fresh.length > 0) onImportCompanies(fresh);
+    if (newConflicts.length > 0) setConflicts(newConflicts);
+
+    const parts = [`${fresh.length} cliente${fresh.length === 1 ? "" : "s"} añadido${fresh.length === 1 ? "" : "s"} al mapa.`];
+    if (newConflicts.length > 0)
+      parts.push(`${newConflicts.length} coincid${newConflicts.length === 1 ? "e" : "en"} con clientes existentes.`);
+    if (skipped > 0) parts.push(`${skipped} fila${skipped === 1 ? "" : "s"} sin datos suficientes.`);
+    if (geocodeFailed.length > 0) parts.push(`No se pudo ubicar: ${geocodeFailed.join(", ")}.`);
+    setResult(parts.join(" "));
+  };
+
+  const scanKnx = async () => {
+    setError(null);
+    setResult(null);
+    setScanningKnx(true);
+    try {
+      const res = await fetch("/api/scan-knx");
+      if (!res.ok) throw new Error(`El escaneo falló (${res.status}).`);
+      const { rows } = (await res.json()) as { rows: ImportRow[] };
+      if (rows.length === 0) {
+        setResult("No se encontraron instaladores KNX nuevos en España/Portugal.");
+        return;
+      }
+      await processRows(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo escanear el directorio de KNX.");
+    } finally {
+      setScanningKnx(false);
+    }
+  };
 
   const submitUrl = () => {
     const trimmed = url.trim();
@@ -119,36 +177,7 @@ export function ImportModal({
       return;
     }
 
-    setImporting(true);
-    setProgress({ done: 0, total: rows.length });
-    const { companies: imported, skipped, geocodeFailed } = await rowsToCompanies(
-      rows,
-      DEFAULT_IMPORT_REP,
-      (done, total) => setProgress({ done, total })
-    );
-    setImporting(false);
-    setProgress(null);
-
-    // Every client read from the file gets checked against the existing
-    // database by name before being added — matches go to a merge popup
-    // instead of creating a duplicate outright.
-    const fresh: Company[] = [];
-    const newConflicts: DuplicateConflict[] = [];
-    for (const inc of imported) {
-      const existing = findDuplicate(inc, companies);
-      if (existing) newConflicts.push({ existing, incoming: inc });
-      else fresh.push(inc);
-    }
-
-    if (fresh.length > 0) onImportCompanies(fresh);
-    if (newConflicts.length > 0) setConflicts(newConflicts);
-
-    const parts = [`${fresh.length} cliente${fresh.length === 1 ? "" : "s"} añadido${fresh.length === 1 ? "" : "s"} al mapa.`];
-    if (newConflicts.length > 0)
-      parts.push(`${newConflicts.length} coincid${newConflicts.length === 1 ? "e" : "en"} con clientes existentes.`);
-    if (skipped > 0) parts.push(`${skipped} fila${skipped === 1 ? "" : "s"} sin datos suficientes.`);
-    if (geocodeFailed.length > 0) parts.push(`No se pudo ubicar: ${geocodeFailed.join(", ")}.`);
-    setResult(parts.join(" "));
+    await processRows(rows);
   };
 
   const applyMergeDecisions = (decisions: MergeDecision[]) => {
@@ -262,6 +291,16 @@ export function ImportModal({
           >
             <RefreshCw size={12} className={scanning ? "animate-spin" : ""} />
             {scanning ? "Reescaneando fuentes..." : "Reescanear todas las fuentes existentes"}
+          </button>
+
+          <button
+            onClick={scanKnx}
+            disabled={scanningKnx || importing}
+            title="Lee el directorio público de instaladores KNX (España/Portugal, socios Gold y Platinum) directamente desde su API"
+            className="w-full flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-xl bg-[#a8dfcf]/25 border border-[#a8dfcf] text-[#2a9678] hover:bg-[#a8dfcf]/40 disabled:opacity-50"
+          >
+            {scanningKnx ? <Loader2 size={12} className="animate-spin" /> : <Radar size={12} />}
+            {scanningKnx ? "Escaneando instaladores KNX..." : "Escanear instaladores KNX (ES/PT)"}
           </button>
 
           {sources.length > 0 && (
